@@ -1,0 +1,17 @@
+{
+  "name": "@uml-editor/backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "@uml-editor/shared": "workspace:*",
+    "hono": "^4.12.22"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.5.0"
+  }
+}

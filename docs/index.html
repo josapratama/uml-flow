@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UML Editor — Modern Diagram Tool</title>
+    <meta
+      name="description"
+      content="A modern, web-based UML diagram editor with custom DSL, visual canvas, and code generation."
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --bg: #0f0f1a;
+        --surface: #1a1a2e;
+        --accent: #6366f1;
+        --accent-light: #818cf8;
+        --text: #e2e8f0;
+        --text-muted: #94a3b8;
+        --border: #3a3a5c;
+      }
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+      }
+      a {
+        color: var(--accent-light);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* Hero */
+      .hero {
+        padding: 80px 0 60px;
+        text-align: center;
+      }
+      .hero h1 {
+        font-size: 3.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #6366f1, #a78bfa, #6366f1);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 16px;
+      }
+      .hero p {
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        max-width: 600px;
+        margin: 0 auto 32px;
+      }
+      .hero-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .btn {
+        padding: 12px 28px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: white;
+      }
+      .btn-primary:hover {
+        background: var(--accent-light);
+        text-decoration: none;
+        transform: translateY(-1px);
+      }
+      .btn-secondary {
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+      .btn-secondary:hover {
+        border-color: var(--accent);
+        text-decoration: none;
+      }
+
+      /* Features */
+      .features {
+        padding: 60px 0;
+      }
+      .features h2 {
+        font-size: 2rem;
+        text-align: center;
+        margin-bottom: 48px;
+      }
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 24px;
+      }
+      .feature-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 28px;
+        transition: border-color 0.2s;
+      }
+      .feature-card:hover {
+        border-color: var(--accent);
+      }
+      .feature-card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .feature-card p {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+
+      /* Diagrams */
+      .diagrams {
+        padding: 60px 0;
+      }
+      .diagrams h2 {
+        font-size: 2rem;
+        text-align: center;
+        margin-bottom: 16px;
+      }
+      .diagrams .subtitle {
+        text-align: center;
+        color: var(--text-muted);
+        margin-bottom: 36px;
+      }
+      .diagram-tags {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+      }
+      .tag {
+        padding: 8px 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+
+      /* Code example */
+      .code-section {
+        padding: 60px 0;
+      }
+      .code-section h2 {
+        font-size: 2rem;
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      .code-block {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.85rem;
+        overflow-x: auto;
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.8;
+      }
+      .code-block .kw {
+        color: #c792ea;
+      }
+      .code-block .str {
+        color: #c3e88d;
+      }
+      .code-block .vis {
+        color: #89ddff;
+      }
+      .code-block .type {
+        color: #82aaff;
+      }
+      .code-block .rel {
+        color: #f07178;
+      }
+
+      /* Shortcuts */
+      .shortcuts {
+        padding: 60px 0;
+      }
+      .shortcuts h2 {
+        font-size: 2rem;
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      .shortcut-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 12px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .shortcut-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 16px;
+        background: var(--surface);
+        border-radius: 8px;
+        font-size: 0.85rem;
+      }
+      .shortcut-item kbd {
+        background: var(--bg);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.8rem;
+        border: 1px solid var(--border);
+      }
+
+      /* Footer */
+      .footer {
+        padding: 40px 0;
+        border-top: 1px solid var(--border);
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+      }
+
+      @media (max-width: 768px) {
+        .hero h1 {
+          font-size: 2.2rem;
+        }
+        .hero p {
+          font-size: 1rem;
+        }
+        .feature-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Hero -->
+      <section class="hero">
+        <h1>UML Editor</h1>
+        <p>
+          Create professional UML diagrams with a custom DSL, visual
+          drag-and-drop canvas, and export to code — all in your browser.
+        </p>
+        <div class="hero-buttons">
+          <a href="/" class="btn btn-primary">🚀 Open Editor</a>
+          <a href="https://github.com" class="btn btn-secondary"
+            >📖 Documentation</a
+          >
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section class="features">
+        <h2>Features</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <h3>📝 Custom DSL</h3>
+            <p>
+              Write diagrams in a simple, readable text format with syntax
+              highlighting and auto-compile.
+            </p>
+          </div>
+          <div class="feature-card">
+            <h3>🎨 Visual Editor</h3>
+            <p>
+              Drag-and-drop nodes, draw connections, resize, style — full visual
+              editing without touching code.
+            </p>
+          </div>
+          <div class="feature-card">
+            <h3>🔷 Code Generation</h3>
+            <p>
+              Export class diagrams to TypeScript or Java. Import .ts/.java
+              files to auto-generate diagrams.
+            </p>
+          </div>
+          <div class="feature-card">
+            <h3>📐 Auto Layout</h3>
+            <p>
+              6 layout algorithms: layered, force-directed, radial, grid,
+              linear, and sequence-optimized.
+            </p>
+          </div>
+          <div class="feature-card">
+            <h3>🌙 Dark Mode</h3>
+            <p>
+              Full dark mode support for comfortable editing in any environment.
+            </p>
+          </div>
+          <div class="feature-card">
+            <h3>📥 Export Anywhere</h3>
+            <p>
+              Export as PNG, SVG, JSON, DSL, TypeScript, or Java. Copy to
+              clipboard with one click.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Supported Diagrams -->
+      <section class="diagrams">
+        <h2>7 Diagram Types</h2>
+        <p class="subtitle">
+          Full UML support for software design and documentation
+        </p>
+        <div class="diagram-tags">
+          <span class="tag">Class Diagram</span>
+          <span class="tag">Sequence Diagram</span>
+          <span class="tag">Activity Diagram</span>
+          <span class="tag">Flowchart</span>
+          <span class="tag">ERD</span>
+          <span class="tag">State Diagram</span>
+          <span class="tag">Use Case Diagram</span>
+        </div>
+      </section>
+
+      <!-- DSL Example -->
+      <section class="code-section">
+        <h2>Simple DSL Syntax</h2>
+        <div class="code-block">
+          <span class="kw">@diagram</span>
+          <span class="str">"User System"</span> <span class="type">class</span>
+
+          <span class="kw">class</span> User { <span class="vis">+</span>id:
+          <span class="type">string</span> <span class="vis">+</span>name:
+          <span class="type">string</span> <span class="vis">-</span>password:
+          <span class="type">string</span> <span class="vis">+</span>login(user,
+          pass): <span class="type">boolean</span>
+          }
+
+          <span class="kw">interface</span> Serializable {
+          <span class="vis">+</span>serialize():
+          <span class="type">string</span> } User
+          <span class="rel">--|></span> Serializable
+        </div>
+      </section>
+
+      <!-- Shortcuts -->
+      <section class="shortcuts">
+        <h2>Keyboard Shortcuts</h2>
+        <div class="shortcut-grid">
+          <div class="shortcut-item">
+            <span>Compile</span><kbd>Ctrl+Enter</kbd>
+          </div>
+          <div class="shortcut-item"><span>Undo</span><kbd>Ctrl+Z</kbd></div>
+          <div class="shortcut-item"><span>Redo</span><kbd>Ctrl+Y</kbd></div>
+          <div class="shortcut-item"><span>Delete</span><kbd>Delete</kbd></div>
+          <div class="shortcut-item"><span>Copy</span><kbd>Ctrl+C</kbd></div>
+          <div class="shortcut-item"><span>Paste</span><kbd>Ctrl+V</kbd></div>
+          <div class="shortcut-item">
+            <span>Duplicate</span><kbd>Ctrl+D</kbd>
+          </div>
+          <div class="shortcut-item"><span>Zoom</span><kbd>Scroll</kbd></div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <p>Built with Bun, Hono, React, Vite, and Tailwind CSS</p>
+      </footer>
+    </div>
+  </body>
+</html>

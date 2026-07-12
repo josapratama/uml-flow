@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface: #0f0f1a;
+  --color-surface-2: #1a1a2e;
+  --color-surface-3: #252540;
+  --color-surface-4: #2f2f4a;
+  --color-border: #3a3a5c;
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+  --color-text: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-success: #34d399;
+  --color-error: #f87171;
+  --color-warning: #fbbf24;
+}
+
+/* Base */
+body {
+  @apply bg-surface text-text font-sans h-screen antialiased;
+}
+
+#root {
+  @apply h-screen flex flex-col;
+}
+
+/* Code editor overlay technique */
+.code-area {
+  @apply relative flex-1 overflow-hidden;
+}
+
+.code-highlight,
+.code-textarea {
+  @apply absolute inset-0 p-3 m-0 overflow-auto;
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  tab-size: 2;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.code-highlight {
+  @apply text-text bg-surface pointer-events-none z-1;
+}
+
+.code-textarea {
+  @apply bg-transparent border-none outline-none resize-none z-2;
+  color: transparent;
+  caret-color: #e2e8f0;
+}
+
+/* Syntax highlighting tokens */
+.hl-keyword {
+  color: #c792ea;
+  font-weight: 500;
+}
+.hl-string {
+  color: #c3e88d;
+}
+.hl-comment {
+  color: #546e7a;
+  font-style: italic;
+}
+.hl-directive {
+  color: #ffcb6b;
+  font-weight: 600;
+}
+.hl-visibility {
+  color: #89ddff;
+  font-weight: 700;
+}
+.hl-relation {
+  color: #f07178;
+  font-weight: 500;
+}
+.hl-type {
+  color: #82aaff;
+}
+.hl-bracket {
+  color: #ffcb6b;
+}
+
+/* SVG node interactions */
+.uml-node {
+  transition: filter 0.15s ease;
+}
+.uml-node:hover {
+  filter: drop-shadow(0 4px 12px rgba(99, 102, 241, 0.2));
+}
+.uml-node.selected {
+  filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.5));
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a3a5c;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4a4a6c;
+}
