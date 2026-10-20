@@ -3,6 +3,71 @@
  * Captures the FULL diagram content (not just the visible viewport).
  * Resets zoom/pan transform and fits all content.
  */
+/**
+ * Helper to calculate the bounding box of real diagram content,
+ * safely ignoring giant/transparent backdrop rects or unbounded elements.
+ */
+function calculateContentBBox(
+  diagramGroup: SVGGraphicsElement | null,
+): { x: number; y: number; width: number; height: number } {
+  if (!diagramGroup) return { x: 0, y: 0, width: 800, height: 600 };
+
+  try {
+    const children = Array.from(diagramGroup.children) as SVGGraphicsElement[];
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    let foundValid = false;
+
+    for (const child of children) {
+      if (child.tagName.toLowerCase() === "rect") {
+        const fill = child.getAttribute("fill");
+        const w = parseFloat(child.getAttribute("width") || "0");
+        const h = parseFloat(child.getAttribute("height") || "0");
+        if (fill === "transparent" && (w >= 500 || h >= 500)) continue;
+      }
+
+      try {
+        const bbox = child.getBBox();
+        if (
+          bbox.width > 0 &&
+          bbox.height > 0 &&
+          bbox.width < 3000 &&
+          bbox.height < 3000
+        ) {
+          minX = Math.min(minX, bbox.x);
+          minY = Math.min(minY, bbox.y);
+          maxX = Math.max(maxX, bbox.x + bbox.width);
+          maxY = Math.max(maxY, bbox.y + bbox.height);
+          foundValid = true;
+        }
+      } catch {}
+    }
+
+    if (foundValid && maxX > minX && maxY > minY) {
+      return {
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY,
+      };
+    }
+
+    const fullBBox = diagramGroup.getBBox();
+    if (
+      fullBBox.width > 0 &&
+      fullBBox.height > 0 &&
+      fullBBox.width < 3000 &&
+      fullBBox.height < 3000
+    ) {
+      return fullBBox;
+    }
+  } catch {}
+
+  return { x: 0, y: 0, width: 800, height: 600 };
+}
+
 export async function exportAsPNG(
   svgElement: SVGSVGElement,
   filename: string,
@@ -17,22 +82,11 @@ export async function exportAsPNG(
   ) as SVGGElement | null;
 
   // Calculate the bounding box of all diagram content
-  // We do this on the ORIGINAL element to get real coordinates
   const diagramGroup = svgElement.querySelector(
     "g[transform]",
-  ) as SVGGElement | null;
+  ) as SVGGraphicsElement | null;
 
-  let contentBBox = { x: 0, y: 0, width: 800, height: 600 };
-  if (diagramGroup) {
-    try {
-      const bbox = (diagramGroup as SVGGraphicsElement).getBBox();
-      if (bbox.width > 0 && bbox.height > 0) {
-        contentBBox = bbox;
-      }
-    } catch {
-      // getBBox can fail if element is not rendered
-    }
-  }
+  const contentBBox = calculateContentBBox(diagramGroup);
 
   const padding = 40;
   const totalW = contentBBox.width + padding * 2;
@@ -54,6 +108,7 @@ export async function exportAsPNG(
     ".node-anchors",
     ".validation-overlay",
     "[class*='selected']",
+    "rect[fill='transparent'][width='5000']",
   ];
   removeSelectors.forEach((sel) => {
     clone.querySelectorAll(sel).forEach((el) => el.remove());
@@ -145,13 +200,7 @@ export function getFullDiagramSVG(svgElement: SVGSVGElement): string {
     "g[transform]",
   ) as SVGGElement | null;
 
-  let contentBBox = { x: 0, y: 0, width: 800, height: 600 };
-  if (diagramGroup) {
-    try {
-      const bbox = diagramGroup.getBBox();
-      if (bbox.width > 0 && bbox.height > 0) contentBBox = bbox;
-    } catch {}
-  }
+  const contentBBox = calculateContentBBox(diagramGroup);
 
   const padding = 40;
   const totalW = contentBBox.width + padding * 2;

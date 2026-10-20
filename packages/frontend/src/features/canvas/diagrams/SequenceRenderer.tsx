@@ -99,20 +99,6 @@ export function SequenceRenderer(props: Props) {
 
   return (
     <g>
-      {/* Background click to deselect */}
-      <rect
-        x={-1000}
-        y={-1000}
-        width={5000}
-        height={5000}
-        fill="transparent"
-        onClick={() => {
-          onParticipantSelect?.(null);
-          onMessageSelect?.(null);
-          setEditingId(null);
-        }}
-      />
-
       {/* Participants (top) */}
       {participants.map((p) => (
         <ParticipantBox
