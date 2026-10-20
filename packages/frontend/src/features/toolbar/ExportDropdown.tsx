@@ -5,80 +5,89 @@ interface ExportOption {
   label: string;
   icon: string;
   description: string;
+  category: "doc" | "image" | "code";
+  requiredType?: "class" | "erd" | "state";
 }
 
 const EXPORT_OPTIONS: ExportOption[] = [
-  {
-    id: "png",
-    label: "PNG Image",
-    icon: "🖼️",
-    description: "High-res raster image (2x)",
-  },
+  // --- Dokumen & Skripsi ---
   {
     id: "pdf",
-    label: "PDF Document (A4)",
+    label: "PDF Dokumen (A4)",
     icon: "📄",
-    description: "Print-ready A4 PDF with academic caption",
+    description: "Format A4 siap cetak dengan caption",
+    category: "doc",
   },
   {
     id: "academic-caption",
     label: "Format Naskah Skripsi",
     icon: "🎓",
-    description: "Salin caption & narasi Bab Skripsi",
+    description: "Salin narasi & caption Bab Skripsi",
+    category: "doc",
+  },
+
+  // --- Gambar Visual ---
+  {
+    id: "png",
+    label: "PNG Image (2x)",
+    icon: "🖼️",
+    description: "Raster resolusi tinggi (retina)",
+    category: "image",
   },
   {
     id: "svg",
     label: "SVG Vector",
     icon: "📐",
-    description: "Scalable vector graphic",
+    description: "Grafik vektor tajam tanpa pecah",
+    category: "image",
   },
+
+  // --- Kode & Skema Database ---
   {
-    id: "json",
-    label: "JSON Data",
-    icon: "📋",
-    description: "Diagram model (re-importable)",
-  },
-  {
-    id: "dsl",
-    label: "DSL Code",
-    icon: "📝",
-    description: "UML DSL source text",
+    id: "sql",
+    label: "SQL DDL Schema",
+    icon: "🗄️",
+    description: "CREATE TABLE DDL database",
+    category: "code",
+    requiredType: "erd",
   },
   {
     id: "typescript",
-    label: "TypeScript",
+    label: "TypeScript Interface",
     icon: "🔷",
-    description: "Generate TS interfaces/classes",
+    description: "Interface & Class models",
+    category: "code",
+    requiredType: "class",
   },
   {
     id: "java",
-    label: "Java",
+    label: "Java Classes",
     icon: "☕",
-    description: "Generate Java classes",
-  },
-  {
-    id: "sql",
-    label: "SQL DDL",
-    icon: "🗄️",
-    description: "Generate SQL CREATE TABLE schema",
+    description: "POJO class & attributes",
+    category: "code",
+    requiredType: "class",
   },
   {
     id: "xstate",
     label: "XState Machine",
     icon: "⚙️",
-    description: "XState v5 & TypeScript union",
+    description: "XState v5 state machine",
+    category: "code",
+    requiredType: "state",
   },
   {
-    id: "clipboard-svg",
-    label: "Copy as SVG",
-    icon: "📎",
-    description: "Copy SVG to clipboard",
+    id: "dsl",
+    label: "UML DSL Code",
+    icon: "📝",
+    description: "Source code UML Flow",
+    category: "code",
   },
   {
-    id: "clipboard-png",
-    label: "Copy as PNG",
-    icon: "🖼️",
-    description: "Copy PNG image to clipboard",
+    id: "json",
+    label: "JSON Model",
+    icon: "📋",
+    description: "Data model AST diagram",
+    category: "code",
   },
 ];
 
@@ -91,20 +100,82 @@ interface Props {
 export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const isClassDiagram = diagramType === "class";
-  const isErdDiagram = diagramType === "erd";
-  const isStateDiagram = diagramType === "state";
 
   // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node))
+      if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
+
+  const renderGroup = (
+    title: string,
+    badge: string,
+    category: "doc" | "image" | "code",
+  ) => {
+    const items = EXPORT_OPTIONS.filter((opt) => opt.category === category);
+    if (items.length === 0) return null;
+
+    return (
+      <div className="space-y-0.5">
+        <div className="px-2.5 pt-2 pb-1 flex items-center justify-between text-[10px] uppercase tracking-wider text-text-muted font-semibold">
+          <span>{title}</span>
+          <span className="text-[9px] lowercase font-normal opacity-70">
+            {badge}
+          </span>
+        </div>
+        {items.map((opt) => {
+          const isDisabled =
+            opt.requiredType !== undefined && opt.requiredType !== diagramType;
+
+          return (
+            <button
+              key={opt.id}
+              className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors text-xs group ${
+                isDisabled
+                  ? "opacity-35 cursor-not-allowed"
+                  : "hover:bg-surface-3 active:scale-[0.99]"
+              }`}
+              onClick={() => {
+                if (!isDisabled) {
+                  onExport(opt.id);
+                  setOpen(false);
+                }
+              }}
+              title={
+                isDisabled
+                  ? `Khusus diagram ${opt.requiredType?.toUpperCase()}`
+                  : opt.description
+              }
+              disabled={isDisabled}
+            >
+              <span className="w-6 h-6 rounded-md bg-surface-3/80 group-hover:bg-surface-4 flex items-center justify-center shrink-0 text-sm shadow-2xs">
+                {opt.icon}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-text group-hover:text-accent transition-colors flex items-center gap-1.5">
+                  <span className="truncate">{opt.label}</span>
+                  {isDisabled && (
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-surface-4 text-text-muted font-normal shrink-0">
+                      {opt.requiredType} only
+                    </span>
+                  )}
+                </div>
+                <div className="text-[10px] text-text-muted truncate">
+                  {opt.description}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div ref={ref} className="relative">
@@ -138,62 +209,60 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-60 bg-surface-2 border border-border rounded-lg shadow-xl z-50 overflow-hidden">
-          <div className="px-3 py-2 border-b border-border">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">
-              Export As
-            </span>
+        <div className="absolute right-0 top-full mt-1.5 w-76 max-h-[min(560px,calc(100vh-80px))] flex flex-col bg-surface-2/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-1 duration-150 overflow-hidden">
+          {/* Header */}
+          <div className="px-3 py-2 border-b border-border/60 flex items-center justify-between shrink-0 bg-surface-1/40">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs">📥</span>
+              <span className="text-xs font-semibold text-text">Export & Bagikan</span>
+            </div>
+            {diagramType && (
+              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-surface-3 text-accent border border-border/50">
+                {diagramType}
+              </span>
+            )}
           </div>
-          {EXPORT_OPTIONS.map((opt) => {
-            const isCodeGen = opt.id === "typescript" || opt.id === "java";
-            const isSql = opt.id === "sql";
-            const isXState = opt.id === "xstate";
-            const isDisabled =
-              (isCodeGen && !isClassDiagram) ||
-              (isSql && !isErdDiagram) ||
-              (isXState && !isStateDiagram);
-            return (
+
+          {/* Scrollable Grouped Items */}
+          <div className="overflow-y-auto flex-1 p-1.5 space-y-1.5 custom-scrollbar">
+            {renderGroup("Dokumen & Skripsi", "akademik", "doc")}
+            <div className="h-px bg-border/40 mx-2" />
+            {renderGroup("Gambar & Visual", "grafis", "image")}
+            <div className="h-px bg-border/40 mx-2" />
+            {renderGroup("Kode & Database", "skema/dsl", "code")}
+          </div>
+
+          {/* Quick Clipboard Action Bar (Sticky Footer) */}
+          <div className="border-t border-border/60 bg-surface-3/30 p-2 shrink-0">
+            <div className="text-[10px] uppercase tracking-wider text-text-muted font-semibold mb-1.5 px-0.5 flex items-center justify-between">
+              <span>⚡ Salin Cepat</span>
+              <span className="text-[9px] lowercase font-normal">clipboard</span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
               <button
-                key={opt.id}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
-                  isDisabled
-                    ? "opacity-40 cursor-not-allowed"
-                    : "hover:bg-surface-3"
-                }`}
                 onClick={() => {
-                  if (!isDisabled) {
-                    onExport(opt.id);
-                    setOpen(false);
-                  }
+                  onExport("clipboard-png");
+                  setOpen(false);
                 }}
-                title={
-                  isDisabled
-                    ? isCodeGen
-                      ? "Only available for Class diagrams"
-                      : isSql
-                        ? "Only available for ERD diagrams"
-                        : "Only available for State diagrams"
-                    : undefined
-                }
-                disabled={isDisabled}
+                className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-surface-2 hover:bg-surface-4 border border-border/70 text-xs font-medium text-text hover:border-accent transition-all active:scale-95 shadow-2xs"
+                title="Salin gambar PNG resolusi tinggi ke clipboard"
               >
-                <span className="text-base">{opt.icon}</span>
-                <div className="flex-1">
-                  <div className="text-xs text-text font-medium flex items-center gap-1">
-                    {opt.label}
-                    {isDisabled && (
-                      <span className="text-[9px] text-text-muted bg-surface-3 px-1 rounded">
-                        {isCodeGen ? "class only" : isSql ? "erd only" : "state only"}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-text-muted">
-                    {opt.description}
-                  </div>
-                </div>
+                <span>🖼️</span>
+                <span>Salin PNG</span>
               </button>
-            );
-          })}
+              <button
+                onClick={() => {
+                  onExport("clipboard-svg");
+                  setOpen(false);
+                }}
+                className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-surface-2 hover:bg-surface-4 border border-border/70 text-xs font-medium text-text hover:border-accent transition-all active:scale-95 shadow-2xs"
+                title="Salin kode vektor SVG ke clipboard"
+              >
+                <span>📎</span>
+                <span>Salin SVG</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

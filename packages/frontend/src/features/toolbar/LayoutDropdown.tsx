@@ -84,7 +84,7 @@ export function LayoutDropdown({ onLayout, disabled }: Props) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1 w-52 bg-surface-2 border border-border rounded-lg shadow-xl z-50 overflow-hidden">
+        <div className="absolute left-0 top-full mt-1.5 w-56 max-h-[min(480px,calc(100vh-80px))] overflow-y-auto custom-scrollbar bg-surface-2/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="px-3 py-2 border-b border-border">
             <span className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">
               Re-layout

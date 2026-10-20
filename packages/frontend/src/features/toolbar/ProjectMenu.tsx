@@ -68,7 +68,7 @@ export function ProjectMenu({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 w-64 bg-surface-2/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute left-0 top-full mt-1.5 w-64 max-h-[min(520px,calc(100vh-80px))] overflow-y-auto custom-scrollbar bg-surface-2/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-text-muted font-semibold border-b border-border/50">
             Diagram & File Actions
           </div>
