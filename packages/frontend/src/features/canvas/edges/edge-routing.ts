@@ -6,6 +6,7 @@ import {
   pointInsideBounds,
   lineIntersectsBox,
 } from "./edge-geometry";
+import { isContainerOf } from "../utils/anchor-utils";
 
 /**
  * Builds a straight-line path between two points.
@@ -32,6 +33,10 @@ export function routeWithObstacleAvoidance(
 ): Position[] {
   const obstacles = allNodes.filter((n) => {
     if (n.id === sourceNode.id || n.id === targetNode.id) return false;
+    // Don't treat parent container as obstacle for internal transitions
+    if (isContainerOf(n, sourceNode) || isContainerOf(n, targetNode)) return false;
+    // Don't treat child subnodes of source/target as obstacles
+    if (isContainerOf(sourceNode, n) || isContainerOf(targetNode, n)) return false;
     const b = getNodeBounds(n, 12);
     return lineIntersectsBox(source, target, b);
   });
@@ -149,6 +154,16 @@ export function buildAnchorAwarePath(
   const excludeIds = new Set<string>();
   if (sourceNode) excludeIds.add(sourceNode.id);
   if (targetNode) excludeIds.add(targetNode.id);
+  if (allNodes) {
+    for (const n of allNodes) {
+      if (sourceNode && (isContainerOf(n, sourceNode) || isContainerOf(sourceNode, n))) {
+        excludeIds.add(n.id);
+      }
+      if (targetNode && (isContainerOf(n, targetNode) || isContainerOf(targetNode, n))) {
+        excludeIds.add(n.id);
+      }
+    }
+  }
 
   if (sourceIsHoriz && targetIsHoriz) {
     routeBothHorizontal(
@@ -177,6 +192,8 @@ export function buildAnchorAwarePath(
       sBounds,
       tBounds,
       PAD,
+      allNodes,
+      excludeIds,
     );
   } else {
     routeHorizontalToVertical(
@@ -187,6 +204,8 @@ export function buildAnchorAwarePath(
       sBounds,
       tBounds,
       PAD,
+      allNodes,
+      excludeIds,
     );
   }
 
@@ -284,13 +303,26 @@ function routeVerticalToHorizontal(
   sBounds: ReturnType<typeof getNodeBounds> | null,
   tBounds: ReturnType<typeof getNodeBounds> | null,
   pad: number,
+  allNodes?: DiagramNode[],
+  excludeIds?: Set<string>,
 ) {
   const goingDown = sourceAnchor === "bottom";
   const cornerL: Position = { x: sExit.x, y: tEntry.y };
   const canL = goingDown ? tEntry.y >= sExit.y : tEntry.y <= sExit.y;
-  const cornerClear =
+  let cornerClear =
     (!sBounds || !pointInsideBounds(cornerL, sBounds)) &&
     (!tBounds || !pointInsideBounds(cornerL, tBounds));
+
+  if (cornerClear && allNodes && allNodes.length > 0) {
+    for (const n of allNodes) {
+      if (excludeIds && excludeIds.has(n.id)) continue;
+      const b = getNodeBounds(n, 8);
+      if (lineIntersectsBox(sExit, cornerL, b) || lineIntersectsBox(cornerL, tEntry, b)) {
+        cornerClear = false;
+        break;
+      }
+    }
+  }
 
   if (canL && cornerClear) {
     points.push(cornerL);
@@ -311,13 +343,26 @@ function routeHorizontalToVertical(
   sBounds: ReturnType<typeof getNodeBounds> | null,
   tBounds: ReturnType<typeof getNodeBounds> | null,
   pad: number,
+  allNodes?: DiagramNode[],
+  excludeIds?: Set<string>,
 ) {
   const goingRight = sourceAnchor === "right";
   const cornerL: Position = { x: tEntry.x, y: sExit.y };
   const canL = goingRight ? tEntry.x >= sExit.x : tEntry.x <= sExit.x;
-  const cornerClear =
+  let cornerClear =
     (!sBounds || !pointInsideBounds(cornerL, sBounds)) &&
     (!tBounds || !pointInsideBounds(cornerL, tBounds));
+
+  if (cornerClear && allNodes && allNodes.length > 0) {
+    for (const n of allNodes) {
+      if (excludeIds && excludeIds.has(n.id)) continue;
+      const b = getNodeBounds(n, 8);
+      if (lineIntersectsBox(sExit, cornerL, b) || lineIntersectsBox(cornerL, tEntry, b)) {
+        cornerClear = false;
+        break;
+      }
+    }
+  }
 
   if (canL && cornerClear) {
     points.push(cornerL);

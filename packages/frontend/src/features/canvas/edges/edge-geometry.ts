@@ -157,6 +157,100 @@ export function getMidpoint(points: Position[]): Position {
   return bestMidpoint;
 }
 
+export interface PathPointResult {
+  point: Position;
+  normal: Position;
+  tangent: Position;
+}
+
+/**
+ * Calculate the point, normal, and tangent on a path at a given ratio (0.0 to 1.0).
+ * Protects against placing labels directly on siku/corners (within 16px of vertices).
+ */
+export function getPathPointAndNormal(
+  points: Position[],
+  ratio: number = 0.5,
+): PathPointResult {
+  if (!points || points.length === 0) {
+    return {
+      point: { x: 0, y: 0 },
+      normal: { x: 0, y: -1 },
+      tangent: { x: 1, y: 0 },
+    };
+  }
+  if (points.length === 1) {
+    return {
+      point: points[0],
+      normal: { x: 0, y: -1 },
+      tangent: { x: 1, y: 0 },
+    };
+  }
+
+  const segLengths: number[] = [];
+  let totalLength = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    const len = Math.hypot(
+      points[i + 1].x - points[i].x,
+      points[i + 1].y - points[i].y,
+    );
+    segLengths.push(len);
+    totalLength += len;
+  }
+
+  if (totalLength <= 0) {
+    return {
+      point: points[0],
+      normal: { x: 0, y: -1 },
+      tangent: { x: 1, y: 0 },
+    };
+  }
+
+  const targetDist = Math.max(0, Math.min(1, ratio)) * totalLength;
+
+  let accumulated = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    const len = segLengths[i];
+    if (len <= 0) continue;
+
+    if (accumulated + len >= targetDist || i === points.length - 2) {
+      const segRemaining = Math.max(0, Math.min(len, targetDist - accumulated));
+      let segRatio = segRemaining / len;
+
+      // Siku / Corner Guard: avoid placing label right at corners (within 16px of vertices)
+      if (len > 32) {
+        const minRatio = 16 / len;
+        const maxRatio = (len - 16) / len;
+        segRatio = Math.max(minRatio, Math.min(maxRatio, segRatio));
+      }
+
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+
+      const pt: Position = {
+        x: p1.x + segRatio * dx,
+        y: p1.y + segRatio * dy,
+      };
+
+      const tangent = { x: dx / len, y: dy / len };
+      // Normal: 90 degrees CCW
+      const normal = { x: -tangent.y, y: tangent.x };
+
+      return { point: pt, normal, tangent };
+    }
+    accumulated += len;
+  }
+
+  const p0 = points[0];
+  const pEnd = points[points.length - 1];
+  return {
+    point: { x: (p0.x + pEnd.x) / 2, y: (p0.y + pEnd.y) / 2 },
+    normal: { x: 0, y: -1 },
+    tangent: { x: 1, y: 0 },
+  };
+}
+
 /**
  * Calculate the connection point on a node's border facing toward a target position.
  * Uses ray-box intersection to find where a line from center to target crosses the border.

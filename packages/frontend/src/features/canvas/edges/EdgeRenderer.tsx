@@ -1,8 +1,12 @@
 import React from "react";
 import type { Edge, DiagramNode, Position } from "@uml-editor/shared";
 import { getVisualSize } from "../nodes/getVisualSize";
-import { getConnectionPoint, getMidpoint } from "./edge-geometry";
-import { getBestTargetAnchor } from "../utils/anchor-utils";
+import {
+  getConnectionPoint,
+  getMidpoint,
+  getPathPointAndNormal,
+} from "./edge-geometry";
+import { getBestTargetAnchor, isContainerOf } from "../utils/anchor-utils";
 import {
   getMarkerLength,
   isDashedEdge,
@@ -22,6 +26,9 @@ interface EdgeRendererProps {
   isSelected: boolean;
   edgeRouting?: "straight" | "orthogonal";
   labelOffset?: number;
+  laneOffset?: number;
+  labelRatio?: number;
+  labelShift?: number;
   onClick: (e: React.MouseEvent) => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
@@ -45,6 +52,9 @@ export function EdgeRenderer({
   isSelected,
   edgeRouting = "straight",
   labelOffset = 0,
+  laneOffset,
+  labelRatio = 0.5,
+  labelShift,
   onClick,
   onDoubleClick,
   onWaypointDragStart,
@@ -117,15 +127,16 @@ export function EdgeRenderer({
     ];
   } else {
     const isOrthogonal = edgeRouting === "orthogonal";
+    const effectiveLaneOffset = laneOffset !== undefined ? laneOffset : labelOffset;
     const effectiveSourceAnchor =
       edge.sourceAnchor ||
       (isOrthogonal
-        ? getBestTargetAnchor(sourceNode, targetNode)
+        ? getBestTargetAnchor(sourceNode, targetNode, nodes)
         : undefined);
     const effectiveTargetAnchor =
       edge.targetAnchor ||
       (isOrthogonal
-        ? getBestTargetAnchor(targetNode, sourceNode)
+        ? getBestTargetAnchor(targetNode, sourceNode, nodes)
         : undefined);
 
     const sp = resolveAnchor(sourceNode, effectiveSourceAnchor, targetCenter);
@@ -139,7 +150,7 @@ export function EdgeRenderer({
         effectiveTargetAnchor,
         sourceNode,
         targetNode,
-        labelOffset,
+        effectiveLaneOffset,
         nodes,
       );
     } else {
@@ -150,7 +161,7 @@ export function EdgeRenderer({
         targetNode,
         nodes,
       );
-      if (labelOffset !== 0 && allPoints.length === 2) {
+      if (effectiveLaneOffset !== 0 && allPoints.length === 2) {
         const p1 = allPoints[0];
         const p2 = allPoints[1];
         const dx = p2.x - p1.x;
@@ -160,8 +171,8 @@ export function EdgeRenderer({
           const nx = -dy / len;
           const ny = dx / len;
           allPoints = [
-            { x: p1.x + nx * labelOffset, y: p1.y + ny * labelOffset },
-            { x: p2.x + nx * labelOffset, y: p2.y + ny * labelOffset },
+            { x: p1.x + nx * effectiveLaneOffset, y: p1.y + ny * effectiveLaneOffset },
+            { x: p2.x + nx * effectiveLaneOffset, y: p2.y + ny * effectiveLaneOffset },
           ];
         }
       }
@@ -359,9 +370,10 @@ export function EdgeRenderer({
       {/* Labels */}
       <EdgeLabels
         edge={edge}
-        mid={mid}
         allPoints={allPoints}
         style={es}
+        labelRatio={labelRatio}
+        labelShift={labelShift}
         labelOffset={labelOffset}
         nodes={nodes}
       />
@@ -407,64 +419,56 @@ function EndpointHandle({
 
 function EdgeLabels({
   edge,
-  mid,
   allPoints,
   style,
+  labelRatio = 0.5,
+  labelShift,
   labelOffset = 0,
   nodes = [],
 }: {
   edge: Edge;
-  mid: Position;
   allPoints: Position[];
   style: any;
+  labelRatio?: number;
+  labelShift?: number;
   labelOffset?: number;
   nodes?: DiagramNode[];
 }) {
-  let labelX = mid.x + (edge.label?.offsetX || 0);
-  let labelY = mid.y + (edge.label?.offsetY || 0);
+  const mid = getMidpoint(allPoints);
+  // Compute point and normal vector along path at designated ratio (avoiding corners/siku)
+  const { point, normal } = getPathPointAndNormal(allPoints, labelRatio);
+  const shiftDist =
+    labelShift !== undefined
+      ? labelShift
+      : labelOffset !== 0
+        ? labelOffset > 0
+          ? 14
+          : -14
+        : -10;
 
-  // Perpendicular offset for parallel edge labels so reverse/opposite labels don't clash
-  if (labelOffset !== 0 && allPoints.length >= 2) {
-    let segDx = 1;
-    let segDy = 0;
-    for (let i = 0; i < allPoints.length - 1; i++) {
-      const p1 = allPoints[i];
-      const p2 = allPoints[i + 1];
-      const minX = Math.min(p1.x, p2.x) - 4;
-      const maxX = Math.max(p1.x, p2.x) + 4;
-      const minY = Math.min(p1.y, p2.y) - 4;
-      const maxY = Math.max(p1.y, p2.y) + 4;
-      if (mid.x >= minX && mid.x <= maxX && mid.y >= minY && mid.y <= maxY) {
-        segDx = p2.x - p1.x;
-        segDy = p2.y - p1.y;
-        break;
-      }
-    }
-    const segLen = Math.hypot(segDx, segDy);
-    if (segLen > 0) {
-      const nx = -segDy / segLen;
-      const ny = segDx / segLen;
-      const shiftDist = labelOffset > 0 ? 14 : -14;
-      labelX += nx * shiftDist;
-      labelY += ny * shiftDist;
-    } else {
-      labelY += labelOffset;
-    }
-  }
+  let labelX = point.x + normal.x * shiftDist + (edge.label?.offsetX || 0);
+  let labelY = point.y + normal.y * shiftDist + (edge.label?.offsetY || 0);
 
-  // Auto-offset if label overlaps any node (except source/target)
+  // Auto-offset if label overlaps an unrelated node (except source/target or parent container)
   if (edge.label && nodes.length > 0) {
+    const sNode = nodes.find((n) => n.id === edge.source);
+    const tNode = nodes.find((n) => n.id === edge.target);
+
     for (const n of nodes) {
       if (n.id === edge.source || n.id === edge.target) continue;
-      const pad = 5;
+      // Do NOT treat parent container or subnodes as obstacle!
+      if (isContainerOf(n, sNode) || isContainerOf(n, tNode)) continue;
+      if (isContainerOf(sNode, n) || isContainerOf(tNode, n)) continue;
+
+      const pad = 6;
       if (
         labelX >= n.position.x - pad &&
         labelX <= n.position.x + n.size.width + pad &&
         labelY >= n.position.y - pad &&
         labelY <= n.position.y + n.size.height + pad
       ) {
-        // Shift label to the right of the node
-        labelX = n.position.x + n.size.width + 20;
+        // Shift label clear to the right of the obstacle
+        labelX = n.position.x + n.size.width + 16;
         break;
       }
     }

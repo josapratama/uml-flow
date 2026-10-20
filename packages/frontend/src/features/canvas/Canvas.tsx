@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import type { Diagram, Position } from "@uml-editor/shared";
+import type { Diagram, DiagramNode, Position } from "@uml-editor/shared";
 import type { CanvasTheme } from "../../hooks/useTheme";
 import { NodeRenderer } from "./nodes/NodeRenderer";
 import { NodeAnchors } from "./nodes/NodeAnchors";
@@ -435,6 +435,170 @@ export function Canvas({
     );
   }
 
+  const renderNode = (node: DiagramNode) => (
+    <React.Fragment key={node.id}>
+      <g
+        onMouseEnter={() => setHoveredNodeId(node.id)}
+        onMouseLeave={() =>
+          setHoveredNodeId((prev) => (prev === node.id ? null : prev))
+        }
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          let currentMulti: string[] = [];
+          if (!multiSelected.has(node.id)) {
+            onNodeSelect(node.id);
+            onEdgeSelect(null);
+            setMultiSelected(new Set());
+            currentMulti = [node.id];
+          } else {
+            currentMulti = [...multiSelected];
+          }
+          const pt = screenToWorld(e.clientX, e.clientY);
+          onContextMenu?.(e, {
+            type: "node",
+            id: node.id,
+            worldPos: pt || node.position,
+            multiNodeIds: currentMulti,
+          });
+        }}
+      >
+        <NodeRenderer
+          node={node}
+          diagramType={diagram.type}
+          isSelected={
+            node.id === selectedNodeId || multiSelected.has(node.id)
+          }
+          hideText={editingNodeId === node.id}
+          onDragStart={(e) => startNodeDrag(node.id, e)}
+          onDoubleClick={() => setEditingNodeId(node.id)}
+        />
+        {/* Drop target highlights */}
+        {connecting &&
+          connecting.sourceId !== node.id &&
+          hoveredNodeId === node.id && (
+            <rect
+              x={node.position.x - 3}
+              y={node.position.y - 3}
+              width={getVisualSize(node).width + 6}
+              height={getVisualSize(node).height + 6}
+              rx={6}
+              fill="none"
+              stroke="#6366f1"
+              strokeWidth="2.5"
+              strokeDasharray="5,3"
+              opacity="0.7"
+              style={{ pointerEvents: "none" }}
+            />
+          )}
+        {reconnecting && hoveredNodeId === node.id && (
+          <rect
+            x={node.position.x - 3}
+            y={node.position.y - 3}
+            width={getVisualSize(node).width + 6}
+            height={getVisualSize(node).height + 6}
+            rx={6}
+            fill="none"
+            stroke="#10b981"
+            strokeWidth="2.5"
+            strokeDasharray="5,3"
+            opacity="0.7"
+            style={{ pointerEvents: "none" }}
+          />
+        )}
+        <NodeAnchors
+          node={node}
+          visible={
+            node.id === selectedNodeId ||
+            node.id === hoveredNodeId ||
+            multiSelected.has(node.id)
+          }
+          onAnchorMouseDown={(anchor, side, e) =>
+            handleAnchorMouseDown(node.id, anchor, side, e)
+          }
+        />
+        <ResizeHandles
+          node={node}
+          visible={
+            node.id === selectedNodeId && multiSelected.size === 0
+          }
+          onResizeStart={(handle, e) =>
+            handleResizeStart(node.id, handle, e)
+          }
+        />
+        {/* Quick-Add Node Connector button */}
+        {node.id === selectedNodeId &&
+          multiSelected.size === 0 &&
+          onQuickAddNode &&
+          (() => {
+            const vs = getVisualSize(node);
+            return (
+              <g
+                className="cursor-pointer group"
+                transform={`translate(${node.position.x + vs.width + 16}, ${node.position.y + vs.height / 2})`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickAddNode(node.id);
+                }}
+              >
+                <line
+                  x1={-16}
+                  y1={0}
+                  x2={-4}
+                  y2={0}
+                  stroke="#6366f1"
+                  strokeWidth="1.5"
+                  strokeDasharray="2,2"
+                />
+                <circle
+                  r={10}
+                  fill="#6366f1"
+                  className="hover:fill-indigo-500 transition-colors shadow-sm"
+                />
+                <text
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fill="#ffffff"
+                  fontSize="13"
+                  fontWeight="bold"
+                  className="select-none pointer-events-none"
+                >
+                  +
+                </text>
+              </g>
+            );
+          })()}
+      </g>
+      {/* Inline editor for node rename */}
+      {editingNodeId === node.id &&
+        (() => {
+          const vs = getVisualSize(node);
+          const editorW = Math.max(vs.width, 140);
+          const editorX = node.position.x + vs.width / 2 - editorW / 2;
+          let editorY: number;
+          if ("attributes" in node) {
+            const hasStereotype = (node as any).type !== "class";
+            editorY = node.position.y + (hasStereotype ? 28 : 14);
+          } else {
+            editorY = node.position.y + vs.height / 2;
+          }
+          return (
+            <InlineEditor
+              x={editorX}
+              y={editorY}
+              width={editorW}
+              initialValue={node.name}
+              onSubmit={(val) => {
+                onNodeRename(node.id, val);
+                setEditingNodeId(null);
+              }}
+              onCancel={() => setEditingNodeId(null)}
+            />
+          );
+        })()}
+    </React.Fragment>
+  );
+
   return (
     <div className="w-full h-full relative">
       {/* Zoom & Search controls */}
@@ -660,89 +824,114 @@ export function Canvas({
               {diagram.type === "activity" && diagram.swimlanes?.length && (
                 <ActivityRenderer diagram={diagram} />
               )}
-              {/* Edges */}
+              {/* Layer 1: Containers (Composite nodes, System boundaries) */}
               {(() => {
-                // Calculate parallel edge offsets
+                const isContainerNode = (n: DiagramNode) =>
+                  n.type === "composite" ||
+                  n.type === "system" ||
+                  (n.type as string) === "boundary";
+                const containerNodes = diagram.nodes.filter(isContainerNode);
+                return containerNodes.map(renderNode);
+              })()}
+
+              {/* Layer 2: Edges */}
+              {(() => {
+                // Calculate parallel edge offsets and label stagger
                 const pairCount = new Map<string, number>();
-                const pairIndex = new Map<string, number>();
                 for (const edge of diagram.edges) {
                   const key = [edge.source, edge.target].sort().join("_");
                   pairCount.set(key, (pairCount.get(key) || 0) + 1);
                 }
                 const pairCurrent = new Map<string, number>();
-                for (const edge of diagram.edges) {
+
+                return diagram.edges.map((edge) => {
                   const key = [edge.source, edge.target].sort().join("_");
                   const count = pairCount.get(key) || 1;
                   const idx = pairCurrent.get(key) || 0;
                   pairCurrent.set(key, idx + 1);
-                  // Offset: center around 0, spread by 24px perpendicular
-                  pairIndex.set(
-                    edge.id,
-                    count > 1 ? (idx - (count - 1) / 2) * 24 : 0,
-                  );
-                }
-                return diagram.edges.map((edge) => (
-                  <EdgeRenderer
-                    key={edge.id}
-                    edge={edge}
-                    nodes={diagram.nodes}
-                    isSelected={
-                      edge.id === selectedEdgeId ||
-                      (selectedEdgeIds?.has(edge.id) ?? false)
-                    }
-                    edgeRouting={edgeRouting || "straight"}
-                    labelOffset={pairIndex.get(edge.id) || 0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (e.shiftKey && onEdgeShiftSelect) {
-                        onEdgeShiftSelect(edge.id);
-                      } else {
+
+                  let laneOffset = 0;
+                  let labelRatio = 0.5;
+                  let labelShift = -10;
+
+                  if (count === 2) {
+                    const isFirst = idx === 0;
+                    laneOffset = isFirst ? -10 : 10;
+                    labelRatio = isFirst ? 0.38 : 0.62;
+                    labelShift = isFirst ? -12 : 12;
+                  } else if (count > 2) {
+                    const norm = idx - (count - 1) / 2;
+                    laneOffset = norm * 16;
+                    labelRatio = 0.28 + (0.44 * idx) / (count - 1);
+                    labelShift = norm >= 0 ? 12 : -12;
+                  }
+
+                  return (
+                    <EdgeRenderer
+                      key={edge.id}
+                      edge={edge}
+                      nodes={diagram.nodes}
+                      isSelected={
+                        edge.id === selectedEdgeId ||
+                        (selectedEdgeIds?.has(edge.id) ?? false)
+                      }
+                      edgeRouting={edgeRouting || "straight"}
+                      laneOffset={laneOffset}
+                      labelOffset={laneOffset}
+                      labelRatio={labelRatio}
+                      labelShift={labelShift}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (e.shiftKey && onEdgeShiftSelect) {
+                          onEdgeShiftSelect(edge.id);
+                        } else {
+                          onEdgeSelect(edge.id);
+                          onNodeSelect(null);
+                        }
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         onEdgeSelect(edge.id);
                         onNodeSelect(null);
+                        const pt = screenToWorld(e.clientX, e.clientY);
+                        onContextMenu?.(e, {
+                          type: "edge",
+                          id: edge.id,
+                          worldPos: pt,
+                        });
+                      }}
+                      onWaypointDragStart={(idx, pt, e) =>
+                        startWpDrag(edge.id, idx, pt, e)
                       }
-                    }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onEdgeSelect(edge.id);
-                      onNodeSelect(null);
-                      const pt = screenToWorld(e.clientX, e.clientY);
-                      onContextMenu?.(e, {
-                        type: "edge",
-                        id: edge.id,
-                        worldPos: pt,
-                      });
-                    }}
-                    onWaypointDragStart={(idx, pt, e) =>
-                      startWpDrag(edge.id, idx, pt, e)
-                    }
-                    onWaypointDelete={
-                      onEdgeWaypointDelete
-                        ? (idx) => onEdgeWaypointDelete(edge.id, idx)
-                        : undefined
-                    }
-                    onEndpointDrag={
-                      onEdgeEndpointDrag
-                        ? (end, anchor) =>
-                            onEdgeEndpointDrag(edge.id, end, anchor)
-                        : undefined
-                    }
-                    onEndpointDragStart={(end, point, e) => {
-                      e.stopPropagation();
-                      onDragStart?.();
-                      setReconnecting({
-                        edgeId: edge.id,
-                        end,
-                        from: point,
-                        to: point,
-                      });
-                    }}
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
-                      setEditingEdgeId(edge.id);
-                    }}
-                  />
-                ));
+                      onWaypointDelete={
+                        onEdgeWaypointDelete
+                          ? (idx) => onEdgeWaypointDelete(edge.id, idx)
+                          : undefined
+                      }
+                      onEndpointDrag={
+                        onEdgeEndpointDrag
+                          ? (end, anchor) =>
+                              onEdgeEndpointDrag(edge.id, end, anchor)
+                          : undefined
+                      }
+                      onEndpointDragStart={(end, point, e) => {
+                        e.stopPropagation();
+                        onDragStart?.();
+                        setReconnecting({
+                          edgeId: edge.id,
+                          end,
+                          from: point,
+                          to: point,
+                        });
+                      }}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        setEditingEdgeId(edge.id);
+                      }}
+                    />
+                  );
+                });
               })()}
 
               {/* Inline edge label editor */}
@@ -784,180 +973,17 @@ export function Canvas({
                   );
                 })()}
 
-              {/* Nodes */}
-              {[...diagram.nodes]
-                .sort((a, b) =>
-                  a.type === "composite" ? -1 : b.type === "composite" ? 1 : 0,
-                )
-                .map((node) => (
-                <React.Fragment key={node.id}>
-                  <g
-                    onMouseEnter={() => setHoveredNodeId(node.id)}
-                    onMouseLeave={() =>
-                      setHoveredNodeId((prev) =>
-                        prev === node.id ? null : prev,
-                      )
-                    }
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      let currentMulti: string[] = [];
-                      if (!multiSelected.has(node.id)) {
-                        onNodeSelect(node.id);
-                        onEdgeSelect(null);
-                        setMultiSelected(new Set());
-                        currentMulti = [node.id];
-                      } else {
-                        currentMulti = [...multiSelected];
-                      }
-                      const pt = screenToWorld(e.clientX, e.clientY);
-                      onContextMenu?.(e, {
-                        type: "node",
-                        id: node.id,
-                        worldPos: pt || node.position,
-                        multiNodeIds: currentMulti,
-                      });
-                    }}
-                  >
-                    <NodeRenderer
-                      node={node}
-                      diagramType={diagram.type}
-                      isSelected={
-                        node.id === selectedNodeId || multiSelected.has(node.id)
-                      }
-                      hideText={editingNodeId === node.id}
-                      onDragStart={(e) => startNodeDrag(node.id, e)}
-                      onDoubleClick={() => setEditingNodeId(node.id)}
-                    />
-                    {/* Drop target highlights */}
-                    {connecting &&
-                      connecting.sourceId !== node.id &&
-                      hoveredNodeId === node.id && (
-                        <rect
-                          x={node.position.x - 3}
-                          y={node.position.y - 3}
-                          width={getVisualSize(node).width + 6}
-                          height={getVisualSize(node).height + 6}
-                          rx={6}
-                          fill="none"
-                          stroke="#6366f1"
-                          strokeWidth="2.5"
-                          strokeDasharray="5,3"
-                          opacity="0.7"
-                          style={{ pointerEvents: "none" }}
-                        />
-                      )}
-                    {reconnecting && hoveredNodeId === node.id && (
-                      <rect
-                        x={node.position.x - 3}
-                        y={node.position.y - 3}
-                        width={getVisualSize(node).width + 6}
-                        height={getVisualSize(node).height + 6}
-                        rx={6}
-                        fill="none"
-                        stroke="#10b981"
-                        strokeWidth="2.5"
-                        strokeDasharray="5,3"
-                        opacity="0.7"
-                        style={{ pointerEvents: "none" }}
-                      />
-                    )}
-                    <NodeAnchors
-                      node={node}
-                      visible={
-                        node.id === selectedNodeId ||
-                        node.id === hoveredNodeId ||
-                        multiSelected.has(node.id)
-                      }
-                      onAnchorMouseDown={(anchor, side, e) =>
-                        handleAnchorMouseDown(node.id, anchor, side, e)
-                      }
-                    />
-                    <ResizeHandles
-                      node={node}
-                      visible={
-                        node.id === selectedNodeId && multiSelected.size === 0
-                      }
-                      onResizeStart={(handle, e) =>
-                        handleResizeStart(node.id, handle, e)
-                      }
-                    />
-                    {/* Quick-Add Node Connector button */}
-                    {node.id === selectedNodeId &&
-                      multiSelected.size === 0 &&
-                      onQuickAddNode &&
-                      (() => {
-                        const vs = getVisualSize(node);
-                        return (
-                          <g
-                            className="cursor-pointer group"
-                            transform={`translate(${node.position.x + vs.width + 16}, ${node.position.y + vs.height / 2})`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onQuickAddNode(node.id);
-                            }}
-                          >
-                            <line
-                              x1={-16}
-                              y1={0}
-                              x2={-4}
-                              y2={0}
-                              stroke="#6366f1"
-                              strokeWidth="1.5"
-                              strokeDasharray="2,2"
-                            />
-                            <circle
-                              r={10}
-                              fill="#6366f1"
-                              className="hover:fill-indigo-500 transition-colors shadow-sm"
-                            />
-                            <text
-                              textAnchor="middle"
-                              dominantBaseline="central"
-                              fill="#ffffff"
-                              fontSize="13"
-                              fontWeight="bold"
-                              className="select-none pointer-events-none"
-                            >
-                              +
-                            </text>
-                          </g>
-                        );
-                      })()}
-                  </g>
-                  {/* Inline editor for node rename */}
-                  {editingNodeId === node.id &&
-                    (() => {
-                      const vs = getVisualSize(node);
-                      const editorW = Math.max(vs.width, 140);
-                      const editorX =
-                        node.position.x + vs.width / 2 - editorW / 2;
-                      // Position Y: ClassNode has name in header, others in center
-                      let editorY: number;
-                      if ("attributes" in node) {
-                        // ClassNode: name in header area (SVG text y is baseline, adjust up)
-                        const hasStereotype = (node as any).type !== "class";
-                        editorY = node.position.y + (hasStereotype ? 28 : 14);
-                      } else {
-                        // Other nodes: name in center
-                        editorY = node.position.y + vs.height / 2;
-                      }
-                      return (
-                        <InlineEditor
-                          x={editorX}
-                          y={editorY}
-                          width={editorW}
-                          initialValue={node.name}
-                          onSubmit={(val) => {
-                            onNodeRename(node.id, val);
-                            setEditingNodeId(null);
-                          }}
-                          onCancel={() => setEditingNodeId(null)}
-                        />
-                      );
-                    })()}
-                </React.Fragment>
-              ))}
+              {/* Layer 3: Leaf / Regular nodes */}
+              {(() => {
+                const isContainerNode = (n: DiagramNode) =>
+                  n.type === "composite" ||
+                  n.type === "system" ||
+                  (n.type as string) === "boundary";
+                const leafNodes = diagram.nodes.filter(
+                  (n) => !isContainerNode(n),
+                );
+                return leafNodes.map(renderNode);
+              })()}
 
               {/* Connection lines */}
               {connecting && (
