@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useI18n } from "../../i18n";
 
 interface Props {
   onShowLibrary?: () => void;
@@ -23,6 +24,7 @@ export function ProjectMenu({
   onNewDiagram,
   hasDiagram,
 }: Props) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -46,10 +48,10 @@ export function ProjectMenu({
             ? "bg-surface-4 text-text border-accent shadow-xs"
             : "bg-surface-3 text-text-muted hover:text-text hover:bg-surface-4 border-border"
         }`}
-        title="Project & Diagram files"
+        title={t("toolbar.projectMenuDesc")}
       >
         <span className="text-sm">📁</span>
-        <span>Project</span>
+        <span>{t("toolbar.projectMenu")}</span>
         <svg
           width="8"
           height="8"
@@ -70,7 +72,7 @@ export function ProjectMenu({
       {open && (
         <div className="absolute left-0 top-full mt-1.5 w-64 max-h-[min(520px,calc(100vh-80px))] overflow-y-auto custom-scrollbar bg-surface-2/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-text-muted font-semibold border-b border-border/50">
-            Diagram & File Actions
+            {t("toolbar.projectMenuDesc")}
           </div>
 
           {onSaveCurrent && (
@@ -85,8 +87,8 @@ export function ProjectMenu({
               <div className="flex items-center gap-2.5">
                 <span className="text-base">💾</span>
                 <div>
-                  <div className="font-medium">Save to Library</div>
-                  <div className="text-[10px] text-text-muted">Save diagram to local store</div>
+                  <div className="font-medium">{t("toolbar.saveToLibrary")}</div>
+                  <div className="text-[10px] text-text-muted">{t("toolbar.saveToLibraryDesc")}</div>
                 </div>
               </div>
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-3 text-text-muted border border-border/50">
@@ -107,8 +109,8 @@ export function ProjectMenu({
               <div className="flex items-center gap-2.5">
                 <span className="text-base">🔗</span>
                 <div>
-                  <div className="font-medium">Share Diagram Link</div>
-                  <div className="text-[10px] text-text-muted">Copy compressed link to clipboard</div>
+                  <div className="font-medium">{t("toolbar.shareDiagramLink")}</div>
+                  <div className="text-[10px] text-text-muted">{t("toolbar.shareDiagramLinkDesc")}</div>
                 </div>
               </div>
             </button>
@@ -125,8 +127,8 @@ export function ProjectMenu({
               <div className="flex items-center gap-2.5">
                 <span className="text-base">📄</span>
                 <div>
-                  <div className="font-medium">New Diagram</div>
-                  <div className="text-[10px] text-text-muted">Create clean canvas tab</div>
+                  <div className="font-medium">{t("toolbar.newDiagramTab")}</div>
+                  <div className="text-[10px] text-text-muted">{t("toolbar.newDiagramTabDesc")}</div>
                 </div>
               </div>
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-3 text-text-muted border border-border/50">
@@ -147,8 +149,8 @@ export function ProjectMenu({
             >
               <span className="text-base">🗂</span>
               <div>
-                <div className="font-medium">Diagram Library</div>
-                <div className="text-[10px] text-text-muted">Browse & manage all saved diagrams</div>
+                <div className="font-medium">{t("toolbar.diagramLibraryMenu")}</div>
+                <div className="text-[10px] text-text-muted">{t("toolbar.diagramLibraryMenuDesc")}</div>
               </div>
             </button>
           )}
@@ -163,8 +165,8 @@ export function ProjectMenu({
             >
               <span className="text-base">📋</span>
               <div>
-                <div className="font-medium">Templates Gallery</div>
-                <div className="text-[10px] text-text-muted">Pre-built architecture patterns</div>
+                <div className="font-medium">{t("toolbar.templatesGallery")}</div>
+                <div className="text-[10px] text-text-muted">{t("toolbar.templatesGalleryDesc")}</div>
               </div>
             </button>
           )}
@@ -179,8 +181,8 @@ export function ProjectMenu({
             >
               <span className="text-base">⚡</span>
               <div>
-                <div className="font-medium text-accent">Import SQL / Mermaid / PlantUML</div>
-                <div className="text-[10px] text-text-muted">Auto-convert code directly into UML Flow</div>
+                <div className="font-medium text-accent">{t("toolbar.universalImport")}</div>
+                <div className="text-[10px] text-text-muted">{t("toolbar.universalImportDesc")}</div>
               </div>
             </button>
           )}
@@ -194,8 +196,8 @@ export function ProjectMenu({
           >
             <span className="text-base">📂</span>
             <div>
-              <div className="font-medium">Import File...</div>
-              <div className="text-[10px] text-text-muted">Load .dsl, .json, .ts, .java, or .mmd</div>
+              <div className="font-medium">{t("toolbar.importFile")}</div>
+              <div className="text-[10px] text-text-muted">{t("toolbar.importFileDesc")}</div>
             </div>
           </button>
 
@@ -210,8 +212,8 @@ export function ProjectMenu({
             >
               <span className="text-base">⊕</span>
               <div>
-                <div className="font-medium">Version Diff & History</div>
-                <div className="text-[10px] text-text-muted">Compare changes with previous version</div>
+                <div className="font-medium">{t("toolbar.versionDiffMenu")}</div>
+                <div className="text-[10px] text-text-muted">{t("toolbar.versionDiffMenuDesc")}</div>
               </div>
             </button>
           )}

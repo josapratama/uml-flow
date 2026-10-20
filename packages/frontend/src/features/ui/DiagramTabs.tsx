@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type { SavedDiagram } from "../../services/storage";
+import { useI18n } from "../../i18n";
 
 interface Props {
   tabs: SavedDiagram[];
@@ -18,6 +19,8 @@ export function DiagramTabs({
   onClose,
   onRename,
 }: Props) {
+  const { locale } = useI18n();
+  const isId = locale === "id";
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
@@ -65,7 +68,7 @@ export function DiagramTabs({
               <span
                 className="text-[11px] max-w-[120px] truncate"
                 onDoubleClick={(e) => startRename(tab.id, tab.name, e)}
-                title={`${tab.name}\nDouble-click to rename`}
+                title={`${tab.name}\n${isId ? "Klik ganda untuk mengubah nama" : "Double-click to rename"}`}
               >
                 {tab.name}
               </span>
@@ -76,7 +79,7 @@ export function DiagramTabs({
                 e.stopPropagation();
                 onClose(tab.id);
               }}
-              title="Close tab"
+              title={isId ? "Tutup tab" : "Close tab"}
             >
               ×
             </button>
@@ -86,7 +89,7 @@ export function DiagramTabs({
       <button
         className="px-2.5 h-full text-text-muted hover:text-text hover:bg-surface-3 transition-colors text-sm shrink-0"
         onClick={onNew}
-        title="New diagram (Ctrl+N)"
+        title={isId ? "Diagram baru (Ctrl+N)" : "New diagram (Ctrl+N)"}
       >
         +
       </button>

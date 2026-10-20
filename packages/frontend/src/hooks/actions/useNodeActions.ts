@@ -48,36 +48,40 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
   const nodeResize = useCallback(
     (nodeId: string, x: number, y: number, width: number, height: number) => {
       if (!diagram) return;
+      const targetX = snapEnabled ? snapToGrid(x) : x;
+      const targetY = snapEnabled ? snapToGrid(y) : y;
+      const targetW = snapEnabled ? Math.max(40, snapToGrid(width)) : width;
+      const targetH = snapEnabled ? Math.max(30, snapToGrid(height)) : height;
       history.replace({
         ...diagram,
         nodes: diagram.nodes.map((n) =>
           n.id === nodeId
-            ? { ...n, position: { x, y }, size: { width, height } }
+            ? { ...n, position: { x: targetX, y: targetY }, size: { width: targetW, height: targetH } }
             : n,
         ),
       });
     },
-    [diagram, history],
+    [diagram, history, snapEnabled],
   );
 
   const multiNodeMove = useCallback(
     (nodeIds: string[], dx: number, dy: number) => {
-      if (!diagram) return;
+      if (!diagram || (dx === 0 && dy === 0)) return;
       history.replace({
         ...diagram,
         nodes: diagram.nodes.map((n) => {
           if (!nodeIds.includes(n.id)) return n;
-          const nx = snapEnabled
-            ? snapToGrid(n.position.x + dx)
-            : n.position.x + dx;
-          const ny = snapEnabled
-            ? snapToGrid(n.position.y + dy)
-            : n.position.y + dy;
-          return { ...n, position: { x: nx, y: ny } };
+          return {
+            ...n,
+            position: {
+              x: Math.round(n.position.x + dx),
+              y: Math.round(n.position.y + dy),
+            },
+          };
         }),
       });
     },
-    [diagram, history, snapEnabled],
+    [diagram, history],
   );
 
   const nodeRename = useCallback(

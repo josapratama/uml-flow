@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import type { Diagram, DiagramNode } from "@uml-editor/shared";
+import { useI18n } from "../../i18n";
 
 interface Props {
   isOpen: boolean;
@@ -16,6 +17,8 @@ export function CanvasSearchBar({
   onSelectNode,
   onFocusNode,
 }: Props) {
+  const { locale } = useI18n();
+  const isId = locale === "id";
   const [query, setQuery] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -120,7 +123,7 @@ export function CanvasSearchBar({
             setCurrentIndex(0);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Cari node, class, entity, atau method..."
+          placeholder={isId ? "Cari node, class, entity, atau method..." : "Search node, class, entity, or method..."}
           className="w-56 sm:w-72 bg-transparent text-text placeholder:text-text-muted/60 outline-none text-xs font-medium"
         />
 
@@ -133,7 +136,7 @@ export function CanvasSearchBar({
               inputRef.current?.focus();
             }}
             className="w-4 h-4 flex items-center justify-center rounded-full text-text-muted hover:text-text hover:bg-surface-3 transition-colors text-[10px]"
-            title="Clear search"
+            title={isId ? "Hapus pencarian" : "Clear search"}
           >
             ×
           </button>
@@ -150,7 +153,7 @@ export function CanvasSearchBar({
           >
             {matches.length > 0
               ? `${currentIndex + 1}/${matches.length}`
-              : "0 hasil"}
+              : (isId ? "0 hasil" : "0 results")}
           </span>
         )}
 
@@ -161,7 +164,7 @@ export function CanvasSearchBar({
           onClick={handlePrev}
           disabled={matches.length <= 1}
           className="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          title="Match Sebelumnya (Shift+Enter / ↑)"
+          title={isId ? "Match Sebelumnya (Shift+Enter / ↑)" : "Previous match (Shift+Enter / ↑)"}
         >
           ▲
         </button>
@@ -169,7 +172,7 @@ export function CanvasSearchBar({
           onClick={handleNext}
           disabled={matches.length <= 1}
           className="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          title="Match Berikutnya (Enter / ↓)"
+          title={isId ? "Match Berikutnya (Enter / ↓)" : "Next match (Enter / ↓)"}
         >
           ▼
         </button>
@@ -178,7 +181,7 @@ export function CanvasSearchBar({
         <button
           onClick={onClose}
           className="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-3 transition-colors text-base"
-          title="Tutup Pencarian (Esc)"
+          title={isId ? "Tutup Pencarian (Esc)" : "Close search (Esc)"}
         >
           ×
         </button>

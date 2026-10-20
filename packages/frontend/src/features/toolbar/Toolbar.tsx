@@ -1,10 +1,13 @@
 import React from "react";
 import type { CanvasTheme } from "../../hooks/useTheme";
+import type { DiagramType } from "@uml-editor/shared";
 import { ExportDropdown } from "./ExportDropdown";
 import { LayoutDropdown } from "./LayoutDropdown";
 import { ProjectMenu } from "./ProjectMenu";
 import { CanvasOptionsMenu } from "./CanvasOptionsMenu";
 import { SamplesMenu } from "./SamplesMenu";
+import { DiagramTypeMenu } from "./DiagramTypeMenu";
+import { useI18n } from "../../i18n";
 
 type EditorMode = "visual" | "code" | "split";
 
@@ -19,6 +22,7 @@ interface ToolbarProps {
   hasDiagram: boolean;
   diagramName?: string;
   diagramType?: string;
+  onSelectDiagramType?: (type: DiagramType) => void;
   onSampleChange: (sample: string) => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -64,6 +68,7 @@ export function Toolbar(props: ToolbarProps) {
     isCompiling,
     hasDiagram,
     diagramType,
+    onSelectDiagramType,
     onSampleChange,
     onUndo,
     onRedo,
@@ -97,6 +102,7 @@ export function Toolbar(props: ToolbarProps) {
     onNavigateHome,
     onApplyPalette,
   } = props;
+  const { t } = useI18n();
 
   const handleGoHome = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -112,7 +118,7 @@ export function Toolbar(props: ToolbarProps) {
         <button
           onClick={handleGoHome}
           className="flex items-center gap-2 group text-left transition-transform active:scale-95 shrink-0 pr-1"
-          title="Return to Landing Page"
+          title={t("nav.home")}
         >
           <div className="w-7 h-7 rounded-lg bg-linear-to-tr from-accent via-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-xs group-hover:shadow-accent/40 transition-shadow">
             <svg
@@ -148,6 +154,12 @@ export function Toolbar(props: ToolbarProps) {
           hasDiagram={hasDiagram}
         />
 
+        {/* Diagram Type Selector & Visual Creator */}
+        <DiagramTypeMenu
+          currentType={diagramType}
+          onSelectType={onSelectDiagramType || (() => {})}
+        />
+
         {/* Samples Custom Dropdown */}
         <SamplesMenu onSampleChange={onSampleChange} />
 
@@ -157,7 +169,7 @@ export function Toolbar(props: ToolbarProps) {
             onClick={onUndo}
             disabled={!canUndo}
             className="w-7 h-7 flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-4 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            title="Undo (Ctrl+Z)"
+            title={`${t("toolbar.undo")} (Ctrl+Z)`}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 14L4 9l5-5" />
@@ -168,7 +180,7 @@ export function Toolbar(props: ToolbarProps) {
             onClick={onRedo}
             disabled={!canRedo}
             className="w-7 h-7 flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-4 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            title="Redo (Ctrl+Y)"
+            title={`${t("toolbar.redo")} (Ctrl+Y)`}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 14l5-5-5-5" />
@@ -188,10 +200,10 @@ export function Toolbar(props: ToolbarProps) {
                 : "text-text-muted hover:text-text"
             }`}
             onClick={() => onModeChange("code")}
-            title="Code editor view only"
+            title={t("toolbar.codeMode")}
           >
             <span>📝</span>
-            <span>Code</span>
+            <span>{t("toolbar.codeMode")}</span>
           </button>
           <button
             className={`h-7 px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
@@ -200,10 +212,10 @@ export function Toolbar(props: ToolbarProps) {
                 : "text-text-muted hover:text-text"
             }`}
             onClick={() => onModeChange("split")}
-            title="Split Code & Visual canvas view"
+            title={t("toolbar.splitMode")}
           >
             <span>◫</span>
-            <span>Split</span>
+            <span>{t("toolbar.splitMode")}</span>
           </button>
           <button
             className={`h-7 px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
@@ -212,10 +224,10 @@ export function Toolbar(props: ToolbarProps) {
                 : "text-text-muted hover:text-text"
             }`}
             onClick={() => onModeChange("visual")}
-            title="Visual canvas view only"
+            title={t("toolbar.visualMode")}
           >
             <span>🎨</span>
-            <span>Visual</span>
+            <span>{t("toolbar.visualMode")}</span>
           </button>
         </div>
       </div>
@@ -227,11 +239,11 @@ export function Toolbar(props: ToolbarProps) {
           <button
             onClick={onSyncToCode}
             disabled={!hasDiagram}
-            title="Sync visual canvas modifications back into DSL code"
+            title={t("toolbar.syncFromCanvas")}
             className="h-8 px-2.5 text-xs font-medium rounded-lg border border-border bg-surface-3 hover:bg-surface-4 text-text-muted hover:text-text transition-all flex items-center gap-1.5 whitespace-nowrap shadow-xs active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed"
           >
             <span>⟳</span>
-            <span className="hidden md:inline">Sync to Code</span>
+            <span className="hidden md:inline">{t("toolbar.syncFromCanvas")}</span>
           </button>
         )}
 
@@ -240,11 +252,11 @@ export function Toolbar(props: ToolbarProps) {
           <button
             onClick={onValidate}
             disabled={!hasDiagram}
-            title="Validate diagram rules & syntax"
+            title={t("toolbar.validateDiagramDesc")}
             className="h-8 px-2.5 text-xs font-medium rounded-lg border border-border bg-surface-3 hover:bg-surface-4 text-text-muted hover:text-text transition-all flex items-center gap-1.5 whitespace-nowrap shadow-xs active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed"
           >
             <span className="text-emerald-400 font-bold">✓</span>
-            <span className="hidden 2xl:inline">Validate</span>
+            <span className="hidden 2xl:inline">{t("common.validate")}</span>
           </button>
         )}
 
@@ -252,12 +264,12 @@ export function Toolbar(props: ToolbarProps) {
         {onShowAI && (
           <button
             onClick={onShowAI}
-            title="Generate UML diagrams with AI prompts"
+            title={t("nav.aiAssistant")}
             className="h-8 px-2.5 text-xs font-medium rounded-lg border border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 transition-all flex items-center gap-1.5 whitespace-nowrap shadow-xs active:scale-95"
           >
             <span>✨</span>
             <span className="hidden xl:inline 2xl:hidden">AI</span>
-            <span className="hidden 2xl:inline">AI Assistant</span>
+            <span className="hidden 2xl:inline">{t("nav.aiAssistant")}</span>
           </button>
         )}
 
@@ -276,11 +288,11 @@ export function Toolbar(props: ToolbarProps) {
           <button
             onClick={onShareLink}
             disabled={!hasDiagram}
-            title="Share diagram via compressed link"
+            title={t("toolbar.shareLink")}
             className="h-8 px-2.5 text-xs font-medium rounded-lg border border-border bg-surface-3 hover:bg-surface-4 text-text-muted hover:text-text transition-all flex items-center gap-1.5 whitespace-nowrap shadow-xs active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed"
           >
             <span>🔗</span>
-            <span className="hidden 2xl:inline">Share</span>
+            <span className="hidden 2xl:inline">{t("common.share")}</span>
           </button>
         )}
 
@@ -304,16 +316,15 @@ export function Toolbar(props: ToolbarProps) {
           onValidate={onValidate}
           onApplyPalette={onApplyPalette}
           hasDiagram={hasDiagram}
+          onShareLink={onShareLink}
         />
-
-        <div className="w-px h-5 bg-border/60 mx-0.5 hidden sm:block" />
 
         {/* Primary Compile CTA */}
         <button
           className="h-8 px-3.5 bg-linear-to-r from-accent to-indigo-500 hover:from-accent-hover hover:to-indigo-400 text-white text-xs font-semibold rounded-lg transition-all shadow-xs hover:shadow-accent/25 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
           onClick={onCompile}
           disabled={isCompiling}
-          title="Compile DSL code to diagram (Ctrl+Enter)"
+          title={`${t("toolbar.compile")} (Ctrl+Enter)`}
         >
           {isCompiling ? (
             <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
@@ -323,7 +334,7 @@ export function Toolbar(props: ToolbarProps) {
           ) : (
             <span>▶</span>
           )}
-          <span>Compile</span>
+          <span>{t("toolbar.compile")}</span>
         </button>
       </div>
     </header>

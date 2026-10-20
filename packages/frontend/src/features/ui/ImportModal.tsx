@@ -3,6 +3,7 @@ import { isSQLDDL, parseSQLToERD } from "../../services/sql-importer";
 import { isMermaidCode, parseMermaidToDSL } from "../../services/mermaid-importer";
 import { isPlantUMLCode, parsePlantUMLToDSL } from "../../services/plantuml-importer";
 import { showToast } from "./Toast";
+import { useI18n } from "../../i18n";
 
 interface Props {
   isOpen: boolean;
@@ -65,16 +66,18 @@ User --> Role : has
 };
 
 export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
+  const { t, locale } = useI18n();
+  const isId = locale === "id";
   const [source, setSource] = useState<ImportSource>("auto");
   const [inputText, setInputText] = useState("");
-  const [diagramName, setDiagramName] = useState("Imported Diagram");
+  const [diagramName, setDiagramName] = useState(isId ? "Diagram Hasil Impor" : "Imported Diagram");
 
   if (!isOpen) return null;
 
   const handleConvert = () => {
     const trimmed = inputText.trim();
     if (!trimmed) {
-      showToast("Silakan masukkan teks kode terlebih dahulu", "error");
+      showToast(isId ? "Silakan masukkan teks kode terlebih dahulu" : "Please enter code text first", "error");
       return;
     }
 
@@ -94,20 +97,22 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
 
       if (detectedType === "sql") {
         resultDSL = parseSQLToERD(trimmed, diagramName);
-        showToast("SQL DDL berhasil dikonversi ke ERD!", "success");
+        showToast(isId ? "SQL DDL berhasil dikonversi ke ERD!" : "SQL DDL successfully converted to ERD!", "success");
       } else if (detectedType === "mermaid") {
         resultDSL = parseMermaidToDSL(trimmed, diagramName);
-        showToast("Mermaid berhasil dikonversi ke UML Flow!", "success");
+        showToast(isId ? "Mermaid berhasil dikonversi ke UML Flow!" : "Mermaid successfully converted to UML Flow!", "success");
       } else if (detectedType === "plantuml") {
         resultDSL = parsePlantUMLToDSL(trimmed, diagramName);
-        showToast("PlantUML berhasil dikonversi ke UML Flow!", "success");
+        showToast(isId ? "PlantUML berhasil dikonversi ke UML Flow!" : "PlantUML successfully converted to UML Flow!", "success");
       }
 
       onImportDSL(resultDSL);
       onClose();
     } catch (err) {
       showToast(
-        `Gagal mengonversi: ${err instanceof Error ? err.message : "Sintaks tidak valid"}`,
+        isId
+          ? `Gagal mengonversi: ${err instanceof Error ? err.message : "Sintaks tidak valid"}`
+          : `Conversion failed: ${err instanceof Error ? err.message : "Invalid syntax"}`,
         "error",
       );
     }
@@ -136,10 +141,12 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
             <span className="text-lg">📥</span>
             <div>
               <h2 className="text-sm font-semibold text-text tracking-tight">
-                Import Code / External Diagrams
+                {t("modals.importTitle")}
               </h2>
               <div className="text-[10px] text-text-muted">
-                Konversi SQL DDL, Mermaid, atau PlantUML ke UML Flow DSL secara otomatis
+                {isId
+                  ? "Konversi SQL DDL, Mermaid, atau PlantUML ke UML Flow DSL secara otomatis"
+                  : "Auto-convert SQL DDL, Mermaid, or PlantUML into UML Flow DSL"}
               </div>
             </div>
           </div>
@@ -175,7 +182,7 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
           </div>
 
           <div className="flex items-center gap-1.5 text-xs text-text-muted">
-            <span>Isi Contoh:</span>
+            <span>{isId ? "Isi Contoh:" : "Load Sample:"}</span>
             <button
               onClick={() => loadSample("sql")}
               className="px-2 py-0.5 rounded bg-surface border border-border hover:border-accent text-[11px]"
@@ -201,7 +208,7 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
         <div className="p-5 flex-1 flex flex-col gap-3 overflow-hidden">
           <div>
             <label className="block text-[11px] font-medium text-text-muted mb-1">
-              Nama Diagram Hasil Konversi
+              {isId ? "Nama Diagram Hasil Konversi" : "Converted Diagram Name"}
             </label>
             <input
               type="text"
@@ -214,21 +221,27 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
 
           <div className="flex-1 flex flex-col min-h-[220px]">
             <label className="block text-[11px] font-medium text-text-muted mb-1 flex justify-between">
-              <span>Paste Kode di Bawah:</span>
+              <span>{isId ? "Paste Kode di Bawah:" : "Paste Code Below:"}</span>
               <span className="text-[10px] text-accent">
                 {source === "sql"
                   ? "Format: CREATE TABLE tableName (...);"
                   : source === "mermaid"
-                  ? "Format: classDiagram, erDiagram, sequenceDiagram, dsb."
+                  ? "Format: classDiagram, erDiagram, sequenceDiagram, etc."
                   : source === "plantuml"
                   ? "Format: @startuml ... @enduml"
-                  : "Mendukung SQL DDL, Mermaid, PlantUML, & UML Flow"}
+                  : isId
+                  ? "Mendukung SQL DDL, Mermaid, PlantUML, & UML Flow"
+                  : "Supports SQL DDL, Mermaid, PlantUML, & UML Flow"}
               </span>
             </label>
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Tempelkan kode SQL DDL, Mermaid, atau PlantUML Anda di sini..."
+              placeholder={
+                isId
+                  ? "Tempelkan kode SQL DDL, Mermaid, atau PlantUML Anda di sini..."
+                  : "Paste your SQL DDL, Mermaid, or PlantUML code here..."
+              }
               className="flex-1 w-full p-3 font-mono text-xs bg-surface border border-border rounded-xl text-text outline-none focus:border-accent resize-none leading-relaxed placeholder:text-text-muted/40"
               autoFocus
             />
@@ -241,7 +254,7 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
             onClick={onClose}
             className="px-4 py-1.5 text-xs bg-surface-3 text-text-muted hover:text-text rounded-lg transition-colors"
           >
-            Batal
+            {t("common.cancel")}
           </button>
           <button
             onClick={handleConvert}
@@ -249,7 +262,7 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
             className="px-5 py-1.5 text-xs font-medium bg-accent hover:bg-accent-hover text-white rounded-lg transition-all shadow-xs disabled:opacity-40 active:scale-95 flex items-center gap-1.5"
           >
             <span>✨</span>
-            <span>Konversi & Tampilkan</span>
+            <span>{isId ? "Konversi & Tampilkan" : "Convert & Display"}</span>
           </button>
         </div>
       </div>

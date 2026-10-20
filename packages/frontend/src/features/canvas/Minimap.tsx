@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Diagram } from "@uml-editor/shared";
 import type { CanvasTheme } from "../../hooks/useTheme";
+import { useI18n } from "../../i18n";
 
 interface Props {
   diagram: Diagram;
@@ -24,6 +25,8 @@ export function Minimap({
   containerHeight,
   theme = "light",
 }: Props) {
+  const { locale } = useI18n();
+  const isId = locale === "id";
   const bounds = useMemo(() => {
     const allPositions: { x: number; y: number; w: number; h: number }[] = [];
     for (const n of diagram.nodes) {
@@ -105,7 +108,7 @@ export function Minimap({
             ? "bg-surface-2/90 hover:bg-surface-3 text-text-muted hover:text-text border-border"
             : "bg-white/90 hover:bg-white text-slate-600 hover:text-slate-800 border-slate-200"
         }`}
-        title="Show diagram minimap"
+        title={isId ? "Tampilkan minimap diagram" : "Show diagram minimap"}
       >
         <span>🗺️</span>
         <span className="text-[11px]">Minimap</span>
@@ -122,7 +125,7 @@ export function Minimap({
         <button
           onClick={() => setCollapsed(true)}
           className="text-text-muted hover:text-text px-1 rounded hover:bg-surface-3 text-xs leading-none"
-          title="Minimize map"
+          title={isId ? "Minimalkan peta" : "Minimize map"}
         >
           −
         </button>

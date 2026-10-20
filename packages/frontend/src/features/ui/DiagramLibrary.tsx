@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type { SavedDiagram } from "../../services/storage";
+import { useI18n } from "../../i18n";
 
 interface Props {
   isOpen: boolean;
@@ -20,6 +21,8 @@ export function DiagramLibrary({
   onDelete,
   onSaveCurrent,
 }: Props) {
+  const { t, locale } = useI18n();
+  const isId = locale === "id";
   const [search, setSearch] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
@@ -52,13 +55,13 @@ export function DiagramLibrary({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h2 className="text-sm font-semibold text-text">Diagram Library</h2>
+          <h2 className="text-sm font-semibold text-text">{t("modals.libraryTitle")}</h2>
           <div className="flex items-center gap-2">
             <button
               onClick={onSaveCurrent}
               className="px-2.5 py-1 text-[11px] bg-accent hover:bg-accent-hover text-white rounded transition-colors"
             >
-              + Save Current
+              + {isId ? "Simpan Saat Ini" : "Save Current"}
             </button>
             <button
               onClick={onClose}
@@ -73,7 +76,7 @@ export function DiagramLibrary({
         <div className="px-4 py-2 border-b border-border">
           <input
             type="text"
-            placeholder="Search diagrams…"
+            placeholder={isId ? "Cari diagram tersimpan..." : "Search saved diagrams..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-3 py-1.5 text-xs bg-surface-3 border border-border rounded text-text placeholder:text-text-muted outline-none focus:border-accent"
@@ -86,8 +89,12 @@ export function DiagramLibrary({
           {filtered.length === 0 ? (
             <div className="text-center py-8 text-text-muted text-xs">
               {diagrams.length === 0
-                ? "No saved diagrams yet.\nSave current diagram to start."
-                : "No results."}
+                ? isId
+                  ? "Belum ada diagram tersimpan.\nSimpan diagram saat ini untuk memulai."
+                  : "No saved diagrams yet.\nSave current diagram to start."
+                : isId
+                ? "Tidak ada hasil ditemukan."
+                : "No results found."}
             </div>
           ) : (
             <div className="space-y-1">
@@ -115,7 +122,7 @@ export function DiagramLibrary({
                   </div>
                   {d.id === activeId && (
                     <span className="text-[10px] text-accent font-medium">
-                      current
+                      {isId ? "aktif" : "current"}
                     </span>
                   )}
                   {confirmDelete === d.id ? (
@@ -130,13 +137,13 @@ export function DiagramLibrary({
                         }}
                         className="px-1.5 py-0.5 text-[10px] bg-error text-white rounded"
                       >
-                        Delete
+                        {t("common.delete")}
                       </button>
                       <button
                         onClick={() => setConfirmDelete(null)}
                         className="px-1.5 py-0.5 text-[10px] bg-surface-4 text-text-muted rounded"
                       >
-                        Cancel
+                        {t("common.cancel")}
                       </button>
                     </div>
                   ) : (
@@ -146,7 +153,7 @@ export function DiagramLibrary({
                         setConfirmDelete(d.id);
                       }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-[11px] text-text-muted hover:text-error px-1"
-                      title="Delete"
+                      title={t("common.delete")}
                     >
                       🗑
                     </button>
@@ -158,10 +165,12 @@ export function DiagramLibrary({
         </div>
 
         <div className="px-4 py-2 border-t border-border text-[10px] text-text-muted flex items-center justify-between">
-          <span>{diagrams.length} saved diagram{diagrams.length !== 1 ? "s" : ""}</span>
+          <span>
+            {diagrams.length} {isId ? "diagram tersimpan" : "saved diagrams"}
+          </span>
           <span className="text-success/90 flex items-center gap-1">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-success"></span>
-            Synced with server
+            {isId ? "Tersinkron dengan penyimpanan" : "Synced with storage"}
           </span>
         </div>
       </div>

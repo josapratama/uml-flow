@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useI18n, type Locale } from "../../i18n";
 
 interface ExportOption {
   id: string;
@@ -9,87 +10,90 @@ interface ExportOption {
   requiredType?: "class" | "erd" | "state";
 }
 
-const EXPORT_OPTIONS: ExportOption[] = [
-  // --- Dokumen & Skripsi ---
-  {
-    id: "pdf",
-    label: "PDF Dokumen (A4)",
-    icon: "📄",
-    description: "Format A4 siap cetak dengan caption",
-    category: "doc",
-  },
-  {
-    id: "academic-caption",
-    label: "Format Naskah Skripsi",
-    icon: "🎓",
-    description: "Salin narasi & caption Bab Skripsi",
-    category: "doc",
-  },
+function getExportOptions(locale: Locale): ExportOption[] {
+  const isId = locale === "id";
+  return [
+    // --- Dokumen & Skripsi ---
+    {
+      id: "pdf",
+      label: isId ? "PDF Dokumen (A4)" : "PDF Document (A4)",
+      icon: "📄",
+      description: isId ? "Format A4 siap cetak dengan caption" : "Print-ready A4 with figure captions",
+      category: "doc",
+    },
+    {
+      id: "academic-caption",
+      label: isId ? "Format Naskah Skripsi" : "Academic Paper Caption",
+      icon: "🎓",
+      description: isId ? "Salin narasi & caption Bab Skripsi" : "Copy thesis narrative & figure labels",
+      category: "doc",
+    },
 
-  // --- Gambar Visual ---
-  {
-    id: "png",
-    label: "PNG Image (2x)",
-    icon: "🖼️",
-    description: "Raster resolusi tinggi (retina)",
-    category: "image",
-  },
-  {
-    id: "svg",
-    label: "SVG Vector",
-    icon: "📐",
-    description: "Grafik vektor tajam tanpa pecah",
-    category: "image",
-  },
+    // --- Gambar Visual ---
+    {
+      id: "png",
+      label: "PNG Image (2x)",
+      icon: "🖼️",
+      description: isId ? "Raster resolusi tinggi (retina)" : "High-resolution retina image",
+      category: "image",
+    },
+    {
+      id: "svg",
+      label: "SVG Vector",
+      icon: "📐",
+      description: isId ? "Grafik vektor tajam tanpa pecah" : "Crisp scalable vector graphic",
+      category: "image",
+    },
 
-  // --- Kode & Skema Database ---
-  {
-    id: "sql",
-    label: "SQL DDL Schema",
-    icon: "🗄️",
-    description: "CREATE TABLE DDL database",
-    category: "code",
-    requiredType: "erd",
-  },
-  {
-    id: "typescript",
-    label: "TypeScript Interface",
-    icon: "🔷",
-    description: "Interface & Class models",
-    category: "code",
-    requiredType: "class",
-  },
-  {
-    id: "java",
-    label: "Java Classes",
-    icon: "☕",
-    description: "POJO class & attributes",
-    category: "code",
-    requiredType: "class",
-  },
-  {
-    id: "xstate",
-    label: "XState Machine",
-    icon: "⚙️",
-    description: "XState v5 state machine",
-    category: "code",
-    requiredType: "state",
-  },
-  {
-    id: "dsl",
-    label: "UML DSL Code",
-    icon: "📝",
-    description: "Source code UML Flow",
-    category: "code",
-  },
-  {
-    id: "json",
-    label: "JSON Model",
-    icon: "📋",
-    description: "Data model AST diagram",
-    category: "code",
-  },
-];
+    // --- Kode & Skema Database ---
+    {
+      id: "sql",
+      label: "SQL DDL Schema",
+      icon: "🗄️",
+      description: isId ? "CREATE TABLE DDL database" : "CREATE TABLE DDL statements",
+      category: "code",
+      requiredType: "erd",
+    },
+    {
+      id: "typescript",
+      label: "TypeScript Interface",
+      icon: "🔷",
+      description: isId ? "Interface & Class models" : "TypeScript type & interface models",
+      category: "code",
+      requiredType: "class",
+    },
+    {
+      id: "java",
+      label: "Java Classes",
+      icon: "☕",
+      description: isId ? "POJO class & attributes" : "POJO classes with attributes & methods",
+      category: "code",
+      requiredType: "class",
+    },
+    {
+      id: "xstate",
+      label: "XState Machine",
+      icon: "⚙️",
+      description: isId ? "XState v5 state machine" : "XState v5 state machine config",
+      category: "code",
+      requiredType: "state",
+    },
+    {
+      id: "dsl",
+      label: "UML DSL Code",
+      icon: "📝",
+      description: isId ? "Source code teks UML Flow" : "UML Flow source code text",
+      category: "code",
+    },
+    {
+      id: "json",
+      label: "JSON Model",
+      icon: "📋",
+      description: isId ? "Data model AST diagram" : "AST diagram JSON data model",
+      category: "code",
+    },
+  ];
+}
 
 interface Props {
   onExport: (format: string) => void;
@@ -98,8 +102,10 @@ interface Props {
 }
 
 export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
+  const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const exportOptions = getExportOptions(locale);
 
   // Close on outside click
   useEffect(() => {
@@ -118,7 +124,7 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
     badge: string,
     category: "doc" | "image" | "code",
   ) => {
-    const items = EXPORT_OPTIONS.filter((opt) => opt.category === category);
+    const items = exportOptions.filter((opt) => opt.category === category);
     if (items.length === 0) return null;
 
     return (
@@ -149,7 +155,9 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
               }}
               title={
                 isDisabled
-                  ? `Khusus diagram ${opt.requiredType?.toUpperCase()}`
+                  ? locale === "id"
+                    ? `Khusus diagram ${opt.requiredType?.toUpperCase()}`
+                    : `${opt.requiredType?.toUpperCase()} diagram only`
                   : opt.description
               }
               disabled={isDisabled}
@@ -187,10 +195,10 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
         }`}
         onClick={() => setOpen(!open)}
         disabled={disabled}
-        title="Export diagram as image, code, or data"
+        title={t("toolbar.exportDiagram")}
       >
         <span>📥</span>
-        <span className="hidden 2xl:inline">Export</span>
+        <span className="hidden 2xl:inline">{t("common.export")}</span>
         <svg
           width="8"
           height="8"
@@ -214,7 +222,7 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
           <div className="px-3 py-2 border-b border-border/60 flex items-center justify-between shrink-0 bg-surface-1/40">
             <div className="flex items-center gap-1.5">
               <span className="text-xs">📥</span>
-              <span className="text-xs font-semibold text-text">Export & Bagikan</span>
+              <span className="text-xs font-semibold text-text">{t("toolbar.exportShareTitle")}</span>
             </div>
             {diagramType && (
               <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-surface-3 text-accent border border-border/50">
@@ -225,17 +233,17 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
 
           {/* Scrollable Grouped Items */}
           <div className="overflow-y-auto flex-1 p-1.5 space-y-1.5 custom-scrollbar">
-            {renderGroup("Dokumen & Skripsi", "akademik", "doc")}
+            {renderGroup(t("toolbar.exportGroupDoc"), t("toolbar.exportGroupDocBadge"), "doc")}
             <div className="h-px bg-border/40 mx-2" />
-            {renderGroup("Gambar & Visual", "grafis", "image")}
+            {renderGroup(t("toolbar.exportGroupImage"), t("toolbar.exportGroupImageBadge"), "image")}
             <div className="h-px bg-border/40 mx-2" />
-            {renderGroup("Kode & Database", "skema/dsl", "code")}
+            {renderGroup(t("toolbar.exportGroupCode"), t("toolbar.exportGroupCodeBadge"), "code")}
           </div>
 
           {/* Quick Clipboard Action Bar (Sticky Footer) */}
           <div className="border-t border-border/60 bg-surface-3/30 p-2 shrink-0">
             <div className="text-[10px] uppercase tracking-wider text-text-muted font-semibold mb-1.5 px-0.5 flex items-center justify-between">
-              <span>⚡ Salin Cepat</span>
+              <span>{t("toolbar.quickCopy")}</span>
               <span className="text-[9px] lowercase font-normal">clipboard</span>
             </div>
             <div className="grid grid-cols-2 gap-1.5">
@@ -245,10 +253,10 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
                   setOpen(false);
                 }}
                 className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-surface-2 hover:bg-surface-4 border border-border/70 text-xs font-medium text-text hover:border-accent transition-all active:scale-95 shadow-2xs"
-                title="Salin gambar PNG resolusi tinggi ke clipboard"
+                title={t("toolbar.copyPng")}
               >
                 <span>🖼️</span>
-                <span>Salin PNG</span>
+                <span>{t("toolbar.copyPng")}</span>
               </button>
               <button
                 onClick={() => {
@@ -256,10 +264,10 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
                   setOpen(false);
                 }}
                 className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-surface-2 hover:bg-surface-4 border border-border/70 text-xs font-medium text-text hover:border-accent transition-all active:scale-95 shadow-2xs"
-                title="Salin kode vektor SVG ke clipboard"
+                title={t("toolbar.copySvg")}
               >
                 <span>📎</span>
-                <span>Salin SVG</span>
+                <span>{t("toolbar.copySvg")}</span>
               </button>
             </div>
           </div>

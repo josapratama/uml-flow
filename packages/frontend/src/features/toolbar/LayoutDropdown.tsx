@@ -1,47 +1,58 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useI18n, type Locale } from "../../i18n";
 
 interface Props {
   onLayout: (preset: string) => void;
   disabled?: boolean;
 }
 
-const PRESETS = [
-  {
-    id: "auto",
-    label: "Auto (Smart)",
-    icon: "✨",
-    desc: "Best layout for diagram type",
-  },
-  {
-    id: "layered",
-    label: "Layered (Hierarchy)",
-    icon: "📊",
-    desc: "Top-down with ranks",
-  },
-  {
-    id: "force",
-    label: "Force-directed",
-    icon: "🌐",
-    desc: "Organic spring layout",
-  },
-  {
-    id: "radial",
-    label: "Radial",
-    icon: "🎯",
-    desc: "Center outward in rings",
-  },
-  { id: "grid", label: "Grid", icon: "⊞", desc: "Uniform grid arrangement" },
-  {
-    id: "linear",
-    label: "Linear (Vertical)",
-    icon: "📋",
-    desc: "Stacked top to bottom",
-  },
-];
+function getPresets(locale: Locale) {
+  const isId = locale === "id";
+  return [
+    {
+      id: "auto",
+      label: isId ? "Auto (Pintar)" : "Auto (Smart)",
+      icon: "✨",
+      desc: isId ? "Tata letak terbaik sesuai tipe" : "Best layout for diagram type",
+    },
+    {
+      id: "layered",
+      label: isId ? "Hierarkis / Bertingkat" : "Layered (Hierarchy)",
+      icon: "📊",
+      desc: isId ? "Atas ke bawah dengan peringkat" : "Top-down with ranks",
+    },
+    {
+      id: "force",
+      label: "Force-directed",
+      icon: "🌐",
+      desc: isId ? "Gaya pegas elastis organik" : "Organic spring layout",
+    },
+    {
+      id: "radial",
+      label: isId ? "Radial Melingkar" : "Radial Rings",
+      icon: "🎯",
+      desc: isId ? "Menyebar dari pusat ke luar" : "Center outward in rings",
+    },
+    {
+      id: "grid",
+      label: "Grid",
+      icon: "⊞",
+      desc: isId ? "Susunan kotak grid seragam" : "Uniform grid arrangement",
+    },
+    {
+      id: "linear",
+      label: isId ? "Linear Vertikal" : "Linear (Vertical)",
+      icon: "📋",
+      desc: isId ? "Bertumpuk lurus satu kolom" : "Stacked top to bottom",
+    },
+  ];
+}
 
 export function LayoutDropdown({ onLayout, disabled }: Props) {
+  const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const presets = getPresets(locale);
 
   useEffect(() => {
     if (!open) return;
@@ -56,16 +67,17 @@ export function LayoutDropdown({ onLayout, disabled }: Props) {
   return (
     <div ref={ref} className="relative">
       <button
-        className={`h-8 px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 disabled:opacity-35 disabled:cursor-not-allowed ${open
+        className={`h-8 px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 disabled:opacity-35 disabled:cursor-not-allowed ${
+          open
             ? "bg-surface-4 text-text border-accent shadow-xs"
             : "bg-surface-3 text-text-muted hover:text-text hover:bg-surface-4 border-border"
-          }`}
+        }`}
         onClick={() => setOpen(!open)}
         disabled={disabled}
-        title="Re-layout diagram automatically"
+        title={t("toolbar.reLayoutDesc")}
       >
         <span>📐</span>
-        <span className="hidden 2xl:inline">Layout</span>
+        <span className="hidden 2xl:inline">{t("toolbar.layout")}</span>
         <svg
           width="8"
           height="8"
@@ -87,10 +99,10 @@ export function LayoutDropdown({ onLayout, disabled }: Props) {
         <div className="absolute left-0 top-full mt-1.5 w-56 max-h-[min(480px,calc(100vh-80px))] overflow-y-auto custom-scrollbar bg-surface-2/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="px-3 py-2 border-b border-border">
             <span className="text-[10px] uppercase tracking-wider text-text-muted font-semibold">
-              Re-layout
+              {t("toolbar.reLayout")}
             </span>
           </div>
-          {PRESETS.map((p) => (
+          {presets.map((p) => (
             <button
               key={p.id}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-surface-3 transition-colors"

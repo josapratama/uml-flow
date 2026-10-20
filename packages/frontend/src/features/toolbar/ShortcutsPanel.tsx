@@ -1,46 +1,53 @@
 import React from "react";
+import { useI18n, type Locale } from "../../i18n";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const SHORTCUTS = [
-  {
-    category: "General",
-    items: [
-      { keys: "Ctrl + Enter", action: "Compile DSL" },
-      { keys: "Ctrl + S", action: "Save to library" },
-      { keys: "Ctrl + N", action: "New diagram tab" },
-      { keys: "Ctrl + Z", action: "Undo" },
-      { keys: "Ctrl + Shift + Z", action: "Redo" },
-      { keys: "Ctrl + Y", action: "Redo" },
-      { keys: "Delete", action: "Delete selected node/edge" },
-      { keys: "?", action: "Toggle shortcuts panel" },
-    ],
-  },
-  {
-    category: "Canvas",
-    items: [
-      { keys: "Scroll", action: "Zoom in/out" },
-      { keys: "Ctrl + Drag", action: "Pan canvas" },
-      { keys: "Middle Mouse", action: "Pan canvas" },
-      { keys: "Click node", action: "Select node" },
-      { keys: "Shift + Click", action: "Multi-select" },
-      { keys: "Double-click node", action: "Edit name" },
-      { keys: "Click edge", action: "Select edge" },
-    ],
-  },
-  {
-    category: "Editor",
-    items: [
-      { keys: "Tab", action: "Indent" },
-      { keys: "Ctrl + Enter", action: "Compile" },
-    ],
-  },
-];
+function getShortcuts(locale: Locale) {
+  const isId = locale === "id";
+  return [
+    {
+      category: isId ? "Umum" : "General",
+      items: [
+        { keys: "Ctrl + Enter", action: isId ? "Kompilasi kode DSL" : "Compile DSL" },
+        { keys: "Ctrl + S", action: isId ? "Simpan ke pustaka lokal" : "Save to library" },
+        { keys: "Ctrl + N", action: isId ? "Buat tab diagram baru" : "New diagram tab" },
+        { keys: "Ctrl + Z", action: isId ? "Urungkan perubahan (Undo)" : "Undo" },
+        { keys: "Ctrl + Shift + Z", action: isId ? "Ulangi perubahan (Redo)" : "Redo" },
+        { keys: "Ctrl + Y", action: isId ? "Ulangi perubahan (Redo)" : "Redo" },
+        { keys: "Delete", action: isId ? "Hapus node/garis terpilih" : "Delete selected node/edge" },
+        { keys: "?", action: isId ? "Buka/tutup panel pintasan ini" : "Toggle shortcuts panel" },
+      ],
+    },
+    {
+      category: isId ? "Kanvas Visual" : "Canvas",
+      items: [
+        { keys: "Scroll", action: isId ? "Perbesar / Perkecil zoom" : "Zoom in/out" },
+        { keys: "Ctrl + Drag", action: isId ? "Geser kanvas (Pan)" : "Pan canvas" },
+        { keys: "Middle Mouse", action: isId ? "Geser kanvas (Pan)" : "Pan canvas" },
+        { keys: isId ? "Klik node" : "Click node", action: isId ? "Pilih elemen node" : "Select node" },
+        { keys: "Shift + Click", action: isId ? "Pilih banyak node (Multi-select)" : "Multi-select" },
+        { keys: isId ? "Klik ganda node" : "Double-click node", action: isId ? "Ubah nama / label" : "Edit name" },
+        { keys: isId ? "Klik garis" : "Click edge", action: isId ? "Pilih garis hubung" : "Select edge" },
+      ],
+    },
+    {
+      category: "Editor DSL",
+      items: [
+        { keys: "Tab", action: isId ? "Indentasi teks" : "Indent" },
+        { keys: "Ctrl + Enter", action: isId ? "Kompilasi diagram" : "Compile" },
+      ],
+    },
+  ];
+}
 
 export function ShortcutsPanel({ isOpen, onClose }: Props) {
+  const { t, locale } = useI18n();
+  const shortcuts = getShortcuts(locale);
+
   if (!isOpen) return null;
 
   return (
@@ -54,7 +61,7 @@ export function ShortcutsPanel({ isOpen, onClose }: Props) {
       >
         <div className="flex justify-between items-center px-5 py-4 border-b border-border">
           <h2 className="text-sm font-semibold text-text">
-            Keyboard Shortcuts
+            {t("modals.shortcutsTitle")}
           </h2>
           <button
             onClick={onClose}
@@ -64,7 +71,7 @@ export function ShortcutsPanel({ isOpen, onClose }: Props) {
           </button>
         </div>
         <div className="p-5 space-y-5">
-          {SHORTCUTS.map((group) => (
+          {shortcuts.map((group) => (
             <div key={group.category}>
               <h3 className="text-[10px] uppercase tracking-wider text-text-muted mb-2">
                 {group.category}

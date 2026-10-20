@@ -8,36 +8,35 @@ interface Props {
   nodeCount: number;
 }
 
-/**
- * Floating toolbar that appears when multiple nodes are selected.
- * Provides align and distribute buttons.
- */
+import { useI18n } from "../../i18n";
+
 export function AlignToolbar({ onAlign, onDistribute, nodeCount }: Props) {
+  const { t } = useI18n();
   if (nodeCount < 2) return null;
 
   return (
     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-md z-10">
       <span className="text-[10px] text-slate-400 mr-1">
-        {nodeCount} selected
+        {nodeCount} {t("align.selected")}
       </span>
       <Sep />
-      <Btn onClick={() => onAlign("left")} title="Align left">
+      <Btn onClick={() => onAlign("left")} title={t("align.alignLeft")}>
         ⫷
       </Btn>
-      <Btn onClick={() => onAlign("center")} title="Align center H">
+      <Btn onClick={() => onAlign("center")} title={t("align.alignCenterH")}>
         ⫿
       </Btn>
-      <Btn onClick={() => onAlign("right")} title="Align right">
+      <Btn onClick={() => onAlign("right")} title={t("align.alignRight")}>
         ⫸
       </Btn>
       <Sep />
-      <Btn onClick={() => onAlign("top")} title="Align top">
+      <Btn onClick={() => onAlign("top")} title={t("align.alignTop")}>
         ⊤
       </Btn>
-      <Btn onClick={() => onAlign("middle")} title="Align center V">
+      <Btn onClick={() => onAlign("middle")} title={t("align.alignCenterV")}>
         ⊝
       </Btn>
-      <Btn onClick={() => onAlign("bottom")} title="Align bottom">
+      <Btn onClick={() => onAlign("bottom")} title={t("align.alignBottom")}>
         ⊥
       </Btn>
       {nodeCount >= 3 && (
@@ -45,13 +44,13 @@ export function AlignToolbar({ onAlign, onDistribute, nodeCount }: Props) {
           <Sep />
           <Btn
             onClick={() => onDistribute("horizontal")}
-            title="Distribute horizontally"
+            title={t("align.distributeH")}
           >
             ⇔
           </Btn>
           <Btn
             onClick={() => onDistribute("vertical")}
-            title="Distribute vertically"
+            title={t("align.distributeV")}
           >
             ⇕
           </Btn>

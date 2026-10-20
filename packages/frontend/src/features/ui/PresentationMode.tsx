@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useI18n } from "../../i18n";
 
 interface Props {
   onExit: () => void;
@@ -10,6 +11,7 @@ interface Props {
  * scales it to fill the screen, and shows it without any UI chrome.
  */
 export function PresentationMode({ onExit }: Props) {
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -64,13 +66,13 @@ export function PresentationMode({ onExit }: Props) {
           }}
           className="px-3 py-1.5 bg-black/80 text-white rounded-lg text-sm"
         >
-          Exit (Esc)
+          {t("presentation.exit")}
         </button>
       </div>
 
       {/* ESC hint at bottom */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-gray-400 opacity-50 pointer-events-none">
-        Click anywhere or press Esc to exit
+        {t("presentation.hint")}
       </div>
 
       {/* SVG container */}

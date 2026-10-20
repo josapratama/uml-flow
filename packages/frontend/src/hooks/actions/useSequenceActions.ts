@@ -1,19 +1,21 @@
 import { useCallback } from "react";
+import { snapToGrid } from "../useSnapToGrid";
 import type { ActionDeps } from "./types";
 
 /** Sequence diagram actions: participants, messages. */
-export function useSequenceActions({ diagram, history }: ActionDeps) {
+export function useSequenceActions({ diagram, history, snapEnabled }: ActionDeps) {
   const participantMove = useCallback(
     (id: string, x: number) => {
       if (!diagram) return;
+      const targetX = snapEnabled ? snapToGrid(x) : x;
       history.replace({
         ...diagram,
         participants: (diagram.participants || []).map((p) =>
-          p.id === id ? { ...p, position: { ...p.position, x } } : p,
+          p.id === id ? { ...p, position: { ...p.position, x: targetX } } : p,
         ),
       });
     },
-    [diagram, history],
+    [diagram, history, snapEnabled],
   );
 
   const participantRename = useCallback(

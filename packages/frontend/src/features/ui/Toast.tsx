@@ -6,6 +6,7 @@ export interface ToastMessage {
   type: "success" | "error" | "info";
 }
 
+let toastCounter = 0;
 let toastListener: ((msg: ToastMessage) => void) | null = null;
 
 /** Show a toast notification from anywhere in the app. */
@@ -13,7 +14,7 @@ export function showToast(
   text: string,
   type: "success" | "error" | "info" = "info",
 ) {
-  toastListener?.({ id: `toast_${Date.now()}`, text, type });
+  toastListener?.({ id: `toast_${Date.now()}_${++toastCounter}`, text, type });
 }
 
 /** Toast container component — render once in App. */
@@ -22,7 +23,12 @@ export function ToastContainer() {
 
   useEffect(() => {
     toastListener = (msg) => {
-      setToasts((prev) => [...prev, msg]);
+      setToasts((prev) => {
+        // Prevent duplicate toasts with the same text from flooding the UI
+        if (prev.some((t) => t.text === msg.text)) return prev;
+        const next = [...prev, msg];
+        return next.length > 4 ? next.slice(next.length - 4) : next;
+      });
       setTimeout(
         () => setToasts((prev) => prev.filter((t) => t.id !== msg.id)),
         3000,

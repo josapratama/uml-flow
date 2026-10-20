@@ -1,24 +1,30 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useI18n, type Locale } from "../../i18n";
 
 interface Props {
   onSampleChange: (sample: string) => void;
 }
 
-const SAMPLES_LIST = [
-  { id: "class", label: "Class Diagram", icon: "🏗️", desc: "OOP domain models & relations" },
-  { id: "sequence", label: "Sequence Diagram", icon: "🔀", desc: "API & message lifelines" },
-  { id: "erd", label: "Database ERD", icon: "🗄️", desc: "Entity tables, PK/FK & relations" },
-  { id: "state", label: "State Machine", icon: "🔁", desc: "Object lifecycle & transitions" },
-  { id: "flowchart", label: "Flowchart", icon: "📊", desc: "Decisions, processes & workflows" },
-  { id: "activity", label: "Activity Diagram", icon: "⚡", desc: "Actions, forks & joins" },
-  { id: "usecase", label: "Use Case Diagram", icon: "👤", desc: "Actor boundaries & system goals" },
-  { id: "component", label: "Component Diagram", icon: "🧩", desc: "Software modules & services" },
-  { id: "deployment", label: "Deployment Diagram", icon: "☁️", desc: "Nodes, hardware & cloud infra" },
-];
+const getSamplesList = (locale: Locale) => {
+  const isId = locale === "id";
+  return [
+    { id: "class", label: "Class Diagram", icon: "🏗️", desc: isId ? "Model domain & relasi OOP" : "OOP domain models & relations" },
+    { id: "sequence", label: "Sequence Diagram", icon: "🔀", desc: isId ? "API & alur komunikasi pesan" : "API & message lifelines" },
+    { id: "erd", label: "Database ERD", icon: "🗄️", desc: isId ? "Tabel entitas, PK/FK & relasi" : "Entity tables, PK/FK & relations" },
+    { id: "state", label: "State Machine", icon: "🔁", desc: isId ? "Siklus hidup objek & transisi" : "Object lifecycle & transitions" },
+    { id: "flowchart", label: "Flowchart", icon: "📊", desc: isId ? "Keputusan, proses & alur kerja" : "Decisions, processes & workflows" },
+    { id: "activity", label: "Activity Diagram", icon: "⚡", desc: isId ? "Aksi, percabangan & penggabungan" : "Actions, forks & joins" },
+    { id: "usecase", label: "Use Case Diagram", icon: "👤", desc: isId ? "Batasan aktor & tujuan sistem" : "Actor boundaries & system goals" },
+    { id: "component", label: "Component Diagram", icon: "🧩", desc: isId ? "Modul perangkat lunak & layanan" : "Software modules & services" },
+    { id: "deployment", label: "Deployment Diagram", icon: "☁️", desc: isId ? "Node, perangkat keras & infra cloud" : "Nodes, hardware & cloud infra" },
+  ];
+};
 
 export function SamplesMenu({ onSampleChange }: Props) {
+  const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const samplesList = getSamplesList(locale);
 
   useEffect(() => {
     if (!open) return;
@@ -40,10 +46,10 @@ export function SamplesMenu({ onSampleChange }: Props) {
             ? "bg-surface-4 text-text border-accent shadow-xs"
             : "bg-surface-3 text-text-muted hover:text-text hover:bg-surface-4 border-border"
         }`}
-        title="Load pre-built sample diagrams"
+        title={t("samples.menuTooltip")}
       >
         <span>📐</span>
-        <span className="hidden sm:inline">Samples</span>
+        <span className="hidden sm:inline">{t("samples.menuTitle")}</span>
         <svg
           width="8"
           height="8"
@@ -64,10 +70,10 @@ export function SamplesMenu({ onSampleChange }: Props) {
       {open && (
         <div className="absolute left-0 top-full mt-1.5 w-60 bg-surface-2/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-text-muted font-semibold border-b border-border/50">
-            Choose Sample Diagram
+            {t("samples.menuHeading")}
           </div>
           <div className="max-h-72 overflow-y-auto py-1">
-            {SAMPLES_LIST.map((sample) => (
+            {samplesList.map((sample) => (
               <button
                 key={sample.id}
                 onClick={() => {

@@ -10,8 +10,12 @@ export interface NodeWarning {
  * Validate diagram and return per-node warnings.
  * These can be displayed as icons on the canvas.
  */
-export function validateDiagramNodes(diagram: Diagram): NodeWarning[] {
+export function validateDiagramNodes(
+  diagram: Diagram,
+  locale: "id" | "en" = "id"
+): NodeWarning[] {
   const warnings: NodeWarning[] = [];
+  const isId = locale === "id";
 
   for (const node of diagram.nodes) {
     // Class diagram validations
@@ -24,21 +28,25 @@ export function validateDiagramNodes(diagram: Diagram): NodeWarning[] {
       ) {
         warnings.push({
           nodeId: node.id,
-          message: "Empty class — no attributes or methods",
+          message: isId
+            ? "Kelas kosong — tidak ada atribut atau metode"
+            : "Empty class — no attributes or methods",
           severity: "info",
         });
       }
       if (cn.type === "interface" && cn.attributes.length > 0) {
         warnings.push({
           nodeId: node.id,
-          message: "Interfaces typically don't have attributes",
+          message: isId
+            ? "Interface umumnya tidak memiliki atribut"
+            : "Interfaces typically don't have attributes",
           severity: "warning",
         });
       }
       if (!node.name || node.name.trim().length === 0) {
         warnings.push({
           nodeId: node.id,
-          message: "Node has no name",
+          message: isId ? "Node tidak memiliki nama" : "Node has no name",
           severity: "warning",
         });
       }
@@ -51,7 +59,9 @@ export function validateDiagramNodes(diagram: Diagram): NodeWarning[] {
       if (!hasPK && erd.attributes?.length > 0) {
         warnings.push({
           nodeId: node.id,
-          message: "Entity has no primary key",
+          message: isId
+            ? "Entitas tidak memiliki primary key"
+            : "Entity has no primary key",
           severity: "warning",
         });
       }
@@ -59,7 +69,7 @@ export function validateDiagramNodes(diagram: Diagram): NodeWarning[] {
 
     // Orphan node (no connections)
     const hasEdge = diagram.edges.some(
-      (e) => e.source === node.id || e.target === node.id,
+      (e) => e.source === node.id || e.target === node.id
     );
     if (
       !hasEdge &&
@@ -68,7 +78,9 @@ export function validateDiagramNodes(diagram: Diagram): NodeWarning[] {
     ) {
       warnings.push({
         nodeId: node.id,
-        message: "Isolated node — no connections",
+        message: isId
+          ? "Node terisolasi — tanpa koneksi relasi"
+          : "Isolated node — no connections",
         severity: "info",
       });
     }

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import type { Diagram } from "@uml-editor/shared";
 import { compareDiagrams } from "../../services/diagram-diff";
 import type { SavedDiagram } from "../../services/storage";
+import { useI18n } from "../../i18n";
 
 interface Props {
   isOpen: boolean;
@@ -18,6 +19,8 @@ export function DiagramDiffPanel({
   savedDiagrams,
   onLoadVersion,
 }: Props) {
+  const { t, locale } = useI18n();
+  const isId = locale === "id";
   const [compareId, setCompareId] = useState<string>("");
 
   const compareDiagram = useMemo(() => {
@@ -47,7 +50,7 @@ export function DiagramDiffPanel({
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2">
             <span className="text-base">⊕</span>
-            <h2 className="text-sm font-semibold text-text">Diagram Diff</h2>
+            <h2 className="text-sm font-semibold text-text">{t("modals.diffTitle")}</h2>
           </div>
           <button
             onClick={onClose}
@@ -60,11 +63,15 @@ export function DiagramDiffPanel({
         {/* Compare selector */}
         <div className="px-4 py-3 border-b border-border space-y-2">
           <div className="text-[11px] text-text-muted">
-            Compare current diagram against a saved version:
+            {isId
+              ? "Bandingkan diagram saat ini dengan versi tersimpan:"
+              : "Compare current diagram against a saved version:"}
           </div>
           {!hasDiagrams ? (
             <div className="text-[11px] text-text-muted/60 italic">
-              No saved diagrams found. Save some diagrams to the library first.
+              {isId
+                ? "Tidak ada diagram tersimpan. Simpan diagram ke pustaka terlebih dahulu."
+                : "No saved diagrams found. Save some diagrams to the library first."}
             </div>
           ) : (
             <select
@@ -72,7 +79,9 @@ export function DiagramDiffPanel({
               onChange={(e) => setCompareId(e.target.value)}
               className="w-full px-3 py-1.5 text-xs bg-surface-3 border border-border rounded text-text outline-none focus:border-accent"
             >
-              <option value="">— Select a saved diagram to compare —</option>
+              <option value="">
+                {isId ? "— Pilih diagram tersimpan untuk dibandingkan —" : "— Select a saved diagram to compare —"}
+              </option>
               {savedDiagrams
                 .filter((d) => d.diagram)
                 .map((d) => (
@@ -87,11 +96,11 @@ export function DiagramDiffPanel({
         {/* Diff results */}
         <div className="flex-1 overflow-y-auto p-4">
           {!currentDiagram ? (
-            <EmptyState message="No current diagram to compare." />
+            <EmptyState message={isId ? "Tidak ada diagram aktif untuk dibandingkan." : "No current diagram to compare."} />
           ) : !compareId ? (
-            <EmptyState message="Select a saved diagram above to see the diff." />
+            <EmptyState message={isId ? "Pilih diagram tersimpan di atas untuk melihat perbedaan." : "Select a saved diagram above to see the diff."} />
           ) : !diff ? (
-            <EmptyState message="Could not compute diff." />
+            <EmptyState message={isId ? "Gagal menghitung perbedaan diagram." : "Could not compute diff."} />
           ) : (
             <div className="space-y-4">
               {/* Summary badge */}
@@ -105,7 +114,7 @@ export function DiagramDiffPanel({
               {/* Added nodes */}
               {diff.addedNodes.length > 0 && (
                 <Section
-                  title="Added Nodes"
+                  title={isId ? "Node Ditambahkan" : "Added Nodes"}
                   color="text-green-500"
                   icon="+"
                   count={diff.addedNodes.length}
@@ -124,7 +133,7 @@ export function DiagramDiffPanel({
               {/* Removed nodes */}
               {diff.removedNodes.length > 0 && (
                 <Section
-                  title="Removed Nodes"
+                  title={isId ? "Node Dihapus" : "Removed Nodes"}
                   color="text-error"
                   icon="−"
                   count={diff.removedNodes.length}
@@ -143,7 +152,7 @@ export function DiagramDiffPanel({
               {/* Modified nodes */}
               {diff.modifiedNodes.length > 0 && (
                 <Section
-                  title="Modified Nodes"
+                  title={isId ? "Node Dimodifikasi" : "Modified Nodes"}
                   color="text-yellow-500"
                   icon="~"
                   count={diff.modifiedNodes.length}
@@ -162,7 +171,7 @@ export function DiagramDiffPanel({
               {/* Added edges */}
               {diff.addedEdges.length > 0 && (
                 <Section
-                  title="Added Edges"
+                  title={isId ? "Relasi Ditambahkan" : "Added Edges"}
                   color="text-green-500"
                   icon="+"
                   count={diff.addedEdges.length}
@@ -181,7 +190,7 @@ export function DiagramDiffPanel({
               {/* Removed edges */}
               {diff.removedEdges.length > 0 && (
                 <Section
-                  title="Removed Edges"
+                  title={isId ? "Relasi Dihapus" : "Removed Edges"}
                   color="text-error"
                   icon="−"
                   count={diff.removedEdges.length}
@@ -204,7 +213,9 @@ export function DiagramDiffPanel({
                 diff.addedEdges.length === 0 &&
                 diff.removedEdges.length === 0 && (
                   <div className="text-center py-6 text-text-muted text-xs">
-                    ✓ No differences found — diagrams are identical.
+                    {isId
+                      ? "✓ Tidak ada perbedaan — kedua versi diagram identik."
+                      : "✓ No differences found — diagrams are identical."}
                   </div>
                 )}
             </div>
@@ -221,13 +232,13 @@ export function DiagramDiffPanel({
               }}
               className="flex-1 py-1.5 text-xs bg-surface-3 border border-border rounded text-text-muted hover:text-text hover:border-accent transition-colors"
             >
-              ↩ Restore selected version
+              ↩ {isId ? "Pulihkan versi yang dipilih" : "Restore selected version"}
             </button>
             <button
               onClick={onClose}
               className="px-4 py-1.5 text-xs text-text-muted bg-surface-3 border border-border rounded hover:text-text"
             >
-              Close
+              {t("common.close")}
             </button>
           </div>
         )}

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import App from "./App";
 import { LandingPage } from "./features/landing/LandingPage";
 import { DocsPage } from "./features/landing/DocsPage";
+import { I18nProvider } from "./i18n";
 import "./styles/global.css";
 
 type Page = "landing" | "editor" | "docs";
@@ -11,14 +12,29 @@ function Root() {
   const [initialEditorCode, setInitialEditorCode] = useState<string | undefined>();
 
   const [page, setPage] = useState<Page>(() => {
-    const hash = window.location.hash.replace("#", "");
-    if (hash === "editor") return "editor";
-    if (hash === "docs") return "docs";
+    const rawHash = window.location.hash;
+    const search = window.location.search;
+    if (
+      rawHash.includes("share=") ||
+      rawHash.includes("code=") ||
+      search.includes("share=") ||
+      search.includes("code=")
+    ) {
+      return "editor";
+    }
+    const hash = rawHash.replace("#", "");
+    if (hash.startsWith("editor")) return "editor";
+    if (hash.startsWith("docs")) return "docs";
     return "landing";
   });
 
   useEffect(() => {
-    const currentHash = window.location.hash.replace("#", "");
+    const rawHash = window.location.hash;
+    // Preserve share code parameters in the URL
+    if (rawHash.includes("share=") || rawHash.includes("code=")) {
+      return;
+    }
+    const currentHash = rawHash.replace("#", "");
     const targetHash = page === "landing" ? "" : page;
     if (currentHash !== targetHash) {
       window.location.hash = targetHash;
@@ -28,9 +44,14 @@ function Root() {
   // Listen for hash changes (browser back/forward)
   useEffect(() => {
     const handler = () => {
-      const hash = window.location.hash.replace("#", "");
-      if (hash === "editor") setPage("editor");
-      else if (hash === "docs") setPage("docs");
+      const rawHash = window.location.hash;
+      if (rawHash.includes("share=") || rawHash.includes("code=")) {
+        setPage("editor");
+        return;
+      }
+      const hash = rawHash.replace("#", "");
+      if (hash.startsWith("editor")) setPage("editor");
+      else if (hash.startsWith("docs")) setPage("docs");
       else setPage("landing");
     };
     window.addEventListener("hashchange", handler);
@@ -67,4 +88,8 @@ function Root() {
   }
 }
 
-createRoot(document.getElementById("root")!).render(<Root />);
+createRoot(document.getElementById("root")!).render(
+  <I18nProvider>
+    <Root />
+  </I18nProvider>,
+);

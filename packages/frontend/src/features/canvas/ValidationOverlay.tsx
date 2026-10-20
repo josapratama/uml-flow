@@ -5,6 +5,7 @@ import {
   type NodeWarning,
 } from "../../services/diagram-validator";
 import { getVisualSize } from "./nodes/getVisualSize";
+import { useI18n } from "../../i18n";
 
 interface Props {
   diagram: Diagram;
@@ -15,7 +16,8 @@ interface Props {
  * Positioned at top-right corner of each node.
  */
 export function ValidationOverlay({ diagram }: Props) {
-  const warnings = useMemo(() => validateDiagramNodes(diagram), [diagram]);
+  const { locale } = useI18n();
+  const warnings = useMemo(() => validateDiagramNodes(diagram, locale), [diagram, locale]);
 
   if (warnings.length === 0) return null;
 

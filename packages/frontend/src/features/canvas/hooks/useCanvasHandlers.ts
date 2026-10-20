@@ -1,5 +1,6 @@
 import React, { useCallback } from "react";
 import type { Diagram, DiagramNode, Position } from "@uml-editor/shared";
+import { snapToGrid } from "../../../hooks/useSnapToGrid";
 import { getVisualSize } from "../nodes/getVisualSize";
 import {
   getBestTargetAnchor,
@@ -43,6 +44,7 @@ interface HandlerDeps {
   prevDy: React.MutableRefObject<number>;
   setEditingNodeId: React.Dispatch<React.SetStateAction<string | null>>;
   diagram: Diagram | null;
+  snapEnabled?: boolean;
   onNodeMove: (nodeId: string, x: number, y: number) => void;
   onNodeSelect: (nodeId: string | null) => void;
   onEdgeSelect: (edgeId: string | null) => void;
@@ -92,6 +94,7 @@ export function useCanvasHandlers(deps: HandlerDeps) {
     prevDy,
     setEditingNodeId,
     diagram,
+    snapEnabled = true,
     onNodeMove,
     onNodeSelect,
     onEdgeSelect,
@@ -161,16 +164,34 @@ export function useCanvasHandlers(deps: HandlerDeps) {
             multiSelected.has(drag.id) &&
             onMultiNodeMove
           ) {
-            const incDx = dx - prevDx.current;
-            const incDy = dy - prevDy.current;
-            prevDx.current = dx;
-            prevDy.current = dy;
-            onMultiNodeMove([...multiSelected], incDx, incDy);
+            if (snapEnabled) {
+              const targetX = snapToGrid(drag.px + dx);
+              const targetY = snapToGrid(drag.py + dy);
+              const effectiveDx = targetX - drag.px;
+              const effectiveDy = targetY - drag.py;
+              const incDx = effectiveDx - prevDx.current;
+              const incDy = effectiveDy - prevDy.current;
+              if (incDx !== 0 || incDy !== 0) {
+                prevDx.current = effectiveDx;
+                prevDy.current = effectiveDy;
+                onMultiNodeMove([...multiSelected], incDx, incDy);
+              }
+            } else {
+              const incDx = dx - prevDx.current;
+              const incDy = dy - prevDy.current;
+              prevDx.current = dx;
+              prevDy.current = dy;
+              onMultiNodeMove([...multiSelected], incDx, incDy);
+            }
           } else {
-            onNodeMove(drag.id, drag.px + dx, drag.py + dy);
+            const targetX = snapEnabled ? snapToGrid(drag.px + dx) : drag.px + dx;
+            const targetY = snapEnabled ? snapToGrid(drag.py + dy) : drag.py + dy;
+            onNodeMove(drag.id, targetX, targetY);
           }
         } else if (drag.wpIdx !== undefined) {
-          onEdgeWaypointMove(drag.id, drag.wpIdx, drag.px + dx, drag.py + dy);
+          const targetX = snapEnabled ? snapToGrid(drag.px + dx) : drag.px + dx;
+          const targetY = snapEnabled ? snapToGrid(drag.py + dy) : drag.py + dy;
+          onEdgeWaypointMove(drag.id, drag.wpIdx, targetX, targetY);
         }
       }
     },
@@ -181,6 +202,7 @@ export function useCanvasHandlers(deps: HandlerDeps) {
       connecting,
       reconnecting,
       view,
+      snapEnabled,
       screenToWorld,
       onNodeMove,
       onEdgeWaypointMove,

@@ -143,18 +143,19 @@ export function getAnchorSideFromDirection(
 }
 
 /**
- * Checks if a point is inside a node's visual bounds.
+ * Checks if a point is inside a node's visual bounds (with generous padding for drop targets).
  */
 export function isPointInsideNode(
   node: DiagramNode,
   x: number,
   y: number,
+  padding = 16,
 ): boolean {
   const vs = getVisualSize(node);
   return (
-    x >= node.position.x &&
-    x <= node.position.x + vs.width &&
-    y >= node.position.y &&
-    y <= node.position.y + vs.height
+    x >= node.position.x - padding &&
+    x <= node.position.x + vs.width + padding &&
+    y >= node.position.y - padding &&
+    y <= node.position.y + vs.height + padding
   );
 }

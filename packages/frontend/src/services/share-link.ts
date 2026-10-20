@@ -65,22 +65,23 @@ export async function decodeShareCode(encoded: string): Promise<string> {
 
 /**
  * Returns a full shareable URL containing the diagram code in the hash.
+ * Formats with #editor?share= so routing lands directly on the editor view.
  */
 export async function createShareUrl(code: string): Promise<string> {
   const hash = await encodeShareCode(code);
-  const url = new URL(window.location.href);
-  url.hash = `share=${hash}`;
-  return url.toString();
+  const base = `${window.location.origin}${window.location.pathname}`;
+  return `${base}#editor?share=${hash}`;
 }
 
 /**
- * Checks window.location.hash for shareable diagram code.
+ * Checks window.location.hash and window.location.search for shareable diagram code.
  */
 export async function getSharedCodeFromLocation(): Promise<string | null> {
-  const hash = window.location.hash;
-  if (!hash) return null;
+  const hash = window.location.hash || "";
+  const search = window.location.search || "";
+  const combined = `${hash}&${search}`;
 
-  const match = hash.match(/[#&](?:share|code)=([^&]+)/);
+  const match = combined.match(/[#?&](?:share|code)=([^&]+)/);
   if (!match || !match[1]) return null;
 
   try {
@@ -88,5 +89,35 @@ export async function getSharedCodeFromLocation(): Promise<string | null> {
   } catch (err) {
     console.error("Failed to decode shared diagram from URL:", err);
     return null;
+  }
+}
+
+/**
+ * Helper to copy text to clipboard with modern API and reliable legacy fallback.
+ */
+export async function copyTextToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fallback below
+  }
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.top = "-9999px";
+    textarea.style.left = "-9999px";
+    textarea.setAttribute("readonly", "");
+    document.body.appendChild(textarea);
+    textarea.select();
+    const successful = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return successful;
+  } catch {
+    return false;
   }
 }

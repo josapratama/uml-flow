@@ -15,6 +15,8 @@ interface DSLEditorProps {
   onSyncToCode?: () => void;
 }
 
+import { useI18n } from "../../i18n";
+
 export function DSLEditor({
   code,
   onChange,
@@ -22,6 +24,7 @@ export function DSLEditor({
   errors,
   onSyncToCode,
 }: DSLEditorProps) {
+  const { t } = useI18n();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -102,25 +105,25 @@ export function DSLEditor({
       <div className="flex justify-between items-center px-3 py-1.5 bg-surface-2 border-b border-border select-none h-8">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-accent" />
-          <span className="text-xs text-text font-semibold">DSL Source</span>
+          <span className="text-xs text-text font-semibold">{t("editor.dslSource")}</span>
           <span className="text-[10px] text-text-muted/60 font-mono">
-            ({lineCount} lines)
+            ({lineCount} {t("editor.lines")})
           </span>
         </div>
         <div className="flex items-center gap-2">
           {onSyncToCode && (
             <button
               onClick={onSyncToCode}
-              title="Sync visual canvas modifications into this DSL code"
+              title={t("editor.syncFromCanvasTooltip")}
               className="px-2 py-0.5 text-[10px] font-medium rounded bg-surface-3 hover:bg-surface-4 text-text-muted hover:text-text border border-border transition-colors flex items-center gap-1 active:scale-95"
             >
               <span>⟳</span>
-              <span>Sync from Canvas</span>
+              <span>{t("editor.syncFromCanvas")}</span>
             </button>
           )}
           {errors.length > 0 && (
             <span className="text-[10px] font-semibold text-error bg-error/15 px-1.5 py-0.5 rounded border border-error/30">
-              {errors.length} {errors.length === 1 ? "error" : "errors"}
+              {errors.length} {errors.length === 1 ? t("editor.errorSingle") : t("editor.errors")}
             </span>
           )}
           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-3 text-text-muted border border-border/50">
@@ -137,7 +140,7 @@ export function DSLEditor({
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Find..."
+            placeholder={t("editor.findPlaceholder")}
             className="flex-1 px-2 py-1 text-xs bg-surface border border-border rounded outline-none text-text"
             onKeyDown={(e) => {
               if (e.key === "Escape") setShowSearch(false);
@@ -148,7 +151,7 @@ export function DSLEditor({
             type="text"
             value={replaceWith}
             onChange={(e) => setReplaceWith(e.target.value)}
-            placeholder="Replace..."
+            placeholder={t("editor.replacePlaceholder")}
             className="flex-1 px-2 py-1 text-xs bg-surface border border-border rounded outline-none text-text"
             onKeyDown={(e) => {
               if (e.key === "Escape") setShowSearch(false);
@@ -161,13 +164,13 @@ export function DSLEditor({
             onClick={handleReplace}
             className="px-2 py-0.5 text-[10px] bg-surface-4 border border-border rounded text-text-muted hover:text-text"
           >
-            Replace
+            {t("editor.replace")}
           </button>
           <button
             onClick={handleReplaceAll}
             className="px-2 py-0.5 text-[10px] bg-surface-4 border border-border rounded text-text-muted hover:text-text"
           >
-            All
+            {t("editor.replaceAll")}
           </button>
           <button
             onClick={() => setShowSearch(false)}
