@@ -71,7 +71,13 @@ export default function App(props: AppProps = {}) {
   const [autoSyncCanvas, setAutoSyncCanvas] = useState(false);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [edgeRouting, setEdgeRouting] = useState<"straight" | "orthogonal">(
-    "straight",
+    () => {
+      try {
+        const saved = localStorage.getItem("uml_edge_routing");
+        if (saved === "orthogonal" || saved === "straight") return saved;
+      } catch {}
+      return "straight";
+    },
   );
   const [activeEdgeTool, setActiveEdgeTool] = useState<string | null>(null);
   const [isMonochrome, setIsMonochrome] = useState(false);
@@ -658,6 +664,22 @@ export default function App(props: AppProps = {}) {
     },
     [diagramHistory],
   );
+
+  const handleEdgeRoutingToggle = useCallback(() => {
+    setEdgeRouting((prev) => {
+      const next = prev === "straight" ? "orthogonal" : "straight";
+      try {
+        localStorage.setItem("uml_edge_routing", next);
+      } catch {}
+      showToast(
+        next === "orthogonal"
+          ? "Mode Garis Siku (Orthogonal) Aktif"
+          : "Mode Garis Lurus (Straight) Aktif",
+        "info",
+      );
+      return next;
+    });
+  }, []);
 
   const handleAddNode = useCallback(
     (nodeType: string) => {
@@ -1450,10 +1472,7 @@ export default function App(props: AppProps = {}) {
                   ? "Switch to Straight Routing"
                   : "Switch to Orthogonal Routing",
               icon: "🔀",
-              action: () =>
-                setEdgeRouting((v) =>
-                  v === "straight" ? "orthogonal" : "straight",
-                ),
+              action: handleEdgeRoutingToggle,
             },
           ],
         });
@@ -1485,6 +1504,7 @@ export default function App(props: AppProps = {}) {
       toggleCanvasTheme,
       snapEnabled,
       edgeRouting,
+      handleEdgeRoutingToggle,
       handleLayout,
       handleQuickAddNode,
     ],
@@ -1521,9 +1541,7 @@ export default function App(props: AppProps = {}) {
         snapEnabled={snapEnabled}
         onSnapToggle={() => setSnapEnabled((v) => !v)}
         edgeRouting={edgeRouting}
-        onEdgeRoutingToggle={() =>
-          setEdgeRouting((v) => (v === "straight" ? "orthogonal" : "straight"))
-        }
+        onEdgeRoutingToggle={handleEdgeRoutingToggle}
         canvasTheme={canvasTheme}
         onThemeToggle={toggleCanvasTheme}
         onMonochromeToggle={() => {
@@ -1651,6 +1669,7 @@ export default function App(props: AppProps = {}) {
               canvasTheme={canvasTheme}
               snapEnabled={snapEnabled}
               edgeRouting={edgeRouting}
+              onEdgeRoutingToggle={handleEdgeRoutingToggle}
               activeEdgeTool={activeEdgeTool}
               onQuickAddNode={handleQuickAddNode}
               onContextMenu={handleCanvasContextMenu}

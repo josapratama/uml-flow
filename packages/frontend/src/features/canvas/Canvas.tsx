@@ -92,6 +92,7 @@ interface CanvasProps {
   canvasTheme: CanvasTheme;
   snapEnabled: boolean;
   edgeRouting?: "straight" | "orthogonal";
+  onEdgeRoutingToggle?: () => void;
   activeEdgeTool?: string | null;
   onQuickAddNode?: (sourceNodeId: string) => void;
   onContextMenu?: (
@@ -137,6 +138,7 @@ export function Canvas({
   canvasTheme,
   snapEnabled,
   edgeRouting,
+  onEdgeRoutingToggle,
   activeEdgeTool,
   onQuickAddNode,
   onContextMenu,
@@ -494,6 +496,31 @@ export function Canvas({
         >
           ⊡
         </button>
+        {onEdgeRoutingToggle && (
+          <>
+            <div className="w-px h-4 bg-border/60 mx-0.5" />
+            <button
+              onClick={onEdgeRoutingToggle}
+              className={`h-7 px-2 flex items-center justify-center gap-1 rounded-lg text-xs font-medium transition-all ${
+                edgeRouting === "orthogonal"
+                  ? "bg-accent text-white shadow-xs font-semibold"
+                  : canvasTheme === "dark"
+                    ? "hover:bg-surface-3 text-text opacity-70 hover:opacity-100"
+                    : "hover:bg-slate-100 text-slate-700 opacity-70 hover:opacity-100"
+              }`}
+              title={
+                edgeRouting === "orthogonal"
+                  ? "Mode Garis Siku (Orthogonal) Aktif - Klik untuk ubah ke Garis Lurus"
+                  : "Mode Garis Lurus (Straight) Aktif - Klik untuk ubah ke Garis Siku"
+              }
+            >
+              <span>{edgeRouting === "orthogonal" ? "⌐" : "↗"}</span>
+              <span className="text-[10px]">
+                {edgeRouting === "orthogonal" ? "Siku" : "Lurus"}
+              </span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* Floating Canvas Search Bar */}
