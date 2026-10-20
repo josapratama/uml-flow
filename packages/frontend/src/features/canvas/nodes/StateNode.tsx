@@ -1,6 +1,7 @@
 import React from "react";
 import type { StateNode } from "@uml-editor/shared";
 import { resolveStyle, getStroke, getStrokeWidth, isDarkCanvas } from "./useNodeStyle";
+import { SvgMultilineText } from "./SvgMultilineText";
 
 interface Props {
   node: StateNode;
@@ -57,18 +58,17 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={cy + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-            >
-              {name}
-            </text>
+              maxWidth={size.width - 16}
+            />
           </g>
         );
       case "choice":
@@ -80,16 +80,15 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={cy + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
-            >
-              {name}
-            </text>
+              maxWidth={size.width * 0.72}
+            />
           </g>
         );
       case "composite": {

@@ -1,5 +1,6 @@
 import React from "react";
 import { resolveStyle, getStroke, getStrokeWidth } from "./useNodeStyle";
+import { SvgMultilineText } from "./SvgMultilineText";
 
 interface Props {
   node: any;
@@ -52,17 +53,16 @@ export function DeploymentNodeRenderer({
             «artifact»
           </text>
           {!hideText && (
-            <text
-              x={size.width / 2}
-              y={size.height / 2 + 8}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={size.width / 2}
+              cy={size.height / 2 + 8}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
-            >
-              {name}
-            </text>
+              maxWidth={size.width - 16}
+            />
           )}
         </g>
       );
@@ -83,17 +83,16 @@ export function DeploymentNodeRenderer({
             strokeWidth={sw}
           />
           {!hideText && (
-            <text
-              x={size.width / 2}
-              y={size.height / 2 + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={size.width / 2}
+              cy={size.height / 2 + 4}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
-            >
-              {name}
-            </text>
+              maxWidth={size.width - 16}
+            />
           )}
         </g>
       );
@@ -148,17 +147,16 @@ export function DeploymentNodeRenderer({
         </text>
         {/* Name */}
         {!hideText && (
-          <text
-            x={(size.width - d3) / 2}
-            y={(size.height + d3) / 2 + 6}
-            textAnchor="middle"
+          <SvgMultilineText
+            text={name}
+            cx={(size.width - d3) / 2}
+            cy={(size.height + d3) / 2 + 6}
             fontSize={s.fontSize}
             fontFamily={s.fontFamily}
             fill={s.fontColor}
             fontWeight={s.fontWeight}
-          >
-            {name}
-          </text>
+            maxWidth={size.width - d3 - 16}
+          />
         )}
         {node.stereotype && (
           <text
