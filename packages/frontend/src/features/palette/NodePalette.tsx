@@ -15,6 +15,7 @@ const PALETTE: Record<string, { label: string; icon: string; type: string }[]> =
       { label: "Interface", icon: "◻", type: "interface" },
       { label: "Abstract", icon: "▨", type: "abstract" },
       { label: "Enum", icon: "▤", type: "enum" },
+      { label: "Boundary", icon: "▢", type: "system" },
       { label: "Note", icon: "📝", type: "note" },
     ],
     sequence: [
@@ -40,10 +41,12 @@ const PALETTE: Record<string, { label: string; icon: string; type: string }[]> =
       { label: "I/O", icon: "▱", type: "io" },
       { label: "Database", icon: "🗄", type: "database" },
       { label: "Document", icon: "📄", type: "document" },
+      { label: "Boundary", icon: "▢", type: "system" },
       { label: "Note", icon: "📝", type: "note" },
     ],
     erd: [
       { label: "Entity", icon: "⊞", type: "entity" },
+      { label: "Boundary", icon: "▢", type: "system" },
       { label: "Note", icon: "📝", type: "note" },
     ],
     state: [
@@ -63,6 +66,7 @@ const PALETTE: Record<string, { label: string; icon: string; type: string }[]> =
       { label: "Component", icon: "🧩", type: "component" },
       { label: "Provided ○", icon: "○", type: "interface-provided" },
       { label: "Required ◗", icon: "◗", type: "interface-required" },
+      { label: "Boundary", icon: "▢", type: "system" },
       { label: "Note", icon: "📝", type: "note" },
     ],
     deployment: [
@@ -70,6 +74,7 @@ const PALETTE: Record<string, { label: string; icon: string; type: string }[]> =
       { label: "Device", icon: "📦", type: "device" },
       { label: "Artifact", icon: "📄", type: "artifact" },
       { label: "Component", icon: "🧩", type: "component" },
+      { label: "Boundary", icon: "▢", type: "system" },
       { label: "Note", icon: "📝", type: "note" },
     ],
   };

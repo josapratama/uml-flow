@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 interface Props {
   onShowLibrary?: () => void;
   onShowTemplates?: () => void;
+  onUniversalImport?: () => void;
   onImport: () => void;
   onSaveCurrent?: () => void;
   onShareLink?: () => void;
@@ -14,6 +15,7 @@ interface Props {
 export function ProjectMenu({
   onShowLibrary,
   onShowTemplates,
+  onUniversalImport,
   onImport,
   onSaveCurrent,
   onShareLink,
@@ -163,6 +165,22 @@ export function ProjectMenu({
               <div>
                 <div className="font-medium">Templates Gallery</div>
                 <div className="text-[10px] text-text-muted">Pre-built architecture patterns</div>
+              </div>
+            </button>
+          )}
+
+          {onUniversalImport && (
+            <button
+              onClick={() => {
+                onUniversalImport();
+                setOpen(false);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text hover:bg-surface-3 transition-colors text-left"
+            >
+              <span className="text-base">⚡</span>
+              <div>
+                <div className="font-medium text-accent">Import SQL / Mermaid / PlantUML</div>
+                <div className="text-[10px] text-text-muted">Auto-convert code directly into UML Flow</div>
               </div>
             </button>
           )}

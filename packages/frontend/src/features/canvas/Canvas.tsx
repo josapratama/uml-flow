@@ -18,6 +18,7 @@ import { InlineEditor } from "./InlineEditor";
 import { ConnectionLine } from "./ConnectionLine";
 import { AlignToolbar } from "./AlignToolbar";
 import { ValidationOverlay } from "./ValidationOverlay";
+import { CanvasSearchBar } from "./CanvasSearchBar";
 import { useCanvasState } from "./hooks/useCanvasState";
 import { useCanvasHandlers } from "./hooks/useCanvasHandlers";
 import { useCanvasZoom } from "./hooks/useCanvasZoom";
@@ -215,12 +216,26 @@ export function Canvas({
     });
 
   // --- Zoom ---
-  const { zoomIn, zoomOut, zoomReset, zoomToFit } = useCanvasZoom(
+  const { zoomIn, zoomOut, zoomReset, zoomToFit, zoomToSelection } = useCanvasZoom(
     svgRef,
     view,
     setView,
     diagram,
   );
+
+  // --- Search state & Ctrl+F shortcut ---
+  const [showSearch, setShowSearch] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setShowSearch((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Auto-fit diagram to canvas viewport when a diagram is loaded or changes
   const prevDiagramKey = React.useRef<string>("");
@@ -420,12 +435,26 @@ export function Canvas({
 
   return (
     <div className="w-full h-full relative">
-      {/* Zoom controls */}
+      {/* Zoom & Search controls */}
       <div className={`absolute top-3 right-3 flex items-center gap-1 rounded-xl px-2 py-1 shadow-lg backdrop-blur-md z-10 border transition-all ${
         canvasTheme === "dark"
           ? "bg-surface-2/90 border-border/80 text-text"
           : "bg-white/90 border-slate-200 text-slate-700"
       }`}>
+        <button
+          onClick={() => setShowSearch((v) => !v)}
+          className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition-colors ${
+            showSearch
+              ? "bg-accent text-white shadow-xs"
+              : canvasTheme === "dark"
+              ? "hover:bg-surface-3 text-text"
+              : "hover:bg-slate-100 text-slate-700"
+          }`}
+          title="Cari Node (Ctrl+F)"
+        >
+          🔍
+        </button>
+        <div className="w-px h-4 bg-border/60 mx-0.5" />
         <button
           onClick={zoomIn}
           className={`w-7 h-7 flex items-center justify-center rounded-lg font-medium transition-colors ${
@@ -466,6 +495,15 @@ export function Canvas({
           ⊡
         </button>
       </div>
+
+      {/* Floating Canvas Search Bar */}
+      <CanvasSearchBar
+        isOpen={showSearch}
+        onClose={() => setShowSearch(false)}
+        diagram={diagram}
+        onSelectNode={onNodeSelect}
+        onFocusNode={(id) => zoomToSelection([id])}
+      />
 
       {/* Minimap */}
       {(diagram.nodes.length > 3 ||

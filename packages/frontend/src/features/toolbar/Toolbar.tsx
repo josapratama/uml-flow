@@ -37,6 +37,7 @@ interface ToolbarProps {
   onMonochromeToggle?: () => void;
   isMonochrome?: boolean;
   onImport: () => void;
+  onUniversalImport?: () => void;
   onSyncToCode: () => void;
   onShowShortcuts: () => void;
   onShowLibrary?: () => void;
@@ -49,6 +50,7 @@ interface ToolbarProps {
   onShareLink?: () => void;
   onNewDiagram?: () => void;
   onNavigateHome?: () => void;
+  onApplyPalette?: (palette: { bg: string; border: string; font: string; name: string }) => void;
 }
 
 export function Toolbar(props: ToolbarProps) {
@@ -80,6 +82,7 @@ export function Toolbar(props: ToolbarProps) {
     onMonochromeToggle,
     isMonochrome,
     onImport,
+    onUniversalImport,
     onSyncToCode,
     onShowShortcuts,
     onShowLibrary,
@@ -92,6 +95,7 @@ export function Toolbar(props: ToolbarProps) {
     onShareLink,
     onNewDiagram,
     onNavigateHome,
+    onApplyPalette,
   } = props;
 
   const handleGoHome = (e: React.MouseEvent) => {
@@ -135,6 +139,7 @@ export function Toolbar(props: ToolbarProps) {
         <ProjectMenu
           onShowLibrary={onShowLibrary}
           onShowTemplates={onShowTemplates}
+          onUniversalImport={onUniversalImport}
           onImport={onImport}
           onSaveCurrent={onSaveCurrent}
           onShareLink={onShareLink}
@@ -297,6 +302,7 @@ export function Toolbar(props: ToolbarProps) {
           onShowHistory={onShowHistory}
           onShowShortcuts={onShowShortcuts}
           onValidate={onValidate}
+          onApplyPalette={onApplyPalette}
           hasDiagram={hasDiagram}
         />
 

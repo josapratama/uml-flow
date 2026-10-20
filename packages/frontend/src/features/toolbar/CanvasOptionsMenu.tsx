@@ -18,6 +18,7 @@ interface Props {
   onShowHistory?: () => void;
   onShowShortcuts: () => void;
   onValidate?: () => void;
+  onApplyPalette?: (palette: { bg: string; border: string; font: string; name: string }) => void;
   hasDiagram: boolean;
 }
 
@@ -38,6 +39,7 @@ export function CanvasOptionsMenu({
   onShowHistory,
   onShowShortcuts,
   onValidate,
+  onApplyPalette,
   hasDiagram,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -89,6 +91,44 @@ export function CanvasOptionsMenu({
           <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-text-muted font-semibold border-b border-border/50">
             Canvas Settings
           </div>
+
+          {/* Quick Palette Themes */}
+          {onApplyPalette && (
+            <div className="px-3 py-2 border-b border-border/50 bg-surface-3/30">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-medium text-text flex items-center gap-1.5">
+                  <span>🎨</span> Tema Warna Diagram
+                </span>
+                <span className="text-[9px] text-text-muted">1-Klik Semua Node</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                {[
+                  { name: "Skripsi Formal", bg: "#ffffff", border: "#475569", font: "#0f172a", label: "🎓 Skripsi" },
+                  { name: "Modern Indigo", bg: "#eef2ff", border: "#6366f1", font: "#1e1b4b", label: "💎 Indigo" },
+                  { name: "Forest Emerald", bg: "#ecfdf5", border: "#10b981", font: "#064e3b", label: "🌿 Emerald" },
+                  { name: "Sunset Amber", bg: "#fffbeb", border: "#f59e0b", font: "#78350f", label: "🌅 Amber" },
+                  { name: "Sky Cyan", bg: "#f0f9ff", border: "#0ea5e9", font: "#0c4a6e", label: "☁️ Sky" },
+                  { name: "Cyber Violet", bg: "#181825", border: "#a855f7", font: "#f8fafc", label: "🌌 Cyber" },
+                ].map((p) => (
+                  <button
+                    key={p.name}
+                    onClick={() => {
+                      onApplyPalette(p);
+                      setOpen(false);
+                    }}
+                    className="flex items-center gap-1 px-1.5 py-1 rounded bg-surface-3 hover:bg-surface-4 border border-border text-[10px] text-text transition-all truncate hover:border-accent"
+                    title={p.name}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full border shrink-0 shadow-2xs"
+                      style={{ backgroundColor: p.bg, borderColor: p.border }}
+                    />
+                    <span className="truncate">{p.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Auto compile toggle */}
           <button

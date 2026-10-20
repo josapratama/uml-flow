@@ -179,3 +179,108 @@ export function getFullDiagramSVG(svgElement: SVGSVGElement): string {
 
   return new XMLSerializer().serializeToString(clone);
 }
+
+/**
+ * Export the diagram as an A4 Print-ready PDF.
+ * Opens a dedicated print preview with academic styling and prompts print/save to PDF.
+ */
+export function exportAsPDF(
+  svgElement: SVGSVGElement,
+  diagramName: string,
+): void {
+  const svgString = getFullDiagramSVG(svgElement);
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    throw new Error("Popup blocked. Please allow popups to export PDF.");
+  }
+
+  const year = new Date().getFullYear();
+  printWindow.document.write(`
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>${diagramName} - PDF Export</title>
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 15mm;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #ffffff;
+      color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .sheet {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .svg-wrapper {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      background: #ffffff;
+    }
+    .svg-wrapper svg {
+      width: 100%;
+      height: auto;
+      max-height: 70vh;
+    }
+    .caption-box {
+      margin-top: 14px;
+      text-align: center;
+    }
+    .caption-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .caption-source {
+      font-size: 11px;
+      font-style: italic;
+      color: #64748b;
+      margin-top: 3px;
+    }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .svg-wrapper { border: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="svg-wrapper">
+      ${svgString}
+    </div>
+    <div class="caption-box">
+      <div class="caption-title">Gambar: ${diagramName}</div>
+      <div class="caption-source">Sumber: Hasil Olahan UML Flow (${year})</div>
+    </div>
+  </div>
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 300);
+    };
+  </script>
+</body>
+</html>
+  `);
+  printWindow.document.close();
+}

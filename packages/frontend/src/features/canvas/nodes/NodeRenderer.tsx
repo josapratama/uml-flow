@@ -49,6 +49,10 @@ export function NodeRenderer({
             />
           );
         }
+        // Boundary / System grouping containers are universal
+        if ((node.type as string) === "system" || (node.type as string) === "boundary") {
+          return <UseCaseNodeRenderer {...props} />;
+        }
         switch (diagramType) {
           case "activity":
             return <ActivityNodeRenderer {...props} />;

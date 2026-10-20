@@ -59,6 +59,51 @@ export function StylePanel(props: Props) {
   );
 }
 
+export const CURATED_PALETTES = [
+  {
+    name: "Skripsi Formal",
+    bg: "#ffffff",
+    border: "#475569",
+    font: "#0f172a",
+    tag: "🎓 Skripsi",
+  },
+  {
+    name: "Modern Indigo",
+    bg: "#eef2ff",
+    border: "#6366f1",
+    font: "#1e1b4b",
+    tag: "💎 Indigo",
+  },
+  {
+    name: "Forest Emerald",
+    bg: "#ecfdf5",
+    border: "#10b981",
+    font: "#064e3b",
+    tag: "🌿 Emerald",
+  },
+  {
+    name: "Sunset Amber",
+    bg: "#fffbeb",
+    border: "#f59e0b",
+    font: "#78350f",
+    tag: "🌅 Amber",
+  },
+  {
+    name: "Sky Cyan",
+    bg: "#f0f9ff",
+    border: "#0ea5e9",
+    font: "#0c4a6e",
+    tag: "☁️ Sky",
+  },
+  {
+    name: "Cyber Violet",
+    bg: "#181825",
+    border: "#a855f7",
+    font: "#f8fafc",
+    tag: "🌌 Cyber",
+  },
+];
+
 function NodeStyleControls({
   style,
   onChange,
@@ -70,6 +115,36 @@ function NodeStyleControls({
 
   return (
     <>
+      {/* 1-Click Curated Palettes */}
+      <Section label="🎨 1-Click Curated Palettes">
+        <div className="grid grid-cols-2 gap-1.5">
+          {CURATED_PALETTES.map((pal) => (
+            <button
+              key={pal.name}
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...style,
+                  backgroundColor: pal.bg,
+                  borderColor: pal.border,
+                  fontColor: pal.font,
+                })
+              }
+              className="flex items-center gap-2 p-1.5 rounded-lg border border-border bg-surface-3 hover:border-accent text-left transition-all active:scale-95 group"
+              title={`Terapkan tema ${pal.name}`}
+            >
+              <div
+                className="w-3.5 h-3.5 rounded-sm border shrink-0 shadow-2xs"
+                style={{ backgroundColor: pal.bg, borderColor: pal.border }}
+              />
+              <span className="text-[11px] font-medium text-text truncate group-hover:text-accent">
+                {pal.tag}
+              </span>
+            </button>
+          ))}
+        </div>
+      </Section>
+
       {/* Font Family */}
       <Section label="Font Family">
         <select

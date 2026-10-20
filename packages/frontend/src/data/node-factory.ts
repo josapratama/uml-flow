@@ -21,6 +21,23 @@ export function createDefaultNode(
     };
   }
 
+  // System Boundary grouping container is universal across all diagram types
+  if (nodeType === "system" || nodeType === "boundary") {
+    return {
+      id,
+      type: "system",
+      name: "System Boundary",
+      position: { x, y },
+      size: { width: 340, height: 260 },
+      style: {
+        borderStyle: "dashed",
+        borderWidth: 1.5,
+        borderColor: "#94a3b8",
+        backgroundColor: "transparent",
+      },
+    };
+  }
+
   switch (diagramType) {
     case "class":
       return {

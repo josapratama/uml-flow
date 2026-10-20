@@ -32,6 +32,8 @@ import { AIAssistant } from "./features/ui/AIAssistant";
 import { PresentationMode } from "./features/ui/PresentationMode";
 import { UndoHistoryPanel } from "./features/ui/UndoHistoryPanel";
 import { DiagramDiffPanel } from "./features/ui/DiagramDiffPanel";
+import { AcademicCaptionModal } from "./features/ui/AcademicCaptionModal";
+import { ImportModal } from "./features/ui/ImportModal";
 import {
   loadTemplates,
   saveTemplate,
@@ -93,6 +95,8 @@ export default function App(props: AppProps = {}) {
   const [showPresentation, setShowPresentation] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
+  const [showAcademicCaption, setShowAcademicCaption] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [templates, setTemplates] = useState<DiagramTemplate[]>(() =>
     loadTemplates(),
   );
@@ -434,6 +438,23 @@ export default function App(props: AppProps = {}) {
             }
             break;
           }
+          case "pdf": {
+            const el = document.querySelector(
+              ".canvas-svg-element",
+            ) as SVGSVGElement | null;
+            if (el) {
+              const { exportAsPDF } = await import("./services/export-png");
+              await exportAsPDF(el, diagram.name);
+              showToast("Membuka dialog cetak / simpan PDF A4...", "info");
+            } else {
+              showToast("Diagram tidak ditemukan untuk diekspor", "error");
+            }
+            break;
+          }
+          case "academic-caption": {
+            setShowAcademicCaption(true);
+            break;
+          }
           case "clipboard-svg": {
             const svg = await api.exportDiagram(diagram, { format: "svg" });
             await navigator.clipboard.writeText(svg);
@@ -560,6 +581,21 @@ export default function App(props: AppProps = {}) {
       }
     },
     [diagram],
+  );
+
+  const handleApplyPalette = useCallback(
+    (palette: { bg: string; border: string; font: string; name: string }) => {
+      actions.globalStyleChange(
+        {
+          backgroundColor: palette.bg,
+          borderColor: palette.border,
+          fontColor: palette.font,
+        },
+        setGlobalStyle,
+      );
+      showToast(`Tema diterapkan: ${palette.name}`, "success");
+    },
+    [actions],
   );
 
   // --- Layout & Validate ---
@@ -1055,6 +1091,31 @@ export default function App(props: AppProps = {}) {
             action: () => handleQuickAddNode(node.id),
           });
 
+          // Add Review / Advisor Feedback Pin
+          items.push({
+            label: "Add Review / Feedback Note...",
+            icon: "📌",
+            action: () => {
+              const noteId = `note_review_${Date.now()}`;
+              const noteNode = {
+                id: noteId,
+                type: "note",
+                name: `Revisi untuk ${node.name}:\n• Catatan review dosen...`,
+                position: {
+                  x: node.position.x + (node.size?.width || 160) + 30,
+                  y: node.position.y,
+                },
+                size: { width: 190, height: 90 },
+                style: { backgroundColor: "#fef9c3", borderColor: "#eab308" },
+              };
+              diagramHistory.set({
+                ...diagram,
+                nodes: [...diagram.nodes, noteNode as any],
+              });
+              setSelectedNodeId(noteId);
+            },
+          });
+
           items.push({ separator: true, label: "", action: () => {} });
 
           items.push({
@@ -1254,6 +1315,32 @@ export default function App(props: AppProps = {}) {
           },
         });
 
+        items.push({
+          label: "Add System Boundary Here",
+          icon: "▢",
+          action: () => {
+            const id = `boundary_${Date.now()}`;
+            const newBoundary = {
+              id,
+              type: "system",
+              name: "System Boundary",
+              position: target.worldPos,
+              size: { width: 340, height: 240 },
+              style: {
+                borderStyle: "dashed",
+                borderWidth: 1.5,
+                borderColor: "#94a3b8",
+                backgroundColor: "transparent",
+              },
+            };
+            diagramHistory.set({
+              ...diagram,
+              nodes: [...diagram.nodes, newBoundary as any],
+            });
+            setSelectedNodeId(id);
+          },
+        });
+
         items.push({ separator: true, label: "", action: () => {} });
 
         items.push({
@@ -1445,6 +1532,7 @@ export default function App(props: AppProps = {}) {
         }}
         isMonochrome={isMonochrome}
         onImport={openFilePicker}
+        onUniversalImport={() => setShowImportModal(true)}
         onSyncToCode={handleSyncToCode}
         onShowShortcuts={() => setShowShortcuts(true)}
         onShowLibrary={() => setShowLibrary(true)}
@@ -1457,6 +1545,7 @@ export default function App(props: AppProps = {}) {
         onShareLink={handleShareLink}
         onNewDiagram={handleNewTab}
         onNavigateHome={props.onNavigateHome}
+        onApplyPalette={handleApplyPalette}
         diagramName={diagram?.name || "Untitled"}
       />
 
@@ -1677,6 +1766,19 @@ export default function App(props: AppProps = {}) {
         onLoadVersion={(d) => {
           diagramHistory.set(d);
           showToast("Version restored", "success");
+        }}
+      />
+      <AcademicCaptionModal
+        isOpen={showAcademicCaption}
+        onClose={() => setShowAcademicCaption(false)}
+        diagram={diagram}
+      />
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportDSL={(dsl) => {
+          setCode(dsl);
+          handleCompile(dsl);
         }}
       />
 

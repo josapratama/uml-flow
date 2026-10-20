@@ -15,6 +15,18 @@ const EXPORT_OPTIONS: ExportOption[] = [
     description: "High-res raster image (2x)",
   },
   {
+    id: "pdf",
+    label: "PDF Document (A4)",
+    icon: "📄",
+    description: "Print-ready A4 PDF with academic caption",
+  },
+  {
+    id: "academic-caption",
+    label: "Format Naskah Skripsi",
+    icon: "🎓",
+    description: "Salin caption & narasi Bab Skripsi",
+  },
+  {
     id: "svg",
     label: "SVG Vector",
     icon: "📐",
