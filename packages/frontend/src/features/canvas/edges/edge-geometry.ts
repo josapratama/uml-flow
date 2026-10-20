@@ -113,15 +113,48 @@ export function getStubPoint(
   }
 }
 
-/** Calculate the midpoint of a path (for label positioning). */
+/**
+ * Calculate the midpoint of a path (for label positioning).
+ * Guarantees that the label is placed on the middle of a straight segment,
+ * and NEVER directly on a corner/siku (vertex).
+ */
 export function getMidpoint(points: Position[]): Position {
+  if (!points || points.length === 0) return { x: 0, y: 0 };
+  if (points.length === 1) return points[0];
   if (points.length === 2) {
     return {
       x: (points[0].x + points[1].x) / 2,
       y: (points[0].y + points[1].y) / 2,
     };
   }
-  return points[Math.floor(points.length / 2)];
+
+  // Multi-segment path (e.g. orthogonal lines with corners/siku).
+  // Find the best straight segment (favoring long and inner segments over tiny stubs).
+  let bestMidpoint: Position = {
+    x: (points[0].x + points[1].x) / 2,
+    y: (points[0].y + points[1].y) / 2,
+  };
+  let bestScore = -1;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const len = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+
+    // Give higher priority to inner/middle segments (not entrance/exit stubs)
+    const isInner = points.length > 3 && i > 0 && i < points.length - 2;
+    const score = len * (isInner ? 1.4 : 1.0);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMidpoint = {
+        x: (p1.x + p2.x) / 2,
+        y: (p1.y + p2.y) / 2,
+      };
+    }
+  }
+
+  return bestMidpoint;
 }
 
 /**

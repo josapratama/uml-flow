@@ -413,12 +413,43 @@ function renderEdge(edge: any): string {
   let svg = `<path d="${d}" fill="none" stroke="#666" stroke-width="1.5"${dash} marker-end="${markerEnd}"${markerStart ? ` marker-start="${markerStart}"` : ""}/>`;
 
   if (edge.label) {
-    const mid = points[Math.floor(points.length / 2)];
+    const mid = getPathMidpoint(points);
     const labelText =
       typeof edge.label === "string" ? edge.label : edge.label.text || "";
     svg += `<text x="${mid.x}" y="${mid.y - 8}" font-size="11" font-family="sans-serif" fill="#444" text-anchor="middle">${escapeXml(labelText)}</text>`;
   }
   return svg;
+}
+
+function getPathMidpoint(points: Array<{ x: number; y: number }>): { x: number; y: number } {
+  if (!points || points.length === 0) return { x: 0, y: 0 };
+  if (points.length === 1) return points[0];
+  if (points.length === 2) {
+    return {
+      x: (points[0].x + points[1].x) / 2,
+      y: (points[0].y + points[1].y) / 2,
+    };
+  }
+  let bestMidpoint = {
+    x: (points[0].x + points[1].x) / 2,
+    y: (points[0].y + points[1].y) / 2,
+  };
+  let bestScore = -1;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const len = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    const isInner = points.length > 3 && i > 0 && i < points.length - 2;
+    const score = len * (isInner ? 1.4 : 1.0);
+    if (score > bestScore) {
+      bestScore = score;
+      bestMidpoint = {
+        x: (p1.x + p2.x) / 2,
+        y: (p1.y + p2.y) / 2,
+      };
+    }
+  }
+  return bestMidpoint;
 }
 
 function escapeXml(str: string | undefined | null): string {
