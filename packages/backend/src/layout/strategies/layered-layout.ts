@@ -21,18 +21,86 @@ export function layoutLayered(
   diagram: Diagram,
   options: LayoutOptions,
 ): Diagram {
-  const graph = buildGraph(diagram);
+  // Track substates belonging to composite nodes
+  const substateToComposite = new Map<string, string>();
+  for (const node of diagram.nodes) {
+    if (node.type === "composite" && (node as any).substates) {
+      for (const sub of (node as any).substates) {
+        substateToComposite.set(sub.id, node.id);
+      }
+    }
+  }
+
+  // Filter top-level diagram so only top-level nodes are ranked and positioned
+  const topLevelDiagram: Diagram = {
+    ...diagram,
+    nodes: diagram.nodes.filter((n) => !substateToComposite.has(n.id)),
+  };
+
+  const graph = buildGraph(topLevelDiagram);
   const reverseForRank = diagram.type === "class" || diagram.type === "erd";
 
-  assignRanks(graph, diagram.edges, reverseForRank);
-  orderWithinRanks(graph, diagram.edges);
-  assignPositions(graph, options, diagram.edges);
+  assignRanks(graph, topLevelDiagram.edges, reverseForRank);
+  orderWithinRanks(graph, topLevelDiagram.edges);
+  assignPositions(graph, options, topLevelDiagram.edges);
 
   const result = { ...diagram, nodes: [...diagram.nodes] };
   for (let i = 0; i < result.nodes.length; i++) {
     const ln = graph.get(result.nodes[i].id);
     if (ln)
       result.nodes[i] = { ...result.nodes[i], position: { ...ln.position } };
+  }
+
+  // Position substates neatly INSIDE their composite parent node
+  for (let i = 0; i < result.nodes.length; i++) {
+    const comp = result.nodes[i];
+    if (comp.type === "composite" && (comp as any).substates) {
+      const subs: any[] = (comp as any).substates;
+      if (subs.length > 0) {
+        let currentX = comp.position.x + 24;
+        const subY = comp.position.y + 54;
+        let maxHeight = 44;
+
+        for (const sub of subs) {
+          const subNodeIdx = result.nodes.findIndex((n) => n.id === sub.id);
+          const subW =
+            sub.size?.width ||
+            (sub.type === "initial" || sub.type === "final" ? 22 : 90);
+          const subH =
+            sub.size?.height ||
+            (sub.type === "initial" || sub.type === "final" ? 22 : 44);
+          maxHeight = Math.max(maxHeight, subH);
+
+          const pos = {
+            x: currentX,
+            y:
+              sub.type === "initial" || sub.type === "final"
+                ? subY + (44 - subH) / 2
+                : subY,
+          };
+
+          if (subNodeIdx >= 0) {
+            result.nodes[subNodeIdx] = {
+              ...result.nodes[subNodeIdx],
+              position: pos,
+              size: { width: subW, height: subH },
+            };
+          }
+          currentX += subW + 28;
+        }
+
+        // Auto-size composite container to comfortably fit all substates
+        const neededWidth = Math.max(
+          comp.size.width,
+          currentX - comp.position.x + 20,
+        );
+        const neededHeight = Math.max(comp.size.height, 54 + maxHeight + 28);
+        result.nodes[i] = {
+          ...result.nodes[i],
+          size: { width: neededWidth, height: neededHeight },
+        };
+      }
+    }
   }
 
   result.edges = diagram.edges.map((e) => ({ ...e }));

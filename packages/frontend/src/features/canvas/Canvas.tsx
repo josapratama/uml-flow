@@ -785,7 +785,11 @@ export function Canvas({
                 })()}
 
               {/* Nodes */}
-              {diagram.nodes.map((node) => (
+              {[...diagram.nodes]
+                .sort((a, b) =>
+                  a.type === "composite" ? -1 : b.type === "composite" ? 1 : 0,
+                )
+                .map((node) => (
                 <React.Fragment key={node.id}>
                   <g
                     onMouseEnter={() => setHoveredNodeId(node.id)}

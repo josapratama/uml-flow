@@ -139,6 +139,8 @@ export function EdgeRenderer({
         effectiveTargetAnchor,
         sourceNode,
         targetNode,
+        labelOffset,
+        nodes,
       );
     } else {
       allPoints = routeWithObstacleAvoidance(
@@ -148,6 +150,21 @@ export function EdgeRenderer({
         targetNode,
         nodes,
       );
+      if (labelOffset !== 0 && allPoints.length === 2) {
+        const p1 = allPoints[0];
+        const p2 = allPoints[1];
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const len = Math.hypot(dx, dy);
+        if (len > 0) {
+          const nx = -dy / len;
+          const ny = dx / len;
+          allPoints = [
+            { x: p1.x + nx * labelOffset, y: p1.y + ny * labelOffset },
+            { x: p2.x + nx * labelOffset, y: p2.y + ny * labelOffset },
+          ];
+        }
+      }
     }
   }
 
@@ -403,9 +420,37 @@ function EdgeLabels({
   labelOffset?: number;
   nodes?: DiagramNode[];
 }) {
-  // Simple vertical offset for parallel edge labels
   let labelX = mid.x + (edge.label?.offsetX || 0);
-  let labelY = mid.y + (edge.label?.offsetY || 0) + labelOffset;
+  let labelY = mid.y + (edge.label?.offsetY || 0);
+
+  // Perpendicular offset for parallel edge labels so reverse/opposite labels don't clash
+  if (labelOffset !== 0 && allPoints.length >= 2) {
+    let segDx = 1;
+    let segDy = 0;
+    for (let i = 0; i < allPoints.length - 1; i++) {
+      const p1 = allPoints[i];
+      const p2 = allPoints[i + 1];
+      const minX = Math.min(p1.x, p2.x) - 4;
+      const maxX = Math.max(p1.x, p2.x) + 4;
+      const minY = Math.min(p1.y, p2.y) - 4;
+      const maxY = Math.max(p1.y, p2.y) + 4;
+      if (mid.x >= minX && mid.x <= maxX && mid.y >= minY && mid.y <= maxY) {
+        segDx = p2.x - p1.x;
+        segDy = p2.y - p1.y;
+        break;
+      }
+    }
+    const segLen = Math.hypot(segDx, segDy);
+    if (segLen > 0) {
+      const nx = -segDy / segLen;
+      const ny = segDx / segLen;
+      const shiftDist = labelOffset > 0 ? 14 : -14;
+      labelX += nx * shiftDist;
+      labelY += ny * shiftDist;
+    } else {
+      labelY += labelOffset;
+    }
+  }
 
   // Auto-offset if label overlaps any node (except source/target)
   if (edge.label && nodes.length > 0) {
@@ -425,27 +470,33 @@ function EdgeLabels({
     }
   }
 
+  const boxW = Math.max(28, (edge.label?.text?.length || 4) * 6.8 + 14);
+  const boxH = 18;
+
   return (
     <>
       {edge.label && (
         <g style={{ cursor: "move" }}>
           <rect
-            x={labelX - edge.label.text.length * 3.5 - 4}
-            y={labelY - 10}
-            width={edge.label.text.length * 7 + 8}
-            height="16"
-            fill="white"
-            stroke="none"
-            rx="3"
-            opacity="0.9"
+            x={labelX - boxW / 2}
+            y={labelY - boxH / 2}
+            width={boxW}
+            height={boxH}
+            fill="#ffffff"
+            stroke="#cbd5e1"
+            strokeWidth="1"
+            rx="4"
+            opacity="0.95"
+            style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.08))" }}
           />
           <text
             x={labelX}
-            y={labelY + 2}
+            y={labelY + 4}
             textAnchor="middle"
-            fontSize={style.fontSize}
+            fontSize={style.fontSize || 11}
             fontFamily={style.fontFamily}
-            fill={style.fontColor}
+            fontWeight="500"
+            fill="#334155"
           >
             {edge.label.text}
           </text>

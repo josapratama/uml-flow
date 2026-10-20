@@ -8,19 +8,38 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
   const nodeMove = useCallback(
     (nodeId: string, x: number, y: number) => {
       if (!diagram) return;
+      const targetNode = diagram.nodes.find((n) => n.id === nodeId);
+      if (!targetNode) return;
+      const targetX = snapEnabled ? snapToGrid(x) : x;
+      const targetY = snapEnabled ? snapToGrid(y) : y;
+      const dx = targetX - targetNode.position.x;
+      const dy = targetY - targetNode.position.y;
+
+      const subIds = new Set<string>();
+      if (targetNode.type === "composite" && (targetNode as any).substates) {
+        for (const sub of (targetNode as any).substates) subIds.add(sub.id);
+      }
+
       history.replace({
         ...diagram,
-        nodes: diagram.nodes.map((n) =>
-          n.id === nodeId
-            ? {
-                ...n,
-                position: {
-                  x: snapEnabled ? snapToGrid(x) : x,
-                  y: snapEnabled ? snapToGrid(y) : y,
-                },
-              }
-            : n,
-        ),
+        nodes: diagram.nodes.map((n) => {
+          if (n.id === nodeId) {
+            return {
+              ...n,
+              position: { x: targetX, y: targetY },
+            };
+          }
+          if (subIds.has(n.id)) {
+            return {
+              ...n,
+              position: {
+                x: n.position.x + dx,
+                y: n.position.y + dy,
+              },
+            };
+          }
+          return n;
+        }),
       });
     },
     [diagram, history, snapEnabled],

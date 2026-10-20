@@ -109,29 +109,65 @@ export function buildAnchorAwarePath(
   targetAnchor?: string,
   sourceNode?: DiagramNode,
   targetNode?: DiagramNode,
+  parallelOffset: number = 0,
+  allNodes?: DiagramNode[],
 ): Position[] {
   const PAD = 20;
+
+  // Apply parallel offset on anchor face so reverse/parallel edges have separated endpoints
+  let srcPt = { ...source };
+  let tgtPt = { ...target };
+  if (parallelOffset !== 0) {
+    if (sourceAnchor === "top" || sourceAnchor === "bottom") {
+      srcPt.x += parallelOffset;
+    } else if (sourceAnchor === "left" || sourceAnchor === "right") {
+      srcPt.y += parallelOffset;
+    }
+    if (targetAnchor === "top" || targetAnchor === "bottom") {
+      tgtPt.x += parallelOffset;
+    } else if (targetAnchor === "left" || targetAnchor === "right") {
+      tgtPt.y += parallelOffset;
+    }
+  }
 
   const sBounds = sourceNode ? getNodeBounds(sourceNode, PAD) : null;
   const tBounds = targetNode ? getNodeBounds(targetNode, PAD) : null;
 
   // Exit/entry points just outside node boundaries
   const sExit = sBounds
-    ? getExitPoint(source, sourceAnchor, sBounds)
-    : getStubPoint(source, sourceAnchor, 30);
+    ? getExitPoint(srcPt, sourceAnchor, sBounds)
+    : getStubPoint(srcPt, sourceAnchor, 30);
   const tEntry = tBounds
-    ? getExitPoint(target, targetAnchor, tBounds)
-    : getStubPoint(target, targetAnchor, 30);
+    ? getExitPoint(tgtPt, targetAnchor, tBounds)
+    : getStubPoint(tgtPt, targetAnchor, 30);
 
-  const points: Position[] = [source, sExit];
+  const points: Position[] = [srcPt, sExit];
 
   const sourceIsHoriz = sourceAnchor === "left" || sourceAnchor === "right";
   const targetIsHoriz = targetAnchor === "left" || targetAnchor === "right";
 
+  const excludeIds = new Set<string>();
+  if (sourceNode) excludeIds.add(sourceNode.id);
+  if (targetNode) excludeIds.add(targetNode.id);
+
   if (sourceIsHoriz && targetIsHoriz) {
-    routeBothHorizontal(points, sExit, tEntry);
+    routeBothHorizontal(
+      points,
+      sExit,
+      tEntry,
+      parallelOffset,
+      allNodes,
+      excludeIds,
+    );
   } else if (!sourceIsHoriz && !targetIsHoriz) {
-    routeBothVertical(points, sExit, tEntry);
+    routeBothVertical(
+      points,
+      sExit,
+      tEntry,
+      parallelOffset,
+      allNodes,
+      excludeIds,
+    );
   } else if (!sourceIsHoriz && targetIsHoriz) {
     routeVerticalToHorizontal(
       points,
@@ -154,7 +190,7 @@ export function buildAnchorAwarePath(
     );
   }
 
-  points.push(tEntry, target);
+  points.push(tEntry, tgtPt);
   return deduplicatePoints(points);
 }
 
@@ -164,9 +200,38 @@ function routeBothHorizontal(
   points: Position[],
   sExit: Position,
   tEntry: Position,
+  parallelOffset: number = 0,
+  allNodes?: DiagramNode[],
+  excludeIds?: Set<string>,
 ) {
   if (Math.abs(sExit.y - tEntry.y) < 2) return; // Same Y — straight
-  const midX = (sExit.x + tEntry.x) / 2;
+  let midX = (sExit.x + tEntry.x) / 2 + parallelOffset * 0.7;
+
+  // Check obstacle collision on vertical segment
+  if (allNodes && allNodes.length > 0) {
+    const minY = Math.min(sExit.y, tEntry.y) - 4;
+    const maxY = Math.max(sExit.y, tEntry.y) + 4;
+    const obstacles = allNodes.filter((n) => {
+      if (excludeIds && excludeIds.has(n.id)) return false;
+      const b = getNodeBounds(n, 8);
+      return b.top < maxY && b.bottom > minY && b.left <= midX && b.right >= midX;
+    });
+
+    if (obstacles.length > 0) {
+      const obsLeft = Math.min(
+        ...obstacles.map((o) => getNodeBounds(o, 16).left),
+      );
+      const obsRight = Math.max(
+        ...obstacles.map((o) => getNodeBounds(o, 16).right),
+      );
+      const candLeft = obsLeft - 16;
+      const candRight = obsRight + 16;
+      const distLeft = Math.abs(candLeft - midX);
+      const distRight = Math.abs(candRight - midX);
+      midX = distLeft <= distRight ? candLeft : candRight;
+    }
+  }
+
   points.push({ x: midX, y: sExit.y });
   points.push({ x: midX, y: tEntry.y });
 }
@@ -175,9 +240,38 @@ function routeBothVertical(
   points: Position[],
   sExit: Position,
   tEntry: Position,
+  parallelOffset: number = 0,
+  allNodes?: DiagramNode[],
+  excludeIds?: Set<string>,
 ) {
   if (Math.abs(sExit.x - tEntry.x) < 2) return; // Same X — straight
-  const midY = (sExit.y + tEntry.y) / 2;
+  let midY = (sExit.y + tEntry.y) / 2 + parallelOffset * 0.7;
+
+  // Check obstacle collision on horizontal segment
+  if (allNodes && allNodes.length > 0) {
+    const minX = Math.min(sExit.x, tEntry.x) - 4;
+    const maxX = Math.max(sExit.x, tEntry.x) + 4;
+    const obstacles = allNodes.filter((n) => {
+      if (excludeIds && excludeIds.has(n.id)) return false;
+      const b = getNodeBounds(n, 8);
+      return b.left < maxX && b.right > minX && b.top <= midY && b.bottom >= midY;
+    });
+
+    if (obstacles.length > 0) {
+      const obsTop = Math.min(
+        ...obstacles.map((o) => getNodeBounds(o, 16).top),
+      );
+      const obsBottom = Math.max(
+        ...obstacles.map((o) => getNodeBounds(o, 16).bottom),
+      );
+      const candTop = obsTop - 16;
+      const candBottom = obsBottom + 16;
+      const distTop = Math.abs(candTop - midY);
+      const distBottom = Math.abs(candBottom - midY);
+      midY = distTop <= distBottom ? candTop : candBottom;
+    }
+  }
+
   points.push({ x: sExit.x, y: midY });
   points.push({ x: tEntry.x, y: midY });
 }

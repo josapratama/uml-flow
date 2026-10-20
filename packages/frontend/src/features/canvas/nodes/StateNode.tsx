@@ -92,15 +92,7 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
           </g>
         );
       case "composite": {
-        const subNodes: StateNode[] = (node as any).substates || [];
-        // Layout substates inside the composite box
-        const headerH = 30;
-        const pad = 12;
-        const subW = Math.max(
-          80,
-          (size.width - pad * 2 - (subNodes.length - 1) * 12) /
-            Math.max(1, subNodes.length),
-        );
+        const headerH = 32;
         return (
           <g>
             {/* Outer rounded rect */}
@@ -135,7 +127,7 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
               x="0"
               y="18"
               width={size.width}
-              height="12"
+              height={headerH - 18}
               fill={
                 (node as any).style?.backgroundColor ||
                 (isDark ? "#23233a" : "#E8EAF6")
@@ -152,7 +144,7 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
             />
             <text
               x={cx}
-              y="20"
+              y={21}
               textAnchor="middle"
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
@@ -161,59 +153,6 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
             >
               {name}
             </text>
-            {/* Substates rendered inside */}
-            {subNodes.map((sub, i) => {
-              const subX = pad + i * (subW + 10);
-              const subY = headerH + 14;
-              const subH = 36;
-              if (sub.type === "initial") {
-                return (
-                  <g key={sub.id}>
-                    <circle cx={subX + 10} cy={subY + 10} r={8} fill="#333" />
-                  </g>
-                );
-              }
-              if (sub.type === "final") {
-                return (
-                  <g key={sub.id}>
-                    <circle
-                      cx={subX + 10}
-                      cy={subY + 10}
-                      r={10}
-                      fill="none"
-                      stroke="#333"
-                      strokeWidth="2"
-                    />
-                    <circle cx={subX + 10} cy={subY + 10} r={6} fill="#333" />
-                  </g>
-                );
-              }
-              return (
-                <g key={sub.id}>
-                  <rect
-                    x={subX}
-                    y={subY}
-                    width={subW}
-                    height={subH}
-                    rx="8"
-                    fill={isDark ? "#1f1f33" : "white"}
-                    stroke={stroke}
-                    strokeWidth="1"
-                    opacity="0.9"
-                  />
-                  <text
-                    x={subX + subW / 2}
-                    y={subY + subH / 2 + 4}
-                    textAnchor="middle"
-                    fontSize="10"
-                    fontFamily={s.fontFamily}
-                    fill={s.fontColor}
-                  >
-                    {sub.name}
-                  </text>
-                </g>
-              );
-            })}
           </g>
         );
       }
