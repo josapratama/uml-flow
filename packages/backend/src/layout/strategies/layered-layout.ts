@@ -38,7 +38,7 @@ export function layoutLayered(
   };
 
   const graph = buildGraph(topLevelDiagram);
-  const reverseForRank = diagram.type === "class" || diagram.type === "erd";
+  const reverseForRank = diagram.type === "class";
 
   assignRanks(graph, topLevelDiagram.edges, reverseForRank);
   orderWithinRanks(graph, topLevelDiagram.edges);
@@ -123,8 +123,7 @@ function buildGraph(diagram: Diagram): Map<string, LayoutNode> {
 }
 
 /**
- * Assign ranks using Kahn's topological sort.
- * For class/ERD diagrams, edges are reversed so parents appear above children.
+ * Assign ranks using Kahn's topological sort with cycle-breaking for state machines.
  */
 function assignRanks(
   graph: Map<string, LayoutNode>,
@@ -139,10 +138,17 @@ function assignRanks(
     inDeg.set(id, 0);
   }
 
+  const seenPairs = new Set<string>();
   for (const edge of edges) {
     if (!graph.has(edge.source) || !graph.has(edge.target)) continue;
     const from = reverse ? edge.target : edge.source;
     const to = reverse ? edge.source : edge.target;
+    const revKey = `${to}->${from}`;
+    if (seenPairs.has(revKey)) {
+      // 2-cycle return/feedback edge — exclude from DAG ranking
+      continue;
+    }
+    seenPairs.add(`${from}->${to}`);
     adj.get(from)?.push(to);
     inDeg.set(to, (inDeg.get(to) || 0) + 1);
   }
@@ -165,13 +171,30 @@ function assignRanks(
       inDeg.set(neighbor, deg);
       if (deg === 0) queue.push(neighbor);
     }
+
+    // If queue is empty but unranked nodes remain (due to multi-node cycles),
+    // break the cycle by picking the node with lowest remaining inDeg
+    if (queue.length === 0) {
+      let bestCandidate: string | null = null;
+      let minDeg = Infinity;
+      for (const [nid, deg] of inDeg) {
+        if (!ranks.has(nid) && deg < minDeg) {
+          minDeg = deg;
+          bestCandidate = nid;
+        }
+      }
+      if (bestCandidate) {
+        inDeg.set(bestCandidate, 0);
+        ranks.set(bestCandidate, rank + 1);
+        queue.push(bestCandidate);
+      }
+    }
   }
 
-  // Handle disconnected/cyclic nodes
-  let maxRank = 0;
-  for (const [, node] of graph) maxRank = Math.max(maxRank, node.rank);
   for (const [id, node] of graph) {
-    if (!ranks.has(id) && inDeg.get(id) !== 0) node.rank = maxRank + 1;
+    if (ranks.has(id)) {
+      node.rank = ranks.get(id)!;
+    }
   }
 }
 

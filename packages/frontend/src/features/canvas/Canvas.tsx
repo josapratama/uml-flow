@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import type { Diagram, DiagramNode, Position } from "@uml-editor/shared";
+import type { Diagram, DiagramNode, Position, Edge } from "@uml-editor/shared";
 import type { CanvasTheme } from "../../hooks/useTheme";
 import { NodeRenderer } from "./nodes/NodeRenderer";
 import { NodeAnchors } from "./nodes/NodeAnchors";
@@ -9,6 +9,7 @@ import {
   type ResizeHandle,
 } from "./nodes/ResizeHandles";
 import { getVisualSize } from "./nodes/getVisualSize";
+import { getBestTargetAnchor } from "./utils/anchor-utils";
 import { EdgeRenderer } from "./edges/EdgeRenderer";
 import { ArrowDefs } from "./edges/ArrowDefs";
 import { SequenceRenderer } from "./diagrams/SequenceRenderer";
@@ -836,35 +837,158 @@ export function Canvas({
 
               {/* Layer 2: Edges */}
               {(() => {
-                // Calculate parallel edge offsets and label stagger
-                const pairCount = new Map<string, number>();
-                for (const edge of diagram.edges) {
-                  const key = [edge.source, edge.target].sort().join("_");
-                  pairCount.set(key, (pairCount.get(key) || 0) + 1);
+                const nodeMap = new Map<string, DiagramNode>(
+                  diagram.nodes.map((n) => [n.id, n]),
+                );
+                const isOrthogonal =
+                  (edgeRouting || "straight") === "orthogonal";
+
+                // 1. Calculate distributed anchor ports for each face of each node
+                interface FaceConn {
+                  edgeId: string;
+                  isSource: boolean;
+                  otherCoord: number;
                 }
-                const pairCurrent = new Map<string, number>();
+                const faceMap = new Map<string, FaceConn[]>();
+
+                for (const edge of diagram.edges) {
+                  const sNode = nodeMap.get(edge.source);
+                  const tNode = nodeMap.get(edge.target);
+                  if (!sNode || !tNode) continue;
+
+                  const sSize = getVisualSize(sNode);
+                  const tSize = getVisualSize(tNode);
+                  const sCenter = {
+                    x: sNode.position.x + sSize.width / 2,
+                    y: sNode.position.y + sSize.height / 2,
+                  };
+                  const tCenter = {
+                    x: tNode.position.x + tSize.width / 2,
+                    y: tNode.position.y + tSize.height / 2,
+                  };
+
+                  const sAnchor =
+                    edge.sourceAnchor ||
+                    (isOrthogonal
+                      ? getBestTargetAnchor(sNode, tNode, diagram.nodes)
+                      : undefined);
+                  const tAnchor =
+                    edge.targetAnchor ||
+                    (isOrthogonal
+                      ? getBestTargetAnchor(tNode, sNode, diagram.nodes)
+                      : undefined);
+
+                  if (sAnchor) {
+                    const key = `${edge.source}:${sAnchor}`;
+                    const list = faceMap.get(key) || [];
+                    const coord =
+                      sAnchor === "top" || sAnchor === "bottom"
+                        ? tCenter.x
+                        : tCenter.y;
+                    list.push({
+                      edgeId: edge.id,
+                      isSource: true,
+                      otherCoord: coord,
+                    });
+                    faceMap.set(key, list);
+                  }
+
+                  if (tAnchor) {
+                    const key = `${edge.target}:${tAnchor}`;
+                    const list = faceMap.get(key) || [];
+                    const coord =
+                      tAnchor === "top" || tAnchor === "bottom"
+                        ? sCenter.x
+                        : sCenter.y;
+                    list.push({
+                      edgeId: edge.id,
+                      isSource: false,
+                      otherCoord: coord,
+                    });
+                    faceMap.set(key, list);
+                  }
+                }
+
+                const portFractionMap = new Map<string, number>();
+                for (const [, conns] of faceMap) {
+                  conns.sort((a, b) => a.otherCoord - b.otherCoord);
+                  const n = conns.length;
+                  for (let i = 0; i < n; i++) {
+                    const c = conns[i];
+                    let frac = 0.5;
+                    if (n === 2) {
+                      frac = i === 0 ? 0.35 : 0.65;
+                    } else if (n === 3) {
+                      frac = i === 0 ? 0.25 : i === 1 ? 0.5 : 0.75;
+                    } else if (n > 3) {
+                      frac = 0.15 + (0.7 * i) / (n - 1);
+                    }
+                    const role = c.isSource ? "source" : "target";
+                    portFractionMap.set(`${c.edgeId}:${role}`, frac);
+                  }
+                }
+
+                // 2. Calculate two-way lane offsets and anti-clash label placement
+                const pairMap = new Map<string, Edge[]>();
+                for (const edge of diagram.edges) {
+                  const key = [edge.source, edge.target].sort().join("<->");
+                  const list = pairMap.get(key) || [];
+                  list.push(edge);
+                  pairMap.set(key, list);
+                }
+
+                const edgeConfigs = new Map<
+                  string,
+                  {
+                    laneOffset: number;
+                    labelRatio: number;
+                    labelShift: number;
+                  }
+                >();
+
+                for (const [, pairEdges] of pairMap) {
+                  if (pairEdges.length === 1) {
+                    edgeConfigs.set(pairEdges[0].id, {
+                      laneOffset: 0,
+                      labelRatio: 0.5,
+                      labelShift: -10,
+                    });
+                  } else if (
+                    pairEdges.length === 2 &&
+                    pairEdges[0].source === pairEdges[1].target
+                  ) {
+                    // Two-way street between opposite nodes:
+                    // Both take their forward right lane (+10px) and place label near source (38%)
+                    for (const e of pairEdges) {
+                      edgeConfigs.set(e.id, {
+                        laneOffset: 10,
+                        labelRatio: 0.38,
+                        labelShift: 12,
+                      });
+                    }
+                  } else {
+                    const n = pairEdges.length;
+                    for (let i = 0; i < n; i++) {
+                      const norm = i - (n - 1) / 2;
+                      edgeConfigs.set(pairEdges[i].id, {
+                        laneOffset: norm * 14,
+                        labelRatio: 0.28 + (0.44 * i) / Math.max(1, n - 1),
+                        labelShift: norm >= 0 ? 12 : -12,
+                      });
+                    }
+                  }
+                }
 
                 return diagram.edges.map((edge) => {
-                  const key = [edge.source, edge.target].sort().join("_");
-                  const count = pairCount.get(key) || 1;
-                  const idx = pairCurrent.get(key) || 0;
-                  pairCurrent.set(key, idx + 1);
-
-                  let laneOffset = 0;
-                  let labelRatio = 0.5;
-                  let labelShift = -10;
-
-                  if (count === 2) {
-                    const isFirst = idx === 0;
-                    laneOffset = isFirst ? -10 : 10;
-                    labelRatio = isFirst ? 0.38 : 0.62;
-                    labelShift = isFirst ? -12 : 12;
-                  } else if (count > 2) {
-                    const norm = idx - (count - 1) / 2;
-                    laneOffset = norm * 16;
-                    labelRatio = 0.28 + (0.44 * idx) / (count - 1);
-                    labelShift = norm >= 0 ? 12 : -12;
-                  }
+                  const cfg = edgeConfigs.get(edge.id) || {
+                    laneOffset: 0,
+                    labelRatio: 0.5,
+                    labelShift: -10,
+                  };
+                  const sFrac =
+                    portFractionMap.get(`${edge.id}:source`) ?? 0.5;
+                  const tFrac =
+                    portFractionMap.get(`${edge.id}:target`) ?? 0.5;
 
                   return (
                     <EdgeRenderer
@@ -876,10 +1000,12 @@ export function Canvas({
                         (selectedEdgeIds?.has(edge.id) ?? false)
                       }
                       edgeRouting={edgeRouting || "straight"}
-                      laneOffset={laneOffset}
-                      labelOffset={laneOffset}
-                      labelRatio={labelRatio}
-                      labelShift={labelShift}
+                      laneOffset={cfg.laneOffset}
+                      labelOffset={cfg.laneOffset}
+                      labelRatio={cfg.labelRatio}
+                      labelShift={cfg.labelShift}
+                      sourcePortFraction={sFrac}
+                      targetPortFraction={tFrac}
                       onClick={(e) => {
                         e.stopPropagation();
                         if (e.shiftKey && onEdgeShiftSelect) {

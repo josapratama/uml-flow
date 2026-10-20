@@ -29,6 +29,8 @@ interface EdgeRendererProps {
   laneOffset?: number;
   labelRatio?: number;
   labelShift?: number;
+  sourcePortFraction?: number;
+  targetPortFraction?: number;
   onClick: (e: React.MouseEvent) => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
@@ -55,6 +57,8 @@ export function EdgeRenderer({
   laneOffset,
   labelRatio = 0.5,
   labelShift,
+  sourcePortFraction = 0.5,
+  targetPortFraction = 0.5,
   onClick,
   onDoubleClick,
   onWaypointDragStart,
@@ -78,23 +82,30 @@ export function EdgeRenderer({
     y: targetNode.position.y + targetSize.height / 2,
   };
 
-  // Resolve anchor points
+  // Resolve anchor points with distributed ports
   const resolveAnchor = (
     node: DiagramNode,
     side?: string,
     fallback?: Position,
+    portFraction: number = 0.5,
   ): Position => {
     const { position } = node;
     const size = getVisualSize(node);
     switch (side) {
       case "top":
-        return { x: position.x + size.width / 2, y: position.y };
+        return { x: position.x + size.width * portFraction, y: position.y };
       case "bottom":
-        return { x: position.x + size.width / 2, y: position.y + size.height };
+        return {
+          x: position.x + size.width * portFraction,
+          y: position.y + size.height,
+        };
       case "left":
-        return { x: position.x, y: position.y + size.height / 2 };
+        return { x: position.x, y: position.y + size.height * portFraction };
       case "right":
-        return { x: position.x + size.width, y: position.y + size.height / 2 };
+        return {
+          x: position.x + size.width,
+          y: position.y + size.height * portFraction,
+        };
       default:
         return fallback ? getConnectionPoint(node, fallback) : sourceCenter;
     }
@@ -105,11 +116,17 @@ export function EdgeRenderer({
   const hasWaypoints = edge.points && edge.points.length > 0;
 
   if (hasWaypoints) {
-    const sp = resolveAnchor(sourceNode, edge.sourceAnchor, edge.points![0]);
+    const sp = resolveAnchor(
+      sourceNode,
+      edge.sourceAnchor,
+      edge.points![0],
+      sourcePortFraction,
+    );
     const tp = resolveAnchor(
       targetNode,
       edge.targetAnchor,
       edge.points![edge.points!.length - 1],
+      targetPortFraction,
     );
     allPoints = [sp, ...edge.points!, tp];
   } else if (sourceNode.id === targetNode.id) {
@@ -127,7 +144,8 @@ export function EdgeRenderer({
     ];
   } else {
     const isOrthogonal = edgeRouting === "orthogonal";
-    const effectiveLaneOffset = laneOffset !== undefined ? laneOffset : labelOffset;
+    const effectiveLaneOffset =
+      laneOffset !== undefined ? laneOffset : labelOffset;
     const effectiveSourceAnchor =
       edge.sourceAnchor ||
       (isOrthogonal
@@ -139,8 +157,18 @@ export function EdgeRenderer({
         ? getBestTargetAnchor(targetNode, sourceNode, nodes)
         : undefined);
 
-    const sp = resolveAnchor(sourceNode, effectiveSourceAnchor, targetCenter);
-    const tp = resolveAnchor(targetNode, effectiveTargetAnchor, sourceCenter);
+    const sp = resolveAnchor(
+      sourceNode,
+      effectiveSourceAnchor,
+      targetCenter,
+      sourcePortFraction,
+    );
+    const tp = resolveAnchor(
+      targetNode,
+      effectiveTargetAnchor,
+      sourceCenter,
+      targetPortFraction,
+    );
 
     if (isOrthogonal) {
       allPoints = buildAnchorAwarePath(
