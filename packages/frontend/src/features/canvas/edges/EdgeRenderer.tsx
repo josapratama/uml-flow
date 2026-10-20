@@ -2,6 +2,7 @@ import React from "react";
 import type { Edge, DiagramNode, Position } from "@uml-editor/shared";
 import { getVisualSize } from "../nodes/getVisualSize";
 import { getConnectionPoint, getMidpoint } from "./edge-geometry";
+import { getBestTargetAnchor } from "../utils/anchor-utils";
 import {
   getMarkerLength,
   isDashedEdge,
@@ -115,17 +116,27 @@ export function EdgeRenderer({
       tp,
     ];
   } else {
-    const sp = resolveAnchor(sourceNode, edge.sourceAnchor, targetCenter);
-    const tp = resolveAnchor(targetNode, edge.targetAnchor, sourceCenter);
-    if (
-      (edge.sourceAnchor || edge.targetAnchor) &&
-      edgeRouting === "orthogonal"
-    ) {
+    const isOrthogonal = edgeRouting === "orthogonal";
+    const effectiveSourceAnchor =
+      edge.sourceAnchor ||
+      (isOrthogonal
+        ? getBestTargetAnchor(sourceNode, targetNode)
+        : undefined);
+    const effectiveTargetAnchor =
+      edge.targetAnchor ||
+      (isOrthogonal
+        ? getBestTargetAnchor(targetNode, sourceNode)
+        : undefined);
+
+    const sp = resolveAnchor(sourceNode, effectiveSourceAnchor, targetCenter);
+    const tp = resolveAnchor(targetNode, effectiveTargetAnchor, sourceCenter);
+
+    if (isOrthogonal) {
       allPoints = buildAnchorAwarePath(
         sp,
         tp,
-        edge.sourceAnchor,
-        edge.targetAnchor,
+        effectiveSourceAnchor,
+        effectiveTargetAnchor,
         sourceNode,
         targetNode,
       );
