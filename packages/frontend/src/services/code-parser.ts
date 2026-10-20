@@ -1,4 +1,5 @@
 import type { Diagram, ClassNode } from "@uml-editor/shared";
+export { isMermaidCode, parseMermaidToDSL } from "./mermaid-importer";
 
 /**
  * Parse TypeScript/JavaScript code and generate a class diagram.
@@ -63,11 +64,16 @@ export function parseTypeScriptToClassDiagram(
         )
           continue;
 
-        // Method: name(...): type or name(...) {
+        // TypeScript Method: name(...): type or name(...) {
         const methodMatch = line.match(
           /^(?:(public|private|protected|static|abstract|readonly)\s+)*(\w+)\s*\(([^)]*)\)\s*(?::\s*(\w+[\[\]<>]*))?/,
         );
-        if (methodMatch && !line.includes("=")) {
+        // Java Method: [vis/modifiers] returnType methodName(params) {
+        const javaMethodMatch = line.match(
+          /^(?:(public|private|protected|static|abstract|final|synchronized)\s+)*([\w<>\[\]]+)\s+(\w+)\s*\(([^)]*)\)\s*(?:throws\s+[\w,\s]+)?\s*[{;]?\s*$/,
+        );
+
+        if (methodMatch && !line.includes("=") && methodMatch[2] !== "constructor") {
           const modifiers = line.substring(0, line.indexOf(methodMatch[2]!));
           const vis = modifiers.includes("private")
             ? "-"
@@ -81,8 +87,52 @@ export function parseTypeScriptToClassDiagram(
             ? paramsStr
                 .split(",")
                 .map((p) => {
-                  const parts = p.trim().split(/[:\s]+/);
-                  return { name: parts[0] || "arg", type: parts[1] || "any" };
+                  const raw = p.trim();
+                  if (raw.includes(":")) {
+                    const [pn, pt] = raw.split(":");
+                    return { name: pn.trim(), type: pt?.trim() || "any" };
+                  }
+                  const parts = raw.split(/\s+/);
+                  if (parts.length >= 2) {
+                    return {
+                      name: parts[parts.length - 1],
+                      type: parts.slice(0, -1).join(" "),
+                    };
+                  }
+                  return { name: parts[0] || "arg", type: "any" };
+                })
+                .filter((p) => p.name)
+            : [];
+          methods.push({
+            visibility: vis,
+            name: methodName,
+            params,
+            returnType,
+            isAbstract: modifiers.includes("abstract"),
+          });
+          continue;
+        } else if (javaMethodMatch && javaMethodMatch[3] !== "constructor") {
+          const modifiers = line.substring(0, line.indexOf(javaMethodMatch[3]!));
+          const vis = modifiers.includes("private")
+            ? "-"
+            : modifiers.includes("protected")
+              ? "#"
+              : "+";
+          const returnType = javaMethodMatch[2];
+          const methodName = javaMethodMatch[3];
+          const paramsStr = javaMethodMatch[4];
+          const params = paramsStr
+            ? paramsStr
+                .split(",")
+                .map((p) => {
+                  const parts = p.trim().split(/\s+/);
+                  if (parts.length >= 2) {
+                    return {
+                      name: parts[parts.length - 1],
+                      type: parts.slice(0, -1).join(" "),
+                    };
+                  }
+                  return { name: parts[0] || "arg", type: "any" };
                 })
                 .filter((p) => p.name)
             : [];
@@ -96,10 +146,35 @@ export function parseTypeScriptToClassDiagram(
           continue;
         }
 
-        // Property: name: type or name = value
+        // TypeScript Property: name: type or name = value
         const propMatch = line.match(
           /^(?:(public|private|protected|static|readonly)\s+)*(\w+)\s*[?!]?\s*(?::\s*([\w\[\]<>|&\s]+?))?(?:\s*=.*)?[;,]?\s*$/,
         );
+        // Java Field: [modifiers] Type name [= value];
+        const javaFieldMatch = line.match(
+          /^(?:(public|private|protected|static|final|volatile|transient)\s+)+([\w<>\[\]]+)\s+(\w+)(?:\s*=.*)?[;,]?\s*$/,
+        );
+
+        if (javaFieldMatch) {
+          const modifiers = line.substring(0, line.indexOf(javaFieldMatch[3]!));
+          const vis = modifiers.includes("private")
+            ? "-"
+            : modifiers.includes("protected")
+              ? "#"
+              : "+";
+          const propType = javaFieldMatch[2];
+          const propName = javaFieldMatch[3];
+          if (propName) {
+            attributes.push({
+              visibility: vis,
+              name: propName,
+              type: propType,
+              isStatic: modifiers.includes("static"),
+            });
+            continue;
+          }
+        }
+
         if (propMatch) {
           const modifiers = line.substring(0, line.indexOf(propMatch[2]!));
           const vis = modifiers.includes("private")

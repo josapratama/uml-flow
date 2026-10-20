@@ -25,7 +25,7 @@ export class ClassDiagramParser extends BaseDiagramParser {
           return;
       }
     }
-    if (token.type === "identifier") {
+    if (token.type === "identifier" || token.type === "string") {
       this.parseRelation();
       return;
     }

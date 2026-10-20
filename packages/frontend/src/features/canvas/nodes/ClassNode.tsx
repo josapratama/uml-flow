@@ -1,6 +1,6 @@
 import React from "react";
 import type { DiagramNode, ClassNode } from "@uml-editor/shared";
-import { resolveStyle, getStroke, getStrokeWidth } from "./useNodeStyle";
+import { resolveStyle, getStroke, getStrokeWidth, isDarkCanvas } from "./useNodeStyle";
 
 interface Props {
   node: DiagramNode;
@@ -44,17 +44,33 @@ export function ClassNodeRenderer({
   const titleCharW = s.fontSize * 0.65;
   const stereoCharW = (s.fontSize - 4) * 0.58;
 
+  const formatParams = (params: any): string => {
+    if (!params) return "";
+    if (typeof params === "string") return params;
+    if (Array.isArray(params)) {
+      return params
+        .map((p) => {
+          if (!p) return "";
+          if (typeof p === "string") return p;
+          return `${p.name || ""}${p.type ? ": " + p.type : ""}`;
+        })
+        .filter(Boolean)
+        .join(", ");
+    }
+    return "";
+  };
+
   let maxMemberLen = 0;
   for (const a of attributes)
     maxMemberLen = Math.max(
       maxMemberLen,
-      `${a.visibility}${a.name}: ${a.type}`.length,
+      `${a.visibility || ""}${a.name || ""}: ${a.type || ""}`.length,
     );
   for (const m of methods) {
-    const p = m.params.map((pp) => `${pp.name}: ${pp.type}`).join(", ");
+    const p = formatParams(m.params);
     maxMemberLen = Math.max(
       maxMemberLen,
-      `${m.visibility}${m.name}(${p}): ${m.returnType}`.length,
+      `${m.visibility || ""}${m.name || ""}(${p}): ${m.returnType || "void"}`.length,
     );
   }
 
@@ -63,8 +79,16 @@ export function ClassNodeRenderer({
   const stereoW = stereotype ? stereotype.length * stereoCharW + 28 : 0;
   const totalW = Math.max(100, titleW, memberW, stereoW);
 
-  const defaultHdrColor =
-    type === "interface"
+  const isDark = isDarkCanvas();
+  const defaultHdrColor = isDark
+    ? type === "interface"
+      ? "#1e293b"
+      : type === "abstract"
+        ? "#2b2318"
+        : type === "enum"
+          ? "#192820"
+          : "#25253e"
+    : type === "interface"
       ? "#E3F2FD"
       : type === "abstract"
         ? "#FFF3E0"
@@ -200,7 +224,7 @@ export function ClassNodeRenderer({
       )}
       {/* Methods */}
       {methods.map((m, i) => {
-        const params = m.params.map((p) => `${p.name}: ${p.type}`).join(", ");
+        const params = formatParams(m.params);
         return (
           <text
             key={`m${i}`}

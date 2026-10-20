@@ -11,38 +11,53 @@ export interface DiffResult {
 
 /**
  * Compare two diagrams and return the differences.
- * Useful for version comparison or before/after analysis.
+ * Uses smart matching: tries ID match first, then falls back to name + type matching.
  */
 export function compareDiagrams(before: Diagram, after: Diagram): DiffResult {
-  const beforeNodeIds = new Set(before.nodes.map((n) => n.id));
-  const afterNodeIds = new Set(after.nodes.map((n) => n.id));
-  const beforeEdgeIds = new Set(before.edges.map((e) => e.id));
-  const afterEdgeIds = new Set(after.edges.map((e) => e.id));
+  const beforeById = new Map(before.nodes.map((n) => [n.id, n]));
+  const beforeByName = new Map(
+    before.nodes.map((n) => [`${n.type}_${n.name}`, n]),
+  );
 
-  // Added/removed nodes
-  const addedNodes = after.nodes.filter((n) => !beforeNodeIds.has(n.id));
-  const removedNodes = before.nodes.filter((n) => !afterNodeIds.has(n.id));
+  const matchedBeforeIds = new Set<string>();
+  const nodePairs: Array<{ beforeNode: DiagramNode; afterNode: DiagramNode }> =
+    [];
+  const addedNodes: DiagramNode[] = [];
 
-  // Modified nodes (same ID, different content)
-  const modifiedNodes: { node: DiagramNode; changes: string[] }[] = [];
   for (const afterNode of after.nodes) {
-    if (!beforeNodeIds.has(afterNode.id)) continue;
-    const beforeNode = before.nodes.find((n) => n.id === afterNode.id);
-    if (!beforeNode) continue;
+    let matchedBefore: DiagramNode | undefined = beforeById.get(afterNode.id);
+    if (!matchedBefore) {
+      matchedBefore = beforeByName.get(`${afterNode.type}_${afterNode.name}`);
+    }
+    if (matchedBefore && !matchedBeforeIds.has(matchedBefore.id)) {
+      matchedBeforeIds.add(matchedBefore.id);
+      nodePairs.push({ beforeNode: matchedBefore, afterNode });
+    } else {
+      addedNodes.push(afterNode);
+    }
+  }
 
+  const removedNodes = before.nodes.filter((n) => !matchedBeforeIds.has(n.id));
+
+  // Modified nodes (content or layout differences)
+  const modifiedNodes: { node: DiagramNode; changes: string[] }[] = [];
+  for (const { beforeNode, afterNode } of nodePairs) {
     const changes: string[] = [];
-    if (beforeNode.name !== afterNode.name)
+    if (beforeNode.name !== afterNode.name) {
       changes.push(`name: "${beforeNode.name}" → "${afterNode.name}"`);
+    }
     if (
-      beforeNode.position.x !== afterNode.position.x ||
-      beforeNode.position.y !== afterNode.position.y
-    )
-      changes.push("position changed");
+      Math.abs(beforeNode.position.x - afterNode.position.x) > 2 ||
+      Math.abs(beforeNode.position.y - afterNode.position.y) > 2
+    ) {
+      changes.push("position moved");
+    }
     if (
-      beforeNode.size.width !== afterNode.size.width ||
-      beforeNode.size.height !== afterNode.size.height
-    )
-      changes.push("size changed");
+      Math.abs(beforeNode.size.width - afterNode.size.width) > 2 ||
+      Math.abs(beforeNode.size.height - afterNode.size.height) > 2
+    ) {
+      changes.push("size resized");
+    }
 
     // Check attributes/methods for class nodes
     if ("attributes" in beforeNode && "attributes" in afterNode) {
@@ -60,9 +75,24 @@ export function compareDiagrams(before: Diagram, after: Diagram): DiffResult {
     if (changes.length > 0) modifiedNodes.push({ node: afterNode, changes });
   }
 
-  // Added/removed edges
-  const addedEdges = after.edges.filter((e) => !beforeEdgeIds.has(e.id));
-  const removedEdges = before.edges.filter((e) => !afterEdgeIds.has(e.id));
+  // Edge diff (smart match by endpoint nodes and relation type)
+  const beforeEdgeKeys = new Set(
+    before.edges.map((e) => `${e.source}_${e.target}_${e.type}`),
+  );
+  const afterEdgeKeys = new Set(
+    after.edges.map((e) => `${e.source}_${e.target}_${e.type}`),
+  );
+
+  const addedEdges = after.edges.filter(
+    (e) =>
+      !beforeEdgeKeys.has(`${e.source}_${e.target}_${e.type}`) &&
+      !before.edges.some((be) => be.id === e.id),
+  );
+  const removedEdges = before.edges.filter(
+    (e) =>
+      !afterEdgeKeys.has(`${e.source}_${e.target}_${e.type}`) &&
+      !after.edges.some((ae) => ae.id === e.id),
+  );
 
   const summary =
     [

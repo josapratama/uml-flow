@@ -196,7 +196,7 @@ export function useEdgeActions({ diagram, history }: ActionDeps) {
       sourceAnchor?: string,
       targetAnchor?: string,
     ) => {
-      if (!diagram || sourceId === targetId) return;
+      if (!diagram) return;
       history.set({
         ...diagram,
         edges: [

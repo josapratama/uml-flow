@@ -26,7 +26,7 @@ export function layoutLayered(
 
   assignRanks(graph, diagram.edges, reverseForRank);
   orderWithinRanks(graph, diagram.edges);
-  assignPositions(graph, options);
+  assignPositions(graph, options, diagram.edges);
 
   const result = { ...diagram, nodes: [...diagram.nodes] };
   for (let i = 0; i < result.nodes.length; i++) {
@@ -150,6 +150,7 @@ function orderWithinRanks(graph: Map<string, LayoutNode>, edges: Edge[]): void {
 function assignPositions(
   graph: Map<string, LayoutNode>,
   options: LayoutOptions,
+  edges: Edge[] = [],
 ): void {
   const rankGroups = new Map<number, LayoutNode[]>();
   for (const [, node] of graph) {
@@ -174,6 +175,12 @@ function assignPositions(
     totalSecondary -= options.nodeSpacing;
 
     let secondaryOffset = Math.max(60, 400 - totalSecondary / 2);
+
+    // If an intermediate rank with 1 node is bypassed by an edge spanning across it,
+    // stagger it to the side to create a clear triangular layout and prevent overlapping lines
+    if (group.length === 1 && hasBypassEdge(rank, graph, edges)) {
+      secondaryOffset = Math.max(60, secondaryOffset - 160);
+    }
     let maxPrimary = 0;
 
     for (const node of group) {
@@ -192,3 +199,23 @@ function assignPositions(
     primaryOffset += maxPrimary + options.rankSpacing;
   }
 }
+
+/** Check if any edge spans across this rank from a lower rank to a higher rank */
+function hasBypassEdge(
+  rank: number,
+  graph: Map<string, LayoutNode>,
+  edges: Edge[],
+): boolean {
+  for (const edge of edges) {
+    const src = graph.get(edge.source);
+    const tgt = graph.get(edge.target);
+    if (!src || !tgt) continue;
+    const minR = Math.min(src.rank, tgt.rank);
+    const maxR = Math.max(src.rank, tgt.rank);
+    if (rank > minR && rank < maxR) {
+      return true;
+    }
+  }
+  return false;
+}
+

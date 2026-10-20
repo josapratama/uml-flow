@@ -45,6 +45,18 @@ const EXPORT_OPTIONS: ExportOption[] = [
     description: "Generate Java classes",
   },
   {
+    id: "sql",
+    label: "SQL DDL",
+    icon: "🗄️",
+    description: "Generate SQL CREATE TABLE schema",
+  },
+  {
+    id: "xstate",
+    label: "XState Machine",
+    icon: "⚙️",
+    description: "XState v5 & TypeScript union",
+  },
+  {
     id: "clipboard-svg",
     label: "Copy as SVG",
     icon: "📎",
@@ -68,6 +80,8 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const isClassDiagram = diagramType === "class";
+  const isErdDiagram = diagramType === "erd";
+  const isStateDiagram = diagramType === "state";
 
   // Close on outside click
   useEffect(() => {
@@ -83,22 +97,29 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
   return (
     <div ref={ref} className="relative">
       <button
-        className="px-2.5 py-1.5 bg-surface-3 text-text text-[11px] border border-border rounded-md hover:bg-surface-4 hover:text-text transition-colors flex items-center gap-1 disabled:opacity-40"
+        className={`h-8 px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 disabled:opacity-35 disabled:cursor-not-allowed ${
+          open
+            ? "bg-surface-4 text-text border-accent shadow-xs"
+            : "bg-surface-3 text-text-muted hover:text-text hover:bg-surface-4 border-border"
+        }`}
         onClick={() => setOpen(!open)}
         disabled={disabled}
+        title="Export diagram as image, code, or data"
       >
-        📥 Export
+        <span>📥</span>
+        <span className="hidden 2xl:inline">Export</span>
         <svg
-          width="10"
-          height="10"
+          width="8"
+          height="8"
           viewBox="0 0 10 10"
-          fill="currentColor"
-          className="opacity-50"
+          className={`transition-transform opacity-60 ${open ? "rotate-180" : ""}`}
         >
           <path
-            d="M2 4 L5 7 L8 4"
+            d="M2 3.5 L5 6.5 L8 3.5"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             fill="none"
           />
         </svg>
@@ -113,7 +134,12 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
           </div>
           {EXPORT_OPTIONS.map((opt) => {
             const isCodeGen = opt.id === "typescript" || opt.id === "java";
-            const isDisabled = isCodeGen && !isClassDiagram;
+            const isSql = opt.id === "sql";
+            const isXState = opt.id === "xstate";
+            const isDisabled =
+              (isCodeGen && !isClassDiagram) ||
+              (isSql && !isErdDiagram) ||
+              (isXState && !isStateDiagram);
             return (
               <button
                 key={opt.id}
@@ -129,7 +155,13 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
                   }
                 }}
                 title={
-                  isDisabled ? "Only available for Class diagrams" : undefined
+                  isDisabled
+                    ? isCodeGen
+                      ? "Only available for Class diagrams"
+                      : isSql
+                        ? "Only available for ERD diagrams"
+                        : "Only available for State diagrams"
+                    : undefined
                 }
                 disabled={isDisabled}
               >
@@ -139,7 +171,7 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
                     {opt.label}
                     {isDisabled && (
                       <span className="text-[9px] text-text-muted bg-surface-3 px-1 rounded">
-                        class only
+                        {isCodeGen ? "class only" : isSql ? "erd only" : "state only"}
                       </span>
                     )}
                   </div>

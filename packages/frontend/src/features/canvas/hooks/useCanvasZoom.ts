@@ -25,28 +25,44 @@ export function useCanvasZoom(
   );
 
   const zoomToFit = useCallback(() => {
-    if (!diagram || diagram.nodes.length === 0) return;
+    if (!diagram) return;
+    const hasNodes = diagram.nodes && diagram.nodes.length > 0;
+    const hasParticipants = diagram.participants && diagram.participants.length > 0;
+    if (!hasNodes && !hasParticipants) return;
     const svgEl = svgRef.current;
     if (!svgEl) return;
     const rect = svgEl.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
     let minX = Infinity,
       minY = Infinity,
       maxX = -Infinity,
       maxY = -Infinity;
-    for (const n of diagram.nodes) {
+
+    for (const n of diagram.nodes || []) {
       minX = Math.min(minX, n.position.x);
       minY = Math.min(minY, n.position.y);
-      maxX = Math.max(maxX, n.position.x + n.size.width);
-      maxY = Math.max(maxY, n.position.y + n.size.height);
+      maxX = Math.max(maxX, n.position.x + (n.size?.width || 120));
+      maxY = Math.max(maxY, n.position.y + (n.size?.height || 60));
     }
+
+    for (const p of diagram.participants || []) {
+      minX = Math.min(minX, p.position.x - 60);
+      minY = Math.min(minY, p.position.y - 20);
+      maxX = Math.max(maxX, p.position.x + 60);
+      const msgCount = diagram.messages?.length || 0;
+      maxY = Math.max(maxY, 120 + (msgCount + 2) * 50);
+    }
+
     const pad = 60;
-    const worldW = maxX - minX + pad * 2;
-    const worldH = maxY - minY + pad * 2;
-    const newScale = Math.min(rect.width / worldW, rect.height / worldH, 2);
+    const worldW = Math.max(100, maxX - minX + pad * 2);
+    const worldH = Math.max(100, maxY - minY + pad * 2);
+    const newScale = Math.min(rect.width / worldW, rect.height / worldH, 1.15);
     const cx = (minX + maxX) / 2,
       cy = (minY + maxY) / 2;
+
     setView({
-      scale: newScale,
+      scale: Math.max(0.35, newScale),
       offsetX: rect.width / 2 - cx * newScale,
       offsetY: rect.height / 2 - cy * newScale,
     });
@@ -73,7 +89,7 @@ export function useCanvasZoom(
       const pad = 80;
       const worldW = maxX - minX + pad * 2;
       const worldH = maxY - minY + pad * 2;
-      const newScale = Math.min(rect.width / worldW, rect.height / worldH, 2);
+      const newScale = Math.min(rect.width / worldW, rect.height / worldH, 1.5);
       const cx = (minX + maxX) / 2,
         cy = (minY + maxY) / 2;
       setView({

@@ -4,6 +4,7 @@ import {
   getExitPoint,
   getStubPoint,
   pointInsideBounds,
+  lineIntersectsBox,
 } from "./edge-geometry";
 
 /**
@@ -15,6 +16,81 @@ export function buildStraightPath(
   target: Position,
 ): Position[] {
   return [source, target];
+}
+
+/**
+ * Builds a path with obstacle avoidance.
+ * If the direct line between source and target intersects any intermediate node,
+ * it routes around the obstacle(s) cleanly to prevent overlapping lines and obscured nodes.
+ */
+export function routeWithObstacleAvoidance(
+  source: Position,
+  target: Position,
+  sourceNode: DiagramNode,
+  targetNode: DiagramNode,
+  allNodes: DiagramNode[],
+): Position[] {
+  const obstacles = allNodes.filter((n) => {
+    if (n.id === sourceNode.id || n.id === targetNode.id) return false;
+    const b = getNodeBounds(n, 12);
+    return lineIntersectsBox(source, target, b);
+  });
+
+  if (obstacles.length === 0) {
+    return [source, target];
+  }
+
+  // Obstacle detected! Route around it cleanly.
+  const isVertical =
+    Math.abs(target.y - source.y) >= Math.abs(target.x - source.x);
+
+  if (isVertical) {
+    const maxRight = Math.max(
+      ...obstacles.map((o) => getNodeBounds(o, 20).right),
+      getNodeBounds(sourceNode, 20).right,
+      getNodeBounds(targetNode, 20).right,
+    );
+    const bypassX = maxRight + 24;
+
+    const startPt: Position = {
+      x: getNodeBounds(sourceNode, 0).right,
+      y: source.y,
+    };
+    const endPt: Position = {
+      x: getNodeBounds(targetNode, 0).right,
+      y: target.y,
+    };
+
+    return [
+      startPt,
+      { x: bypassX, y: startPt.y },
+      { x: bypassX, y: endPt.y },
+      endPt,
+    ];
+  } else {
+    const maxBottom = Math.max(
+      ...obstacles.map((o) => getNodeBounds(o, 20).bottom),
+      getNodeBounds(sourceNode, 20).bottom,
+      getNodeBounds(targetNode, 20).bottom,
+    );
+    const bypassY = maxBottom + 24;
+
+    const startPt: Position = {
+      x: source.x,
+      y: getNodeBounds(sourceNode, 0).bottom,
+    };
+    const endPt: Position = {
+      x: target.x,
+      y: getNodeBounds(targetNode, 0).bottom,
+    };
+
+    return [
+      startPt,
+      { x: startPt.x, y: bypassY },
+      { x: endPt.x, y: bypassY },
+      endPt,
+    ];
+  }
 }
 
 /**

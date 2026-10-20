@@ -55,6 +55,10 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ diagram, options }),
     });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err || `Export failed: ${res.status}`);
+    }
     if (options.format === "json")
       return JSON.stringify(await res.json(), null, 2);
     return res.text();
@@ -74,5 +78,45 @@ export const api = {
     preset: string,
   ): Promise<{ diagram: Diagram }> {
     return this.layout(diagram, undefined, preset);
+  },
+
+  // --- Diagram Storage API ---
+  async getDiagrams(): Promise<Diagram[]> {
+    const res = await fetch(`${BASE_URL}/diagrams`);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return res.json();
+  },
+
+  async getDiagram(id: string): Promise<Diagram> {
+    const res = await fetch(`${BASE_URL}/diagrams/${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return res.json();
+  },
+
+  async saveServerDiagram(diagram: Diagram): Promise<Diagram> {
+    const res = await fetch(`${BASE_URL}/diagrams`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(diagram),
+    });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return res.json();
+  },
+
+  async updateServerDiagram(id: string, diagram: Diagram): Promise<Diagram> {
+    const res = await fetch(`${BASE_URL}/diagrams/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(diagram),
+    });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return res.json();
+  },
+
+  async deleteServerDiagram(id: string): Promise<boolean> {
+    const res = await fetch(`${BASE_URL}/diagrams/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    return res.ok;
   },
 };

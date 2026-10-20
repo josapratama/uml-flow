@@ -1,6 +1,6 @@
 import React from "react";
 import type { ERDEntity } from "@uml-editor/shared";
-import { resolveStyle, getStroke, getStrokeWidth } from "./useNodeStyle";
+import { resolveStyle, getStroke, getStrokeWidth, isDarkCanvas } from "./useNodeStyle";
 
 interface Props {
   node: ERDEntity;
@@ -22,7 +22,9 @@ export function ERDNodeRenderer({
   const isWeak = type === "weak-entity";
   const headerH = 32;
   const rowH = Math.max(20, s.fontSize + 7);
-  const headerColor = (node as any).style ? s.backgroundColor : "#E8EAF6";
+  const isDark = isDarkCanvas();
+  const defaultHeaderColor = isDark ? "#282a40" : "#E8EAF6";
+  const headerColor = (node as any).style?.backgroundColor || defaultHeaderColor;
 
   return (
     <g

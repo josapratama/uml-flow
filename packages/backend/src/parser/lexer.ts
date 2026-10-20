@@ -50,9 +50,9 @@ export class Lexer {
         this.readBracket();
         continue;
       }
+      if (this.tryRelation()) continue;
       if (this.tryVisibility(ch)) continue;
       if (this.tryERDPrimaryKey(ch)) continue;
-      if (this.tryRelation()) continue;
       if (PUNCTUATION.has(ch)) {
         this.emitSingle("punctuation", ch);
         continue;

@@ -92,6 +92,16 @@ interface CanvasProps {
   snapEnabled: boolean;
   edgeRouting?: "straight" | "orthogonal";
   activeEdgeTool?: string | null;
+  onQuickAddNode?: (sourceNodeId: string) => void;
+  onContextMenu?: (
+    e: React.MouseEvent,
+    target: {
+      type: "canvas" | "node" | "edge";
+      id?: string;
+      worldPos: Position;
+      multiNodeIds?: string[];
+    },
+  ) => void;
 }
 
 export function Canvas({
@@ -127,6 +137,8 @@ export function Canvas({
   snapEnabled,
   edgeRouting,
   activeEdgeTool,
+  onQuickAddNode,
+  onContextMenu,
 }: CanvasProps) {
   // --- State ---
   const state = useCanvasState();
@@ -155,6 +167,18 @@ export function Canvas({
     hoveredNodeId,
     setHoveredNodeId,
   } = state;
+
+  const screenToWorld = useCallback(
+    (clientX: number, clientY: number): Position => {
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return { x: 0, y: 0 };
+      return {
+        x: Math.round((clientX - rect.left - view.offsetX) / view.scale),
+        y: Math.round((clientY - rect.top - view.offsetY) / view.scale),
+      };
+    },
+    [svgRef, view],
+  );
 
   // --- Handlers ---
   const { handleMouseDown, handleMouseMove, handleMouseUp, handleWheel } =
@@ -197,6 +221,20 @@ export function Canvas({
     setView,
     diagram,
   );
+
+  // Auto-fit diagram to canvas viewport when a diagram is loaded or changes
+  const prevDiagramKey = React.useRef<string>("");
+  React.useEffect(() => {
+    if (!diagram) return;
+    const key = `${diagram.name}_${diagram.type}_${diagram.nodes.length}_${diagram.participants?.length || 0}`;
+    if (prevDiagramKey.current !== key) {
+      prevDiagramKey.current = key;
+      const t = setTimeout(() => {
+        zoomToFit();
+      }, 80);
+      return () => clearTimeout(t);
+    }
+  }, [diagram, zoomToFit]);
 
   // --- Node interactions ---
   const startNodeDrag = useCallback(
@@ -327,28 +365,53 @@ export function Canvas({
 
   // --- Empty state ---
   if (!diagram) {
+    const isDark = canvasTheme === "dark";
     return (
-      <div className="w-full h-full flex items-center justify-center bg-slate-50">
-        <div className="text-center text-slate-400">
-          <svg
-            className="mx-auto mb-4"
-            width="56"
-            height="56"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
+      <div
+        className={`w-full h-full flex items-center justify-center transition-colors duration-200 ${
+          isDark ? "bg-[#161625] text-slate-500" : "bg-slate-50/70 text-slate-400"
+        }`}
+      >
+        <div className="text-center max-w-sm px-6">
+          <div
+            className={`w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center border shadow-sm ${
+              isDark
+                ? "bg-[#1f1f33] border-slate-700/60 text-indigo-400/90"
+                : "bg-white border-slate-200 text-indigo-600/90"
+            }`}
           >
-            <rect x="3" y="3" width="7" height="7" rx="1.5" />
-            <rect x="14" y="3" width="7" height="7" rx="1.5" />
-            <rect x="8" y="14" width="7" height="7" rx="1.5" />
-          </svg>
-          <p className="text-sm">
-            Press{" "}
-            <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-xs font-mono">
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+            >
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="8" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+          </div>
+          <h3
+            className={`text-sm font-semibold mb-1 ${
+              isDark ? "text-slate-200" : "text-slate-700"
+            }`}
+          >
+            No Diagram Loaded
+          </h3>
+          <p className="text-xs mb-3 opacity-80 leading-relaxed">
+            Write your DSL code in the editor panel or press{" "}
+            <kbd
+              className={`px-1.5 py-0.5 rounded text-[11px] font-mono border shadow-sm ${
+                isDark
+                  ? "bg-[#25253e] border-slate-700 text-slate-200"
+                  : "bg-white border-slate-300 text-slate-800"
+              }`}
+            >
               Ctrl+Enter
             </kbd>{" "}
-            to compile
+            to compile.
           </p>
         </div>
       </div>
@@ -358,32 +421,47 @@ export function Canvas({
   return (
     <div className="w-full h-full relative">
       {/* Zoom controls */}
-      <div className="absolute top-3 right-3 flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm z-10">
+      <div className={`absolute top-3 right-3 flex items-center gap-1 rounded-xl px-2 py-1 shadow-lg backdrop-blur-md z-10 border transition-all ${
+        canvasTheme === "dark"
+          ? "bg-surface-2/90 border-border/80 text-text"
+          : "bg-white/90 border-slate-200 text-slate-700"
+      }`}>
         <button
           onClick={zoomIn}
-          className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600"
+          className={`w-7 h-7 flex items-center justify-center rounded-lg font-medium transition-colors ${
+            canvasTheme === "dark" ? "hover:bg-surface-3 text-text" : "hover:bg-slate-100 text-slate-700"
+          }`}
+          title="Zoom in (+)"
         >
           +
         </button>
-        <span className="text-[10px] text-slate-500 min-w-[36px] text-center">
+        <span className="text-[11px] font-mono min-w-[36px] text-center opacity-80">
           {Math.round(view.scale * 100)}%
         </span>
         <button
           onClick={zoomOut}
-          className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600"
+          className={`w-7 h-7 flex items-center justify-center rounded-lg font-medium transition-colors ${
+            canvasTheme === "dark" ? "hover:bg-surface-3 text-text" : "hover:bg-slate-100 text-slate-700"
+          }`}
+          title="Zoom out (-)"
         >
           −
         </button>
         <button
           onClick={zoomReset}
-          className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 text-xs"
+          className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition-colors ${
+            canvasTheme === "dark" ? "hover:bg-surface-3 text-text" : "hover:bg-slate-100 text-slate-700"
+          }`}
+          title="Reset zoom (100%)"
         >
           ⟲
         </button>
         <button
           onClick={zoomToFit}
-          className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 text-[9px]"
-          title="Zoom to fit"
+          className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition-colors ${
+            canvasTheme === "dark" ? "hover:bg-surface-3 text-text" : "hover:bg-slate-100 text-slate-700"
+          }`}
+          title="Zoom to fit diagram"
         >
           ⊡
         </button>
@@ -416,13 +494,21 @@ export function Canvas({
         ref={svgRef}
         className="w-full h-full canvas-svg-element"
         style={{
-          backgroundColor: canvasTheme === "dark" ? "#1a1a2e" : "#fafafa",
+          backgroundColor: canvasTheme === "dark" ? "#12121f" : "#f8fafc",
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          const pt = screenToWorld(e.clientX, e.clientY);
+          onContextMenu?.(e, {
+            type: "canvas",
+            worldPos: pt,
+          });
+        }}
       >
         <defs>
           <pattern
@@ -435,7 +521,7 @@ export function Canvas({
             <path
               d="M 20 0 L 0 0 0 20"
               fill="none"
-              stroke={canvasTheme === "dark" ? "#2a2a4a" : "#e2e8f0"}
+              stroke={canvasTheme === "dark" ? "#222238" : "#e2e8f0"}
               strokeWidth="0.5"
             />
           </pattern>
@@ -465,11 +551,6 @@ export function Canvas({
 
         <g
           transform={`translate(${view.offsetX},${view.offsetY}) scale(${view.scale})`}
-          style={
-            canvasTheme === "dark"
-              ? { filter: "invert(0.78) hue-rotate(180deg) saturate(1.2)" }
-              : undefined
-          }
         >
           {diagram.type === "sequence" ? (
             <SequenceRenderer
@@ -555,6 +636,18 @@ export function Canvas({
                         onNodeSelect(null);
                       }
                     }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onEdgeSelect(edge.id);
+                      onNodeSelect(null);
+                      const pt = screenToWorld(e.clientX, e.clientY);
+                      onContextMenu?.(e, {
+                        type: "edge",
+                        id: edge.id,
+                        worldPos: pt,
+                      });
+                    }}
                     onWaypointDragStart={(idx, pt, e) =>
                       startWpDrag(edge.id, idx, pt, e)
                     }
@@ -636,6 +729,26 @@ export function Canvas({
                         prev === node.id ? null : prev,
                       )
                     }
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      let currentMulti: string[] = [];
+                      if (!multiSelected.has(node.id)) {
+                        onNodeSelect(node.id);
+                        onEdgeSelect(null);
+                        setMultiSelected(new Set());
+                        currentMulti = [node.id];
+                      } else {
+                        currentMulti = [...multiSelected];
+                      }
+                      const pt = screenToWorld(e.clientX, e.clientY);
+                      onContextMenu?.(e, {
+                        type: "node",
+                        id: node.id,
+                        worldPos: pt || node.position,
+                        multiNodeIds: currentMulti,
+                      });
+                    }}
                   >
                     <NodeRenderer
                       node={node}
@@ -700,6 +813,48 @@ export function Canvas({
                         handleResizeStart(node.id, handle, e)
                       }
                     />
+                    {/* Quick-Add Node Connector button */}
+                    {node.id === selectedNodeId &&
+                      multiSelected.size === 0 &&
+                      onQuickAddNode &&
+                      (() => {
+                        const vs = getVisualSize(node);
+                        return (
+                          <g
+                            className="cursor-pointer group"
+                            transform={`translate(${node.position.x + vs.width + 16}, ${node.position.y + vs.height / 2})`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onQuickAddNode(node.id);
+                            }}
+                          >
+                            <line
+                              x1={-16}
+                              y1={0}
+                              x2={-4}
+                              y2={0}
+                              stroke="#6366f1"
+                              strokeWidth="1.5"
+                              strokeDasharray="2,2"
+                            />
+                            <circle
+                              r={10}
+                              fill="#6366f1"
+                              className="hover:fill-indigo-500 transition-colors shadow-sm"
+                            />
+                            <text
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              fill="#ffffff"
+                              fontSize="13"
+                              fontWeight="bold"
+                              className="select-none pointer-events-none"
+                            >
+                              +
+                            </text>
+                          </g>
+                        );
+                      })()}
                   </g>
                   {/* Inline editor for node rename */}
                   {editingNodeId === node.id &&

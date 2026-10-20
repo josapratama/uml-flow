@@ -36,15 +36,22 @@ export function getVisualSize(node: DiagramNode): Size {
     for (const a of cn.attributes || [])
       maxMemberLen = Math.max(
         maxMemberLen,
-        `${a.visibility}${a.name}${a.type ? `: ${a.type}` : ""}`.length,
+        `${a.visibility || ""}${a.name || ""}${a.type ? `: ${a.type}` : ""}`.length,
       );
     for (const m of cn.methods || []) {
-      const p = (m.params || [])
-        .map((pp: any) => `${pp.name}: ${pp.type}`)
-        .join(", ");
+      const p = Array.isArray(m.params)
+        ? m.params
+            .map((pp: any) =>
+              typeof pp === "string" ? pp : `${pp?.name || ""}${pp?.type ? ": " + pp.type : ""}`,
+            )
+            .filter(Boolean)
+            .join(", ")
+        : typeof m.params === "string"
+          ? m.params
+          : "";
       maxMemberLen = Math.max(
         maxMemberLen,
-        `${m.visibility}${m.name}(${p}): ${m.returnType}`.length,
+        `${m.visibility || ""}${m.name || ""}(${p}): ${m.returnType || "void"}`.length,
       );
     }
 

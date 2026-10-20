@@ -190,7 +190,14 @@ function renderNode(node: any): string {
   const { position, size, name } = node;
   let svg = "";
 
-  if ("attributes" in node && "methods" in node) {
+  if (
+    node.type === "class" ||
+    node.type === "interface" ||
+    node.type === "abstract" ||
+    node.type === "enum" ||
+    "attributes" in node ||
+    "methods" in node
+  ) {
     // Class / interface / abstract / enum node
     const headerColor =
       node.type === "interface"
@@ -219,20 +226,35 @@ function renderNode(node: any): string {
     svg += `<line x1="${position.x}" y1="${sepY}" x2="${position.x + size.width}" y2="${sepY}" stroke="#ccc" stroke-width="1"/>`;
     let y = sepY + 15;
     for (const attr of node.attributes || []) {
-      svg += `<text x="${position.x + 8}" y="${y}" font-size="11" font-family="monospace" fill="#555">${escapeXml((attr.visibility || "") + attr.name + (attr.type ? ": " + attr.type : ""))}</text>`;
+      const vis = attr.visibility || "";
+      const attrName = attr.name || "";
+      const attrType = attr.type ? ": " + attr.type : "";
+      svg += `<text x="${position.x + 8}" y="${y}" font-size="11" font-family="monospace" fill="#555">${escapeXml(vis + attrName + attrType)}</text>`;
       y += 17;
     }
-    if (node.methods?.length > 0) {
+    if (node.methods && node.methods.length > 0) {
       svg += `<line x1="${position.x}" y1="${y - 2}" x2="${position.x + size.width}" y2="${y - 2}" stroke="#ccc" stroke-width="1"/>`;
       y += 8;
       for (const m of node.methods) {
-        const params =
-          m.params?.map((p: any) => `${p.name}: ${p.type}`).join(", ") || "";
-        svg += `<text x="${position.x + 8}" y="${y}" font-size="11" font-family="monospace" fill="#555">${escapeXml(`${m.visibility || ""}${m.name}(${params}): ${m.returnType || "void"}`)}</text>`;
+        const params = Array.isArray(m.params)
+          ? m.params
+              .map((p: any) =>
+                typeof p === "string"
+                  ? p
+                  : `${p.name || ""}${p.type ? ": " + p.type : ""}`,
+              )
+              .join(", ")
+          : typeof m.params === "string"
+            ? m.params
+            : "";
+        svg += `<text x="${position.x + 8}" y="${y}" font-size="11" font-family="monospace" fill="#555">${escapeXml(`${m.visibility || ""}${m.name || ""}(${params}): ${m.returnType || "void"}`)}</text>`;
         y += 17;
       }
     }
-  } else if (node.type === "entity" && "columns" in node) {
+  } else if (
+    node.type === "entity" ||
+    (node.type === "weak-entity" || ("attributes" in node && !("methods" in node)))
+  ) {
     // ERD entity
     svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${size.height}" fill="white" stroke="#333" stroke-width="1.5" rx="3"/>`;
     svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="28" fill="#FFF3E0" stroke="#333" stroke-width="1.5" rx="3"/>`;
@@ -240,8 +262,11 @@ function renderNode(node: any): string {
     svg += `<text x="${position.x + size.width / 2}" y="${position.y + 19}" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">${escapeXml(name)}</text>`;
     svg += `<line x1="${position.x}" y1="${position.y + 30}" x2="${position.x + size.width}" y2="${position.y + 30}" stroke="#ccc" stroke-width="1"/>`;
     let y = position.y + 45;
-    for (const col of node.columns || []) {
-      const icon = col.isPrimary ? "🔑" : col.isForeignKey ? "🔗" : "  ";
+    const cols = node.attributes || node.columns || [];
+    for (const col of cols) {
+      const isPk = col.isPrimaryKey ?? col.isPrimary ?? false;
+      const isFk = col.isForeignKey ?? col.isFk ?? false;
+      const icon = isPk ? "🔑" : isFk ? "🔗" : "  ";
       svg += `<text x="${position.x + 8}" y="${y}" font-size="11" font-family="monospace" fill="#555">${icon} ${escapeXml(col.name)}: ${escapeXml(col.type)}</text>`;
       y += 17;
     }
@@ -389,12 +414,15 @@ function renderEdge(edge: any): string {
 
   if (edge.label) {
     const mid = points[Math.floor(points.length / 2)];
-    svg += `<text x="${mid.x}" y="${mid.y - 8}" font-size="11" font-family="sans-serif" fill="#444" text-anchor="middle">${escapeXml(edge.label.text)}</text>`;
+    const labelText =
+      typeof edge.label === "string" ? edge.label : edge.label.text || "";
+    svg += `<text x="${mid.x}" y="${mid.y - 8}" font-size="11" font-family="sans-serif" fill="#444" text-anchor="middle">${escapeXml(labelText)}</text>`;
   }
   return svg;
 }
 
-function escapeXml(str: string): string {
+function escapeXml(str: string | undefined | null): string {
+  if (str == null) return "";
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

@@ -12,6 +12,7 @@ interface DSLEditorProps {
   onChange: (code: string) => void;
   onCompile: (code: string) => void;
   errors: any[];
+  onSyncToCode?: () => void;
 }
 
 export function DSLEditor({
@@ -19,6 +20,7 @@ export function DSLEditor({
   onChange,
   onCompile,
   errors,
+  onSyncToCode,
 }: DSLEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
@@ -97,11 +99,34 @@ export function DSLEditor({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex justify-between items-center px-3 py-2 bg-surface-3 border-b border-border">
-        <span className="text-xs text-text-muted font-medium">Editor</span>
-        <span className="text-[10px] text-text-muted/60">
-          Ctrl+Enter to compile
-        </span>
+      <div className="flex justify-between items-center px-3 py-1.5 bg-surface-2 border-b border-border select-none h-8">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-accent" />
+          <span className="text-xs text-text font-semibold">DSL Source</span>
+          <span className="text-[10px] text-text-muted/60 font-mono">
+            ({lineCount} lines)
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {onSyncToCode && (
+            <button
+              onClick={onSyncToCode}
+              title="Sync visual canvas modifications into this DSL code"
+              className="px-2 py-0.5 text-[10px] font-medium rounded bg-surface-3 hover:bg-surface-4 text-text-muted hover:text-text border border-border transition-colors flex items-center gap-1 active:scale-95"
+            >
+              <span>⟳</span>
+              <span>Sync from Canvas</span>
+            </button>
+          )}
+          {errors.length > 0 && (
+            <span className="text-[10px] font-semibold text-error bg-error/15 px-1.5 py-0.5 rounded border border-error/30">
+              {errors.length} {errors.length === 1 ? "error" : "errors"}
+            </span>
+          )}
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-3 text-text-muted border border-border/50">
+            Ctrl+Enter
+          </span>
+        </div>
       </div>
 
       {/* Search bar */}

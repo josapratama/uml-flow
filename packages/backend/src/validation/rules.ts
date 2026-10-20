@@ -40,6 +40,30 @@ export function validateDiagram(diagram: Diagram): ValidationIssue[] {
 }
 
 function validateGeneric(diagram: Diagram, issues: ValidationIssue[]) {
+  // Sequence diagrams validate participants and messages separately
+  if (diagram.type === "sequence") {
+    const participants = diagram.participants || [];
+    const messages = diagram.messages || [];
+    const pIds = new Set(participants.map((p) => p.id));
+    for (const msg of messages) {
+      if (!pIds.has(msg.from)) {
+        issues.push({
+          severity: "error",
+          message: `Message source "${msg.from}" not found`,
+          rule: "broken-message",
+        });
+      }
+      if (!pIds.has(msg.to)) {
+        issues.push({
+          severity: "error",
+          message: `Message target "${msg.to}" not found`,
+          rule: "broken-message",
+        });
+      }
+    }
+    return;
+  }
+
   // Check for orphan nodes (no connections)
   for (const node of diagram.nodes) {
     const hasEdge = diagram.edges.some(

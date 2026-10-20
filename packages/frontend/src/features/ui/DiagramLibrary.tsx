@@ -157,9 +157,12 @@ export function DiagramLibrary({
           )}
         </div>
 
-        <div className="px-4 py-2 border-t border-border text-[10px] text-text-muted">
-          {diagrams.length} saved diagram{diagrams.length !== 1 ? "s" : ""} ·
-          Stored in browser (localStorage)
+        <div className="px-4 py-2 border-t border-border text-[10px] text-text-muted flex items-center justify-between">
+          <span>{diagrams.length} saved diagram{diagrams.length !== 1 ? "s" : ""}</span>
+          <span className="text-success/90 flex items-center gap-1">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-success"></span>
+            Synced with server
+          </span>
         </div>
       </div>
     </div>

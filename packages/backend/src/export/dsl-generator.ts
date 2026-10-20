@@ -48,7 +48,14 @@ export function diagramToDSL(diagram: Diagram): string {
 function generateClassDSL(diagram: Diagram): string {
   let dsl = "";
   for (const node of diagram.nodes) {
-    if ("attributes" in node && "methods" in node) {
+    if (
+      node.type === "class" ||
+      node.type === "interface" ||
+      node.type === "abstract" ||
+      node.type === "enum" ||
+      "attributes" in node ||
+      "methods" in node
+    ) {
       const cn = node as any;
       const keyword =
         cn.type === "abstract"
@@ -60,13 +67,21 @@ function generateClassDSL(diagram: Diagram): string {
               : "class";
       dsl += `${keyword} ${cn.name} {\n`;
       for (const attr of cn.attributes || []) {
-        dsl += `  ${attr.visibility || ""}${attr.name}${attr.type ? ": " + attr.type : ""}\n`;
+        dsl += `  ${attr.visibility || ""}${attr.name || ""}${attr.type ? ": " + attr.type : ""}\n`;
       }
       for (const method of cn.methods || []) {
-        const params = (method.params || [])
-          .map((p: any) => `${p.name}: ${p.type}`)
-          .join(", ");
-        dsl += `  ${method.visibility || ""}${method.name}(${params}): ${method.returnType || "void"}\n`;
+        const params = Array.isArray(method.params)
+          ? method.params
+              .map((p: any) =>
+                typeof p === "string"
+                  ? p
+                  : `${p.name || ""}${p.type ? ": " + p.type : ""}`,
+              )
+              .join(", ")
+          : typeof method.params === "string"
+            ? method.params
+            : "";
+        dsl += `  ${method.visibility || ""}${method.name || ""}(${params}): ${method.returnType || "void"}\n`;
       }
       dsl += "}\n\n";
     }
@@ -197,9 +212,19 @@ function generateActivityDSL(diagram: Diagram): string {
         ? ` [${(edge as any).condition}]`
         : "";
       const label = edge.label ? ` : ${edge.label.text}` : "";
-      // Only emit explicit edges for non-trivially sequential flow
-      if (edge.type === "flow" && !cond && !label) continue;
-      dsl += `${src.name} --> ${tgt.name}${cond}${label}\n`;
+      const srcName =
+        src.type === "start"
+          ? "[start]"
+          : src.type === "end"
+            ? "[end]"
+            : formatName(src.name);
+      const tgtName =
+        tgt.type === "start"
+          ? "[start]"
+          : tgt.type === "end"
+            ? "[end]"
+            : formatName(tgt.name);
+      dsl += `${srcName} --> ${tgtName}${cond}${label}\n`;
     }
   }
 
@@ -239,16 +264,19 @@ function generateFlowchartDSL(diagram: Diagram): string {
 function generateERDDSL(diagram: Diagram): string {
   let dsl = "";
   for (const node of diagram.nodes as any[]) {
-    if (node.type !== "entity") continue;
+    if (node.type !== "entity" && !("attributes" in node && !("methods" in node)))
+      continue;
     dsl += `entity ${node.name} {\n`;
-    for (const col of node.columns || []) {
-      const pk = col.isPrimary ? "*" : "";
+    const cols = node.attributes || node.columns || [];
+    for (const col of cols) {
+      const isPk = col.isPrimaryKey ?? col.isPrimary ?? false;
+      const pk = isPk ? "*" : "";
       const tags: string[] = [];
       if (col.isForeignKey) tags.push("fk");
       if (col.isUnique) tags.push("unique");
       if (col.isNullable) tags.push("nullable");
       const tagStr = tags.length ? ` [${tags.join(", ")}]` : "";
-      dsl += `  ${pk}${col.name}: ${col.type}${tagStr}\n`;
+      dsl += `  ${pk}${col.name}: ${col.type || "varchar"}${tagStr}\n`;
     }
     dsl += "}\n\n";
   }
@@ -280,7 +308,7 @@ function generateStateDSL(diagram: Diagram): string {
       for (const sub of subs) {
         if (sub.type === "initial") dsl += `  [initial]\n`;
         else if (sub.type === "final") dsl += `  [final]\n`;
-        else dsl += `  state ${sub.name}\n`;
+        else dsl += `  state ${formatName(sub.name)}\n`;
       }
       // Write internal edges
       const subIds = new Set(subs.map((s: any) => s.id));
@@ -289,15 +317,26 @@ function generateStateDSL(diagram: Diagram): string {
           const srcN = subs.find((s: any) => s.id === edge.source);
           const tgtN = subs.find((s: any) => s.id === edge.target);
           if (srcN && tgtN) {
-            const srcName = srcN.type === "initial" ? "[initial]" : srcN.name;
+            const srcName =
+              srcN.type === "initial"
+                ? "[initial]"
+                : srcN.type === "final"
+                  ? "[final]"
+                  : formatName(srcN.name);
+            const tgtName =
+              tgtN.type === "initial"
+                ? "[initial]"
+                : tgtN.type === "final"
+                  ? "[final]"
+                  : formatName(tgtN.name);
             const label = edge.label ? ` : ${edge.label.text}` : "";
-            dsl += `  ${srcName} --> ${tgtN.name}${label}\n`;
+            dsl += `  ${srcName} --> ${tgtName}${label}\n`;
           }
         }
       }
       dsl += `}\n\n`;
     } else {
-      dsl += `state ${node.name}\n`;
+      dsl += `state ${formatName(node.name)}\n`;
     }
   }
   dsl += "\n";
@@ -317,9 +356,20 @@ function generateStateDSL(diagram: Diagram): string {
     const src = nodeMap.get(edge.source) as any;
     const tgt = nodeMap.get(edge.target) as any;
     if (src && tgt) {
-      const srcName = src.type === "initial" ? "[initial]" : src.name;
+      const srcName =
+        src.type === "initial"
+          ? "[initial]"
+          : src.type === "final"
+            ? "[final]"
+            : formatName(src.name);
+      const tgtName =
+        tgt.type === "initial"
+          ? "[initial]"
+          : tgt.type === "final"
+            ? "[final]"
+            : formatName(tgt.name);
       const label = edge.label ? ` : ${edge.label.text}` : "";
-      dsl += `${srcName} --> ${tgt.name}${label}\n`;
+      dsl += `${srcName} --> ${tgtName}${label}\n`;
     }
   }
   return dsl;
@@ -414,6 +464,15 @@ function generateGenericDSL(diagram: Diagram): string {
 
 // ── Shared edge writer ─────────────────────────────────────────────────────
 
+function formatName(name: string): string {
+  if (!name) return '""';
+  if (name.startsWith("[") && name.endsWith("]")) return name;
+  if (name.includes(" ") || /[^a-zA-Z0-9_]/.test(name)) {
+    return `"${name}"`;
+  }
+  return name;
+}
+
 function generateEdgesDSL(diagram: Diagram): string {
   let dsl = "";
   const nodeMap = new Map(diagram.nodes.map((n) => [n.id, n]));
@@ -422,7 +481,7 @@ function generateEdgesDSL(diagram: Diagram): string {
     const target = nodeMap.get(edge.target);
     if (source && target) {
       const symbol = getRelationSymbol(edge.type);
-      dsl += `${source.name} ${symbol} ${target.name}`;
+      dsl += `${formatName(source.name)} ${symbol} ${formatName(target.name)}`;
       if (edge.label) dsl += ` : ${edge.label.text}`;
       dsl += "\n";
     }

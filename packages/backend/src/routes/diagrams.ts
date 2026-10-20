@@ -54,9 +54,9 @@ app.get("/:id", (c) => {
 });
 
 app.post("/", async (c) => {
-  let diagram: Diagram;
+  let diagram: any;
   try {
-    diagram = await c.req.json<Diagram>();
+    diagram = await c.req.json();
   } catch {
     return c.json({ error: "Invalid JSON body" }, 400);
   }
@@ -67,7 +67,9 @@ app.post("/", async (c) => {
       version: 1,
     };
   }
-  diagram.id = `diagram_${Date.now()}`;
+  if (!diagram.id) {
+    diagram.id = `diagram_${Date.now()}`;
+  }
   diagram.metadata.createdAt = new Date().toISOString();
   diagram.metadata.updatedAt = new Date().toISOString();
   diagrams.set(diagram.id, diagram);
@@ -77,9 +79,9 @@ app.post("/", async (c) => {
 
 app.put("/:id", async (c) => {
   const id = c.req.param("id");
-  let diagram: Diagram;
+  let diagram: any;
   try {
-    diagram = await c.req.json<Diagram>();
+    diagram = await c.req.json();
   } catch {
     return c.json({ error: "Invalid JSON body" }, 400);
   }

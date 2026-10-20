@@ -94,40 +94,41 @@ export function ComponentNodeRenderer({
           y={0}
           width={size.width}
           height={size.height}
-          rx="3"
-          fill={s.backgroundColor || "#E8F4FD"}
+          rx={s.borderRadius || 6}
+          fill={s.backgroundColor}
           stroke={stroke}
           strokeWidth={sw}
         />
         {/* UML component icon (top-right) */}
         <rect
           x={size.width - 22}
-          y={6}
-          width={16}
-          height={12}
-          fill="white"
-          stroke={stroke}
-          strokeWidth="1"
-        />
-        <rect
-          x={size.width - 24}
-          y={9}
-          width={6}
-          height={4}
-          fill="white"
+          y={8}
+          width={15}
+          height={11}
+          fill={s.backgroundColor}
           stroke={stroke}
           strokeWidth="1"
           rx="1"
+        />
+        <rect
+          x={size.width - 24}
+          y={10}
+          width={5}
+          height={3}
+          fill={s.backgroundColor}
+          stroke={stroke}
+          strokeWidth="1"
+          rx="0.5"
         />
         <rect
           x={size.width - 24}
           y={15}
-          width={6}
-          height={4}
-          fill="white"
+          width={5}
+          height={3}
+          fill={s.backgroundColor}
           stroke={stroke}
           strokeWidth="1"
-          rx="1"
+          rx="0.5"
         />
 
         {/* Stereotype label */}

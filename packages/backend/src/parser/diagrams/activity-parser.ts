@@ -102,12 +102,16 @@ export class ActivityDiagramParser extends BaseDiagramParser {
     }
 
     // Explicit edge: NodeA --> NodeB
-    if (token.type === "identifier") {
+    if (token.type === "identifier" || token.type === "string") {
       this.parseRelation();
-      // Mark this edge as explicit so we don't auto-add it
       const lastEdge = this.diagram.edges[this.diagram.edges.length - 1];
-      if (lastEdge)
+      if (lastEdge) {
         this.explicitEdges.add(`${lastEdge.source}-->${lastEdge.target}`);
+        // Remove conflicting auto-edges originating from the same source
+        this.diagram.edges = this.diagram.edges.filter(
+          (e) => !e.id.startsWith("edge_auto_") || e.source !== lastEdge.source,
+        );
+      }
       return;
     }
     this.advance();

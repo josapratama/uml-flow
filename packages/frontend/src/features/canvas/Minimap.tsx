@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Diagram } from "@uml-editor/shared";
 import type { CanvasTheme } from "../../hooks/useTheme";
 
@@ -87,17 +87,46 @@ export function Minimap({
   const vpW = (containerWidth / viewScale) * s;
   const vpH = (containerHeight / viewScale) * s;
 
+  const [collapsed, setCollapsed] = useState(false);
+
   const isDark = theme === "dark";
   const bgClass = isDark
-    ? "bg-slate-800/90 border-slate-600"
-    : "bg-white/90 border-slate-200";
+    ? "bg-surface-2/95 border-border text-text"
+    : "bg-white/95 border-slate-200 text-slate-800";
   const nodeColor = isDark ? "#818cf8" : "#6366f1";
   const vpStroke = isDark ? "#a5b4fc" : "#6366f1";
 
+  if (collapsed) {
+    return (
+      <button
+        onClick={() => setCollapsed(false)}
+        className={`absolute bottom-3 right-3 z-10 px-2.5 py-1 text-xs font-medium rounded-lg shadow-md border backdrop-blur-md flex items-center gap-1.5 transition-all ${
+          isDark
+            ? "bg-surface-2/90 hover:bg-surface-3 text-text-muted hover:text-text border-border"
+            : "bg-white/90 hover:bg-white text-slate-600 hover:text-slate-800 border-slate-200"
+        }`}
+        title="Show diagram minimap"
+      >
+        <span>🗺️</span>
+        <span className="text-[11px]">Minimap</span>
+      </button>
+    );
+  }
+
   return (
     <div
-      className={`absolute bottom-3 right-3 z-10 ${bgClass} border rounded-lg shadow-sm overflow-hidden backdrop-blur-sm`}
+      className={`absolute bottom-3 right-3 z-10 ${bgClass} border rounded-xl shadow-lg overflow-hidden backdrop-blur-md transition-all`}
     >
+      <div className="flex items-center justify-between px-2 py-1 border-b border-border/40 text-[9px] font-semibold text-text-muted select-none">
+        <span>MINIMAP</span>
+        <button
+          onClick={() => setCollapsed(true)}
+          className="text-text-muted hover:text-text px-1 rounded hover:bg-surface-3 text-xs leading-none"
+          title="Minimize map"
+        >
+          −
+        </button>
+      </div>
       <svg width={MINIMAP_W} height={MINIMAP_H}>
         {/* Nodes */}
         {diagram.nodes.map((n) => (

@@ -64,6 +64,8 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
   const nodeRename = useCallback(
     (nodeId: string, newName: string) => {
       if (!diagram || !newName.trim()) return;
+      const targetNode = diagram.nodes.find((n) => n.id === nodeId);
+      if (!targetNode || targetNode.name === newName.trim()) return;
       history.set({
         ...diagram,
         nodes: diagram.nodes.map((n) => {

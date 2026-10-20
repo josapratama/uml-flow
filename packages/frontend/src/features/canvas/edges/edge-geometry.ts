@@ -29,6 +29,50 @@ export function pointInsideBounds(pt: Position, bounds: Bounds): boolean {
   );
 }
 
+/** Check if a line segment between p1 and p2 intersects a bounding box. */
+export function lineIntersectsBox(
+  p1: Position,
+  p2: Position,
+  box: Bounds,
+): boolean {
+  if (Math.max(p1.x, p2.x) < box.left) return false;
+  if (Math.min(p1.x, p2.x) > box.right) return false;
+  if (Math.max(p1.y, p2.y) < box.top) return false;
+  if (Math.min(p1.y, p2.y) > box.bottom) return false;
+
+  if (pointInsideBounds(p1, box) || pointInsideBounds(p2, box)) return true;
+
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+
+  let t0 = 0;
+  let t1 = 1;
+
+  const checks: Array<[number, number]> = [
+    [-dx, p1.x - box.left],
+    [dx, box.right - p1.x],
+    [-dy, p1.y - box.top],
+    [dy, box.bottom - p1.y],
+  ];
+
+  for (const [p, q] of checks) {
+    if (p === 0) {
+      if (q < 0) return false;
+    } else {
+      const r = q / p;
+      if (p < 0) {
+        if (r > t1) return false;
+        if (r > t0) t0 = r;
+      } else {
+        if (r < t0) return false;
+        if (r < t1) t1 = r;
+      }
+    }
+  }
+
+  return t0 <= t1;
+}
+
 /** Get the exit/entry point just outside the node boundary in the anchor direction. */
 export function getExitPoint(
   anchor: Position,

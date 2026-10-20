@@ -1,6 +1,6 @@
 import React from "react";
 import type { StateNode } from "@uml-editor/shared";
-import { resolveStyle, getStroke, getStrokeWidth } from "./useNodeStyle";
+import { resolveStyle, getStroke, getStrokeWidth, isDarkCanvas } from "./useNodeStyle";
 
 interface Props {
   node: StateNode;
@@ -13,6 +13,7 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
   const s = resolveStyle((node as any).style);
   const stroke = getStroke(s, isSelected);
   const sw = getStrokeWidth(s, isSelected);
+  const isDark = isDarkCanvas();
   const cx = size.width / 2,
     cy = size.height / 2;
 
@@ -110,7 +111,10 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
               width={size.width}
               height={size.height}
               rx="12"
-              fill={(node as any).style ? s.backgroundColor : "#F8F9FF"}
+              fill={
+                (node as any).style?.backgroundColor ||
+                (isDark ? "#161628" : "#F8F9FF")
+              }
               stroke={stroke}
               strokeWidth={sw}
             />
@@ -121,7 +125,10 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
               width={size.width}
               height={headerH}
               rx="12"
-              fill={(node as any).style ? s.backgroundColor : "#E8EAF6"}
+              fill={
+                (node as any).style?.backgroundColor ||
+                (isDark ? "#23233a" : "#E8EAF6")
+              }
               stroke="none"
             />
             {/* Square off bottom of header */}
@@ -130,7 +137,10 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
               y="18"
               width={size.width}
               height="12"
-              fill={(node as any).style ? s.backgroundColor : "#E8EAF6"}
+              fill={
+                (node as any).style?.backgroundColor ||
+                (isDark ? "#23233a" : "#E8EAF6")
+              }
             />
             <line
               x1="0"
@@ -187,7 +197,7 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
                     width={subW}
                     height={subH}
                     rx="8"
-                    fill="white"
+                    fill={isDark ? "#1f1f33" : "white"}
                     stroke={stroke}
                     strokeWidth="1"
                     opacity="0.9"

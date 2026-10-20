@@ -56,23 +56,28 @@ export function LayoutDropdown({ onLayout, disabled }: Props) {
   return (
     <div ref={ref} className="relative">
       <button
-        className="px-1.5 py-1 bg-surface-3 text-text-muted text-[11px] border border-border rounded hover:bg-surface-4 hover:text-text transition-colors disabled:opacity-30 flex items-center gap-1"
+        className={`h-8 px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 disabled:opacity-35 disabled:cursor-not-allowed ${open
+            ? "bg-surface-4 text-text border-accent shadow-xs"
+            : "bg-surface-3 text-text-muted hover:text-text hover:bg-surface-4 border-border"
+          }`}
         onClick={() => setOpen(!open)}
         disabled={disabled}
-        title="Re-layout diagram"
+        title="Re-layout diagram automatically"
       >
-        📐
+        <span>📐</span>
+        <span className="hidden 2xl:inline">Layout</span>
         <svg
           width="8"
           height="8"
           viewBox="0 0 10 10"
-          fill="currentColor"
-          className="opacity-50"
+          className={`transition-transform opacity-60 ${open ? "rotate-180" : ""}`}
         >
           <path
-            d="M2 4 L5 7 L8 4"
+            d="M2 3.5 L5 6.5 L8 3.5"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             fill="none"
           />
         </svg>

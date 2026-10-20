@@ -52,11 +52,9 @@ export function AIAssistant({ isOpen, onClose, onGenerate }: Props) {
     setError(null);
     setPreview(null);
     try {
-      const prompt = diagramType
-        ? `Generate a ${diagramType} diagram for: ${description}`
-        : description;
       const dsl = await generateDiagramFromDescription(
-        prompt,
+        description,
+        diagramType || undefined,
         apiKey || undefined,
         apiKey && endpoint ? endpoint : undefined,
       );

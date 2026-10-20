@@ -8,16 +8,21 @@ import "./styles/global.css";
 type Page = "landing" | "editor" | "docs";
 
 function Root() {
+  const [initialEditorCode, setInitialEditorCode] = useState<string | undefined>();
+
   const [page, setPage] = useState<Page>(() => {
     const hash = window.location.hash.replace("#", "");
     if (hash === "editor") return "editor";
     if (hash === "docs") return "docs";
-    if (localStorage.getItem("uml-editor-code")) return "editor";
     return "landing";
   });
 
   useEffect(() => {
-    window.location.hash = page === "landing" ? "" : page;
+    const currentHash = window.location.hash.replace("#", "");
+    const targetHash = page === "landing" ? "" : page;
+    if (currentHash !== targetHash) {
+      window.location.hash = targetHash;
+    }
   }, [page]);
 
   // Listen for hash changes (browser back/forward)
@@ -32,20 +37,30 @@ function Root() {
     return () => window.removeEventListener("hashchange", handler);
   }, []);
 
+  const handleOpenEditor = (code?: string) => {
+    if (code) setInitialEditorCode(code);
+    setPage("editor");
+  };
+
   switch (page) {
     case "docs":
       return (
         <DocsPage
           onBack={() => setPage("landing")}
-          onOpenEditor={() => setPage("editor")}
+          onOpenEditor={() => handleOpenEditor()}
         />
       );
     case "editor":
-      return <App />;
+      return (
+        <App
+          initialCode={initialEditorCode}
+          onNavigateHome={() => setPage("landing")}
+        />
+      );
     default:
       return (
         <LandingPage
-          onOpenEditor={() => setPage("editor")}
+          onOpenEditor={handleOpenEditor}
           onOpenDocs={() => setPage("docs")}
         />
       );

@@ -44,6 +44,7 @@ export async function exportAsPNG(
     const tx = -contentBBox.x + padding;
     const ty = -contentBBox.y + padding;
     contentGroup.setAttribute("transform", `translate(${tx}, ${ty})`);
+    contentGroup.removeAttribute("style");
   }
 
   // Remove UI elements that shouldn't be in export
@@ -161,6 +162,7 @@ export function getFullDiagramSVG(svgElement: SVGSVGElement): string {
       "transform",
       `translate(${-contentBBox.x + padding}, ${-contentBBox.y + padding})`,
     );
+    contentGroup.removeAttribute("style");
   }
 
   clone.setAttribute("width", String(totalW));

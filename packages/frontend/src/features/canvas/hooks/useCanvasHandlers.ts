@@ -202,8 +202,7 @@ export function useCanvasHandlers(deps: HandlerDeps) {
         const pt = screenToWorld(e.clientX, e.clientY);
         if (pt) {
           const targetNode = diagram.nodes.find(
-            (n) =>
-              n.id !== connecting.sourceId && isPointInsideNode(n, pt.x, pt.y),
+            (n) => isPointInsideNode(n, pt.x, pt.y),
           );
           if (targetNode) {
             // Edge type: palette tool > modifier keys > diagram default
@@ -231,9 +230,10 @@ export function useCanvasHandlers(deps: HandlerDeps) {
             const sourceNodeObj = diagram.nodes.find(
               (n) => n.id === connecting.sourceId,
             );
-            const targetAnchor = sourceNodeObj
-              ? getBestTargetAnchor(targetNode, sourceNodeObj)
-              : "top";
+            const isSelf = connecting.sourceId === targetNode.id;
+            const targetAnchor = isSelf
+              ? (connecting.sourceAnchorSide === "top" ? "right" : "top")
+              : (sourceNodeObj ? getBestTargetAnchor(targetNode, sourceNodeObj) : "top");
             onAddEdge(
               connecting.sourceId,
               targetNode.id,

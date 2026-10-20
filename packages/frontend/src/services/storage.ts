@@ -1,4 +1,5 @@
 import type { Diagram } from "@uml-editor/shared";
+import { api } from "./api";
 
 const STORAGE_KEY = "uml-editor-diagrams";
 const CURRENT_KEY = "uml-editor-current";
@@ -56,7 +57,7 @@ export const storage = {
     }
   },
 
-  /** Save diagram to library */
+  /** Save diagram to library (localStorage + server sync) */
   save(entry: SavedDiagram): void {
     const list = this.list();
     const idx = list.findIndex((d) => d.id === entry.id);
@@ -67,6 +68,23 @@ export const storage = {
     } catch {
       /* */
     }
+
+    if (entry.diagram) {
+      const serverDiagram: any = {
+        ...entry.diagram,
+        id: entry.id,
+        name: entry.name,
+        code: entry.code || "",
+        metadata: {
+          ...entry.diagram.metadata,
+          updatedAt: entry.updatedAt || new Date().toISOString(),
+        },
+      };
+      api
+        .updateServerDiagram(entry.id, serverDiagram)
+        .catch(() => api.saveServerDiagram(serverDiagram))
+        .catch(() => {});
+    }
   },
 
   /** Delete from library */
@@ -76,6 +94,41 @@ export const storage = {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
     } catch {
       /* */
+    }
+    api.deleteServerDiagram(id).catch(() => {});
+  },
+
+  /** Sync list from server on startup */
+  async syncFromServer(): Promise<SavedDiagram[]> {
+    try {
+      const serverDiagrams = await api.getDiagrams();
+      if (!serverDiagrams || serverDiagrams.length === 0) return this.list();
+
+      const localList = this.list();
+      const localMap = new Map(localList.map((d) => [d.id, d]));
+
+      for (const sd of serverDiagrams) {
+        if (!localMap.has(sd.id)) {
+          localList.push({
+            id: sd.id,
+            name: sd.name,
+            code: (sd as any).code || "",
+            diagram: sd,
+            updatedAt: sd.metadata?.updatedAt || new Date().toISOString(),
+          });
+        }
+      }
+
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(localList.slice(0, 50)),
+        );
+      } catch {}
+
+      return localList;
+    } catch {
+      return this.list();
     }
   },
 };

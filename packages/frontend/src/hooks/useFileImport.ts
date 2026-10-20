@@ -1,6 +1,10 @@
 import { useCallback } from "react";
 import type { Diagram } from "@uml-editor/shared";
-import { parseTypeScriptToClassDiagram } from "../services/code-parser";
+import {
+  parseTypeScriptToClassDiagram,
+  isMermaidCode,
+  parseMermaidToDSL,
+} from "../services/code-parser";
 
 interface UseFileImportOptions {
   onCodeImport: (code: string) => void;
@@ -9,7 +13,8 @@ interface UseFileImportOptions {
 
 /**
  * Handles file import via drag-and-drop or file picker.
- * Supports .json (diagram), .uml/.txt (DSL code), .ts/.js/.java (auto-generate class diagram).
+ * Supports .json (diagram), .uml/.txt (DSL code), .ts/.js/.java (auto-generate class diagram),
+ * and .mmd/.mermaid (Mermaid diagram auto-conversion).
  */
 export function useFileImport({
   onCodeImport,
@@ -32,6 +37,27 @@ export function useFileImport({
         }
       }
 
+      // Mermaid diagram import (.mmd, .mermaid or detected Mermaid syntax)
+      if (
+        file.name.endsWith(".mmd") ||
+        file.name.endsWith(".mermaid") ||
+        isMermaidCode(text)
+      ) {
+        const diagramName = file.name.replace(/\.\w+$/, "");
+        const dsl = parseMermaidToDSL(text, diagramName);
+        onCodeImport(dsl);
+        try {
+          const { api } = await import("../services/api");
+          const res = await api.compile(dsl);
+          if (res.success && res.diagram) {
+            onDiagramImport(res.diagram);
+          }
+        } catch {
+          /* ignore compile error, DSL is still imported */
+        }
+        return;
+      }
+
       // TypeScript/JavaScript → auto-generate class diagram
       if (
         file.name.endsWith(".ts") ||
@@ -45,6 +71,13 @@ export function useFileImport({
         );
         if (diagram.nodes.length > 0) {
           onDiagramImport(diagram);
+          try {
+            const { api } = await import("../services/api");
+            const dsl = await api.exportDiagram(diagram, { format: "dsl" });
+            if (dsl) onCodeImport(dsl);
+          } catch {
+            /* ignore fallback */
+          }
           return;
         }
       }
@@ -72,7 +105,7 @@ export function useFileImport({
   const openFilePicker = useCallback(() => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".json,.uml,.txt,.ts,.tsx,.js,.java";
+    input.accept = ".json,.uml,.txt,.ts,.tsx,.js,.java,.mmd,.mermaid";
     input.onchange = () => {
       const file = input.files?.[0];
       if (file) handleFile(file);

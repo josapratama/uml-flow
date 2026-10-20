@@ -1,9 +1,16 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 export type CanvasTheme = "light" | "dark";
 
 export function useTheme() {
-  const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>("light");
+  const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>(() => {
+    const saved = localStorage.getItem("uml-canvas-theme");
+    return saved === "light" || saved === "dark" ? saved : "dark";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("uml-canvas-theme", canvasTheme);
+  }, [canvasTheme]);
 
   const toggleCanvasTheme = useCallback(() => {
     setCanvasTheme((prev) => (prev === "light" ? "dark" : "light"));
@@ -12,17 +19,17 @@ export function useTheme() {
   const canvasColors =
     canvasTheme === "light"
       ? {
-          bg: "#fafafa",
+          bg: "#f8fafc",
           grid: "#e2e8f0",
-          nodeStroke: "#444",
-          nodeFill: "#fff",
-          text: "#333",
+          nodeStroke: "#94a3b8",
+          nodeFill: "#ffffff",
+          text: "#1e293b",
         }
       : {
-          bg: "#1a1a2e",
-          grid: "#2a2a4a",
-          nodeStroke: "#6366f1",
-          nodeFill: "#252540",
+          bg: "#12121f",
+          grid: "#202038",
+          nodeStroke: "#3e3e60",
+          nodeFill: "#1a1a2e",
           text: "#e2e8f0",
         };
 

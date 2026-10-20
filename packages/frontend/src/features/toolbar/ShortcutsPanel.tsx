@@ -10,10 +10,12 @@ const SHORTCUTS = [
     category: "General",
     items: [
       { keys: "Ctrl + Enter", action: "Compile DSL" },
+      { keys: "Ctrl + S", action: "Save to library" },
+      { keys: "Ctrl + N", action: "New diagram tab" },
       { keys: "Ctrl + Z", action: "Undo" },
       { keys: "Ctrl + Shift + Z", action: "Redo" },
       { keys: "Ctrl + Y", action: "Redo" },
-      { keys: "Delete", action: "Delete selected" },
+      { keys: "Delete", action: "Delete selected node/edge" },
       { keys: "?", action: "Toggle shortcuts panel" },
     ],
   },

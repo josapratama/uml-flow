@@ -59,7 +59,7 @@ export class FlowchartParser extends BaseDiagramParser {
       return;
     }
 
-    if (token.type === "identifier") {
+    if (token.type === "identifier" || token.type === "string") {
       this.parseRelation();
       return;
     }

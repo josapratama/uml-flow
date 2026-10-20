@@ -15,7 +15,7 @@ export class StateDiagramParser extends BaseDiagramParser {
         return;
       }
 
-      if (val === "initial") {
+      if (val === "initial" || val === "*") {
         this.advance();
         if (!this.diagram.nodes.find((n) => n.id === "node_initial")) {
           this.diagram.nodes.push({
@@ -100,15 +100,56 @@ export class StateDiagramParser extends BaseDiagramParser {
             const bval = cur.value.toLowerCase();
             this.advance();
             const innerId = `node_${name}_${bval}`;
-            substates.push({
-              id: innerId,
-              type: bval === "initial" ? "initial" : "final",
-              name: bval === "initial" ? "●" : "◉",
-              position: { x: 0, y: 0 },
-              size: { width: 20, height: 20 },
-            });
-            if (!this.diagram.nodes.find((n) => n.id === innerId)) {
-              this.diagram.nodes.push(substates[substates.length - 1]);
+            this.skipNewlines();
+            const relTok = this.currentToken();
+            if (relTok?.type === "symbol") {
+              const relType = this.mapRelationType(relTok.value);
+              this.advance();
+              this.skipNewlines();
+              const tgtName = this.currentToken()?.value || "";
+              this.advance();
+              let label: string | undefined;
+              if (this.currentToken()?.value === ":") {
+                this.advance();
+                label = this.readToEndOfLine();
+              }
+              if (!substates.find((s) => s.id === innerId)) {
+                const subNode: StateNode = {
+                  id: innerId,
+                  type: bval === "initial" ? "initial" : "final",
+                  name: bval === "initial" ? "●" : "◉",
+                  position: { x: 0, y: 0 },
+                  size: { width: 20, height: 20 },
+                };
+                substates.push(subNode);
+                if (!this.diagram.nodes.find((n) => n.id === innerId)) {
+                  this.diagram.nodes.push(subNode);
+                }
+              }
+              const tgtId = `node_${name}_${tgtName}`;
+              const edge: Edge = {
+                id: `edge_inner_${bval}_${tgtName}_${subEdges.length}`,
+                source: innerId,
+                target: tgtId,
+                type: relType,
+              };
+              if (label) edge.label = { text: label };
+              subEdges.push(edge);
+              this.diagram.edges.push(edge);
+            } else {
+              if (!substates.find((s) => s.id === innerId)) {
+                const subNode: StateNode = {
+                  id: innerId,
+                  type: bval === "initial" ? "initial" : "final",
+                  name: bval === "initial" ? "●" : "◉",
+                  position: { x: 0, y: 0 },
+                  size: { width: 20, height: 20 },
+                };
+                substates.push(subNode);
+                if (!this.diagram.nodes.find((n) => n.id === innerId)) {
+                  this.diagram.nodes.push(subNode);
+                }
+              }
             }
           } else if (cur.type === "identifier" || cur.type === "string") {
             // transition inside composite: SubA --> SubB : label
@@ -172,11 +213,41 @@ export class StateDiagramParser extends BaseDiagramParser {
       return;
     }
 
-    if (token.type === "identifier") {
+    if (token.type === "identifier" || token.type === "string") {
       this.parseRelation();
       return;
     }
     this.advance();
+  }
+
+  protected override findNodeId(name: string): string {
+    const clean = name.replace(/^\[|\]$/g, "").trim();
+    const lower = clean.toLowerCase();
+    if (clean === "*" || lower === "final" || clean === "◉") {
+      if (!this.diagram.nodes.find((n) => n.id === "node_final")) {
+        this.diagram.nodes.push({
+          id: "node_final",
+          type: "final",
+          name: "◉",
+          position: { x: 0, y: 0 },
+          size: { width: 24, height: 24 },
+        } as StateNode);
+      }
+      return "node_final";
+    }
+    if (lower === "initial" || clean === "●") {
+      if (!this.diagram.nodes.find((n) => n.id === "node_initial")) {
+        this.diagram.nodes.push({
+          id: "node_initial",
+          type: "initial",
+          name: "●",
+          position: { x: 0, y: 0 },
+          size: { width: 24, height: 24 },
+        } as StateNode);
+      }
+      return "node_initial";
+    }
+    return super.findNodeId(name);
   }
 
   private parseBracketRelation(sourceName: string): void {
@@ -202,9 +273,16 @@ export class StateDiagramParser extends BaseDiagramParser {
       label = this.readToEndOfLine();
     }
 
+    const sourceId =
+      sourceName === "*" || sourceName.toLowerCase() === "initial"
+        ? this.findNodeId("initial")
+        : sourceName.toLowerCase() === "final"
+          ? this.findNodeId("final")
+          : this.findNodeId(sourceName);
+
     const edge: Edge = {
       id: `edge_${sourceName}_${targetName}_${this.diagram.edges.length}`,
-      source: `node_${sourceName}`,
+      source: sourceId,
       target: this.findNodeId(targetName),
       type: relType,
     };

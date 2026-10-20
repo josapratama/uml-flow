@@ -9,7 +9,11 @@ import {
   getMarkerStart,
   hasStartMarker,
 } from "./edge-markers";
-import { buildStraightPath, buildAnchorAwarePath } from "./edge-routing";
+import {
+  buildStraightPath,
+  buildAnchorAwarePath,
+  routeWithObstacleAvoidance,
+} from "./edge-routing";
 
 interface EdgeRendererProps {
   edge: Edge;
@@ -19,6 +23,7 @@ interface EdgeRendererProps {
   labelOffset?: number;
   onClick: (e: React.MouseEvent) => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
   onWaypointDragStart: (
     index: number,
     point: Position,
@@ -45,6 +50,7 @@ export function EdgeRenderer({
   onWaypointDelete,
   onEndpointDrag,
   onEndpointDragStart,
+  onContextMenu,
 }: EdgeRendererProps) {
   const sourceNode = nodes.find((n) => n.id === edge.source);
   const targetNode = nodes.find((n) => n.id === edge.target);
@@ -95,6 +101,19 @@ export function EdgeRenderer({
       edge.points![edge.points!.length - 1],
     );
     allPoints = [sp, ...edge.points!, tp];
+  } else if (sourceNode.id === targetNode.id) {
+    const p = sourceNode.position;
+    const sz = sourceSize;
+    const offset = 32;
+    const sp = { x: p.x + sz.width * 0.7, y: p.y };
+    const tp = { x: p.x + sz.width, y: p.y + sz.height * 0.35 };
+    allPoints = [
+      sp,
+      { x: sp.x, y: p.y - offset },
+      { x: p.x + sz.width + offset, y: p.y - offset },
+      { x: p.x + sz.width + offset, y: tp.y },
+      tp,
+    ];
   } else {
     const sp = resolveAnchor(sourceNode, edge.sourceAnchor, targetCenter);
     const tp = resolveAnchor(targetNode, edge.targetAnchor, sourceCenter);
@@ -111,7 +130,13 @@ export function EdgeRenderer({
         targetNode,
       );
     } else {
-      allPoints = buildStraightPath(sp, tp);
+      allPoints = routeWithObstacleAvoidance(
+        sp,
+        tp,
+        sourceNode,
+        targetNode,
+        nodes,
+      );
     }
   }
 
@@ -165,7 +190,10 @@ export function EdgeRenderer({
   const strokeColor = isSelected ? "#6366f1" : es.strokeColor;
 
   return (
-    <g className={`uml-edge ${isSelected ? "selected" : ""}`}>
+    <g
+      className={`uml-edge ${isSelected ? "selected" : ""}`}
+      onContextMenu={onContextMenu}
+    >
       {/* Hit area */}
       <path
         d={d}

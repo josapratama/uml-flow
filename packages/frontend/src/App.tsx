@@ -40,12 +40,17 @@ import {
 } from "./services/templates";
 import type { DiagramTemplate } from "./services/templates";
 
+interface AppProps {
+  initialCode?: string;
+  onNavigateHome?: () => void;
+}
+
 type EditorMode = "visual" | "code" | "split";
 
-export default function App() {
+export default function App(props: AppProps = {}) {
   // --- Core state ---
   const [mode, setMode] = useState<EditorMode>("split");
-  const [code, setCode] = useState(() => storage.loadCode() || SAMPLES.class);
+  const [code, setCode] = useState(() => props.initialCode || storage.loadCode() || SAMPLES.class);
   const diagramHistory = useHistory<Diagram | null>(storage.loadCurrent());
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
@@ -60,6 +65,7 @@ export default function App() {
   >(null);
   const [globalStyle, setGlobalStyle] = useState<Record<string, any>>({});
   const [autoCompile, setAutoCompile] = useState(true);
+  const [autoSyncCanvas, setAutoSyncCanvas] = useState(false);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [edgeRouting, setEdgeRouting] = useState<"straight" | "orthogonal">(
     "straight",
@@ -107,6 +113,70 @@ export default function App() {
   // --- Tab helpers ---
   const refreshTabs = useCallback(() => setTabs(storage.list()), []);
 
+  // Sync with backend on startup & check for shared link
+  useEffect(() => {
+    storage.syncFromServer().then((list) => {
+      setTabs(list);
+    });
+
+    import("./services/share-link").then(({ getSharedCodeFromLocation }) => {
+      getSharedCodeFromLocation().then((sharedCode) => {
+        if (sharedCode) {
+          setCode(sharedCode);
+          handleCompile(sharedCode);
+          showToast("Shared diagram loaded from link", "success");
+        }
+      });
+    });
+  }, []);
+
+  // --- Compile ---
+  const handleCompile = useCallback(
+    async (dslCode?: string) => {
+      setIsCompiling(true);
+      try {
+        const result = await api.compile(dslCode ?? code);
+        if (result.success && result.diagram) {
+          const newDiagram = result.diagram;
+          const old = diagramHistory.state;
+          if (old) {
+            for (const node of newDiagram.nodes) {
+              const oldNode = old.nodes.find(
+                (n) => n.name === node.name || n.id === node.id,
+              );
+              if (oldNode && (oldNode as any).style)
+                (node as any).style = (oldNode as any).style;
+            }
+            for (const edge of newDiagram.edges) {
+              const oldEdge = old.edges.find(
+                (e) => e.source === edge.source && e.target === edge.target,
+              );
+              if (oldEdge?.style) edge.style = oldEdge.style;
+            }
+          }
+          // Recalculate node sizes using getVisualSize for all node types
+          for (const node of newDiagram.nodes) {
+            const vs = getVisualSize(node);
+            node.size = vs;
+          }
+          diagramHistory.set(newDiagram);
+          setErrors([]);
+        } else setErrors(result.errors || []);
+      } catch {
+        setErrors([
+          {
+            line: 0,
+            column: 0,
+            message: "Server connection failed",
+            severity: "error",
+          },
+        ]);
+      }
+      setIsCompiling(false);
+    },
+    [code, diagramHistory],
+  );
+
   const handleNewTab = useCallback(() => {
     const newCode = SAMPLES.class;
     setCode(newCode);
@@ -117,13 +187,27 @@ export default function App() {
   }, [diagramHistory]);
 
   const handleOpenTab = useCallback(
-    (entry: SavedDiagram) => {
-      setCode(entry.code);
-      if (entry.diagram) diagramHistory.set(entry.diagram);
+    async (entry: SavedDiagram) => {
+      let currentCode = entry.code;
+      if (!currentCode && entry.diagram) {
+        try {
+          currentCode = await api.exportDiagram(entry.diagram, {
+            format: "dsl",
+          });
+        } catch {
+          currentCode = "";
+        }
+      }
+      setCode(currentCode);
+      if (entry.diagram) {
+        diagramHistory.set(entry.diagram);
+      } else if (currentCode) {
+        handleCompile(currentCode);
+      }
       setActiveTabId(entry.id);
       setErrors([]);
     },
-    [diagramHistory],
+    [diagramHistory, handleCompile],
   );
 
   const handleCloseTab = useCallback(
@@ -168,6 +252,21 @@ export default function App() {
     refreshTabs();
     showToast("Diagram saved to library", "success");
   }, [diagram, code, activeTabId, refreshTabs]);
+
+  const handleShareLink = useCallback(async () => {
+    if (!code) {
+      showToast("No diagram code to share", "error");
+      return;
+    }
+    try {
+      const { createShareUrl } = await import("./services/share-link");
+      const url = await createShareUrl(code);
+      await navigator.clipboard.writeText(url);
+      showToast("Shareable link copied to clipboard!", "success");
+    } catch {
+      showToast("Failed to copy share link", "error");
+    }
+  }, [code]);
 
   // --- Template helpers ---
   const handleSaveTemplate = useCallback(
@@ -237,52 +336,45 @@ export default function App() {
     [code],
   );
 
-  // --- Compile ---
-  const handleCompile = useCallback(
-    async (dslCode?: string) => {
-      setIsCompiling(true);
-      try {
-        const result = await api.compile(dslCode ?? code);
-        if (result.success && result.diagram) {
-          const newDiagram = result.diagram;
-          const old = diagramHistory.state;
-          if (old) {
-            for (const node of newDiagram.nodes) {
-              const oldNode = old.nodes.find(
-                (n) => n.name === node.name || n.id === node.id,
-              );
-              if (oldNode && (oldNode as any).style)
-                (node as any).style = (oldNode as any).style;
-            }
-            for (const edge of newDiagram.edges) {
-              const oldEdge = old.edges.find(
-                (e) => e.source === edge.source && e.target === edge.target,
-              );
-              if (oldEdge?.style) edge.style = oldEdge.style;
-            }
+
+
+  // --- Two-Way Live Auto-Sync (Canvas -> DSL) ---
+  const lastSyncedDiagram = useRef<Diagram | null>(null);
+  useDebounce(
+    async () => {
+      if (
+        autoSyncCanvas &&
+        diagram &&
+        !isCompiling &&
+        !isInteracting &&
+        diagram !== lastSyncedDiagram.current
+      ) {
+        lastSyncedDiagram.current = diagram;
+        try {
+          const exportableDiagram = {
+            ...diagram,
+            nodes: diagram.nodes.filter((n) => (n.type as string) !== "note"),
+          };
+          const dsl = await api.exportDiagram(exportableDiagram, { format: "dsl" });
+          if (dsl && dsl !== code) {
+            lastCompiledCode.current = dsl;
+            setCode(dsl);
           }
-          // Recalculate node sizes using getVisualSize for all node types
-          for (const node of newDiagram.nodes) {
-            const vs = getVisualSize(node);
-            node.size = vs;
-          }
-          diagramHistory.set(newDiagram);
-          setErrors([]);
-        } else setErrors(result.errors || []);
-      } catch {
-        setErrors([
-          {
-            line: 0,
-            column: 0,
-            message: "Server connection failed",
-            severity: "error",
-          },
-        ]);
+        } catch {}
       }
-      setIsCompiling(false);
     },
-    [code, diagramHistory],
+    800,
+    [diagram, autoSyncCanvas, isInteracting],
   );
+
+  // --- Initial auto-compile on first visit ---
+  const initialCompiled = useRef(false);
+  useEffect(() => {
+    if (!initialCompiled.current && !diagramHistory.state && code.trim().length > 10) {
+      initialCompiled.current = true;
+      handleCompile(code);
+    }
+  }, [code, diagramHistory.state, handleCompile]);
 
   // --- Drag lifecycle ---
   const handleDragStart = useCallback(() => {
@@ -427,6 +519,36 @@ export default function App() {
             showToast("Java exported", "success");
             break;
           }
+          case "sql": {
+            if (diagram.type !== "erd") {
+              showToast("SQL export only works for ERD diagrams", "error");
+              break;
+            }
+            const { generateSQL } = await import("./services/code-generator");
+            const sql = generateSQL(diagram);
+            if (!sql || sql.startsWith("-- Only ERD")) {
+              showToast("No entities found to export", "error");
+              break;
+            }
+            download(sql, `${diagram.name}.sql`, "application/sql");
+            showToast("SQL DDL exported", "success");
+            break;
+          }
+          case "xstate": {
+            if (diagram.type !== "state") {
+              showToast("XState export only works for State diagrams", "error");
+              break;
+            }
+            const { generateXState } = await import("./services/code-generator");
+            const xstateCode = generateXState(diagram);
+            if (!xstateCode || xstateCode.startsWith("// Only state")) {
+              showToast("No states found to export", "error");
+              break;
+            }
+            download(xstateCode, `${diagram.name}.machine.ts`, "text/typescript");
+            showToast("XState Machine exported", "success");
+            break;
+          }
           default:
             showToast(`Unknown format: ${format}`, "error");
         }
@@ -446,8 +568,13 @@ export default function App() {
       if (!diagram) return;
       try {
         const r = await api.relayout(diagram, preset);
-        if (r.diagram) diagramHistory.set(r.diagram);
-      } catch {}
+        if (r.diagram) {
+          diagramHistory.set(r.diagram);
+          showToast(`Layout applied: ${preset.charAt(0).toUpperCase() + preset.slice(1)}`, "success");
+        }
+      } catch {
+        showToast("Layout calculation failed", "error");
+      }
     },
     [diagram, diagramHistory],
   );
@@ -514,6 +641,43 @@ export default function App() {
     [diagram, actions, diagramHistory],
   );
 
+  const handleQuickAddNode = useCallback(
+    (sourceNodeId: string) => {
+      if (!diagram) return;
+      const sourceNode = diagram.nodes.find((n) => n.id === sourceNodeId);
+      if (!sourceNode) return;
+
+      const sourceWidth = sourceNode.size?.width || 160;
+      const targetType = sourceNode.type || (diagram.type === "class" ? "class" : "process");
+      const newNode = createDefaultNode(targetType, diagram.type, diagram.nodes.length);
+      newNode.position = {
+        x: sourceNode.position.x + sourceWidth + 80,
+        y: sourceNode.position.y,
+      };
+
+      const newEdge: any = {
+        id: `edge_${Date.now()}`,
+        source: sourceNode.id,
+        target: newNode.id,
+        type:
+          diagram.type === "class"
+            ? "association"
+            : diagram.type === "erd"
+              ? "one-to-many"
+              : "flow",
+      };
+
+      diagramHistory.set({
+        ...diagram,
+        nodes: [...diagram.nodes, newNode],
+        edges: [...diagram.edges, newEdge],
+      });
+      setSelectedNodeId(newNode.id);
+      showToast("Node added and connected", "success");
+    },
+    [diagram, diagramHistory],
+  );
+
   const handleSyncToCode = useCallback(async () => {
     if (!diagram) return;
     try {
@@ -551,6 +715,16 @@ export default function App() {
   // --- Keyboard shortcuts ---
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+
+      // If user is typing in code editor or an input field, let native browser Ctrl+Z / Ctrl+Y handle text undo/redo
+      if (isInput) return;
+
       if (e.ctrlKey && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         diagramHistory.undo();
@@ -560,9 +734,6 @@ export default function App() {
         diagramHistory.redo();
       }
       if (e.key === "?" && !e.ctrlKey) {
-        // Don't trigger if typing in an input/textarea
-        const target = e.target as HTMLElement;
-        if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
         setShowShortcuts((v) => !v);
       }
       if (e.key === "Delete") {
@@ -620,68 +791,349 @@ export default function App() {
   ]);
 
   // --- Context menu ---
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent) => {
+  const handleCanvasContextMenu = useCallback(
+    (
+      e: React.MouseEvent,
+      target: {
+        type: "canvas" | "node" | "edge";
+        id?: string;
+        worldPos: { x: number; y: number };
+        multiNodeIds?: string[];
+      },
+    ) => {
       e.preventDefault();
       const items: ContextMenuItem[] = [];
-      if (selectedNodeId && diagram) {
-        const node = diagram.nodes.find((n) => n.id === selectedNodeId);
-        items.push({
-          label: "Copy",
-          icon: "📋",
-          action: () => {
-            if (node) copy([node], diagram.edges);
-          },
-        });
-        items.push({
-          label: "Duplicate",
-          icon: "⧉",
-          action: () => {
-            const id = actions.duplicateNode(selectedNodeId);
-            if (id) setSelectedNodeId(id);
-          },
-        });
-        items.push({ separator: true, label: "", action: () => {} });
-        items.push({
-          label: "Bring to Front",
-          icon: "⬆",
-          action: () => {
-            if (diagram) {
-              const node = diagram.nodes.find((n) => n.id === selectedNodeId);
-              if (node) {
-                const others = diagram.nodes.filter(
-                  (n) => n.id !== selectedNodeId,
-                );
-                diagramHistory.set({ ...diagram, nodes: [...others, node] });
+
+      // TARGET: NODE (Single or Multi)
+      if (target.type === "node" && diagram) {
+        const isMulti = target.multiNodeIds && target.multiNodeIds.length > 1;
+
+        if (isMulti) {
+          const multiIds = target.multiNodeIds!;
+          const selectedNodes = diagram.nodes.filter((n) =>
+            multiIds.includes(n.id),
+          );
+
+          items.push({
+            label: "Align Nodes",
+            icon: "📏",
+            children: [
+              {
+                label: "Align Left",
+                icon: "⇤",
+                action: () => actions.alignNodes?.(multiIds, "left"),
+              },
+              {
+                label: "Align Center",
+                icon: "⇥⇤",
+                action: () => actions.alignNodes?.(multiIds, "center"),
+              },
+              {
+                label: "Align Right",
+                icon: "⇥",
+                action: () => actions.alignNodes?.(multiIds, "right"),
+              },
+              { separator: true, label: "", action: () => {} },
+              {
+                label: "Align Top",
+                icon: "⤒",
+                action: () => actions.alignNodes?.(multiIds, "top"),
+              },
+              {
+                label: "Align Middle",
+                icon: "⇕",
+                action: () => actions.alignNodes?.(multiIds, "middle"),
+              },
+              {
+                label: "Align Bottom",
+                icon: "⤓",
+                action: () => actions.alignNodes?.(multiIds, "bottom"),
+              },
+            ],
+          });
+
+          items.push({
+            label: "Distribute",
+            icon: "↔",
+            children: [
+              {
+                label: "Distribute Horizontally",
+                icon: "↔",
+                action: () => actions.distributeNodes?.(multiIds, "horizontal"),
+              },
+              {
+                label: "Distribute Vertically",
+                icon: "↕",
+                action: () => actions.distributeNodes?.(multiIds, "vertical"),
+              },
+            ],
+          });
+
+          items.push({ separator: true, label: "", action: () => {} });
+
+          items.push({
+            label: `Copy All (${multiIds.length} nodes)`,
+            icon: "📋",
+            shortcut: "Ctrl+C",
+            action: () => copy(selectedNodes, diagram.edges),
+          });
+
+          items.push({
+            label: `Delete All (${multiIds.length} nodes)`,
+            icon: "🗑",
+            shortcut: "Del",
+            danger: true,
+            action: () => {
+              if (diagram) {
+                diagramHistory.set({
+                  ...diagram,
+                  nodes: diagram.nodes.filter((n) => !multiIds.includes(n.id)),
+                  edges: diagram.edges.filter(
+                    (e) =>
+                      !multiIds.includes(e.source) &&
+                      !multiIds.includes(e.target),
+                  ),
+                });
               }
+              setSelectedNodeId(null);
+            },
+          });
+        } else {
+          const node = diagram.nodes.find((n) => n.id === target.id);
+          if (!node) return;
+
+          items.push({
+            label: "Rename",
+            icon: "✏️",
+            shortcut: "F2",
+            action: () => {
+              const newName = window.prompt("Rename entity/node:", node.name);
+              if (newName && newName.trim()) {
+                actions.nodeRename(node.id, newName.trim());
+              }
+            },
+          });
+
+          // Add Field / Attribute based on diagram type
+          if (
+            diagram.type === "erd" ||
+            ("attributes" in node && !("methods" in node))
+          ) {
+            items.push({
+              label: "Add Column",
+              icon: "➕",
+              action: () => {
+                const colName = window.prompt("New Column Name:", "new_column");
+                if (colName && colName.trim()) {
+                  actions.addERDColumn(
+                    node.id,
+                    colName.trim(),
+                    "varchar",
+                    false,
+                    false,
+                    true,
+                  );
+                }
+              },
+            });
+          } else if (diagram.type === "class" || "methods" in node) {
+            items.push({
+              label: "Add Property",
+              icon: "➕",
+              action: () => {
+                const prop = window.prompt(
+                  "New Property (name: type):",
+                  "property: string",
+                );
+                if (prop && prop.trim()) {
+                  const parts = prop.trim().split(":");
+                  const name = parts[0]?.trim().replace(/^[+\-#~]/, "") || "property";
+                  const type = parts[1]?.trim() || "string";
+                  actions.addAttribute(node.id, name, type, "public");
+                }
+              },
+            });
+            items.push({
+              label: "Add Method",
+              icon: "ƒ",
+              action: () => {
+                const method = window.prompt(
+                  "New Method (name(): returnType):",
+                  "execute(): void",
+                );
+                if (method && method.trim()) {
+                  const parts = method.trim().split(":");
+                  const name = parts[0]?.trim().replace(/^[+\-#~]/, "").replace("()", "") || "execute";
+                  const returnType = parts[1]?.trim() || "void";
+                  actions.addMethod(node.id, name, returnType, "public");
+                }
+              },
+            });
+          }
+
+          // Color & Styling Submenu
+          items.push({
+            label: "Color & Style",
+            icon: "🎨",
+            children: [
+              {
+                label: "Default",
+                icon: "⚪",
+                action: () =>
+                  actions.nodeStyleChange(node.id, {
+                    backgroundColor: undefined,
+                    borderColor: undefined,
+                  }),
+              },
+              {
+                label: "Indigo",
+                icon: "🔵",
+                action: () =>
+                  actions.nodeStyleChange(node.id, {
+                    backgroundColor:
+                      canvasTheme === "dark" ? "#1e1e38" : "#e0e7ff",
+                    borderColor: "#6366f1",
+                  }),
+              },
+              {
+                label: "Violet",
+                icon: "🟣",
+                action: () =>
+                  actions.nodeStyleChange(node.id, {
+                    backgroundColor:
+                      canvasTheme === "dark" ? "#261938" : "#ede9fe",
+                    borderColor: "#8b5cf6",
+                  }),
+              },
+              {
+                label: "Emerald",
+                icon: "🟢",
+                action: () =>
+                  actions.nodeStyleChange(node.id, {
+                    backgroundColor:
+                      canvasTheme === "dark" ? "#122822" : "#d1fae5",
+                    borderColor: "#10b981",
+                  }),
+              },
+              {
+                label: "Amber",
+                icon: "🟡",
+                action: () =>
+                  actions.nodeStyleChange(node.id, {
+                    backgroundColor:
+                      canvasTheme === "dark" ? "#2d2315" : "#fef3c7",
+                    borderColor: "#f59e0b",
+                  }),
+              },
+              {
+                label: "Rose",
+                icon: "🔴",
+                action: () =>
+                  actions.nodeStyleChange(node.id, {
+                    backgroundColor:
+                      canvasTheme === "dark" ? "#2d161d" : "#ffe4e6",
+                    borderColor: "#f43f5e",
+                  }),
+              },
+              {
+                label: "Slate",
+                icon: "⚫",
+                action: () =>
+                  actions.nodeStyleChange(node.id, {
+                    backgroundColor:
+                      canvasTheme === "dark" ? "#0f172a" : "#f1f5f9",
+                    borderColor: "#64748b",
+                  }),
+              },
+            ],
+          });
+
+          // Quick relationship connection
+          items.push({
+            label: "Connect Relationship...",
+            icon: "🔗",
+            action: () => handleQuickAddNode(node.id),
+          });
+
+          items.push({ separator: true, label: "", action: () => {} });
+
+          items.push({
+            label: "Copy",
+            icon: "📋",
+            shortcut: "Ctrl+C",
+            action: () => copy([node], diagram.edges),
+          });
+
+          items.push({
+            label: "Duplicate",
+            icon: "⧉",
+            shortcut: "Ctrl+D",
+            action: () => {
+              const id = actions.duplicateNode(node.id);
+              if (id) setSelectedNodeId(id);
+            },
+          });
+
+          items.push({
+            label: "Bring to Front",
+            icon: "⬆",
+            action: () => {
+              const others = diagram.nodes.filter((n) => n.id !== node.id);
+              diagramHistory.set({ ...diagram, nodes: [...others, node] });
+            },
+          });
+
+          items.push({
+            label: "Send to Back",
+            icon: "⬇",
+            action: () => {
+              const others = diagram.nodes.filter((n) => n.id !== node.id);
+              diagramHistory.set({ ...diagram, nodes: [node, ...others] });
+            },
+          });
+
+          items.push({ separator: true, label: "", action: () => {} });
+
+          items.push({
+            label: "Delete",
+            icon: "🗑",
+            shortcut: "Del",
+            danger: true,
+            action: () => {
+              actions.deleteNode(node.id);
+              setSelectedNodeId(null);
+            },
+          });
+        }
+      }
+
+      // TARGET: EDGE / RELATIONSHIP
+      else if (target.type === "edge" && diagram) {
+        const currentEdge = diagram.edges.find((e) => e.id === target.id);
+        if (!currentEdge) return;
+
+        items.push({
+          label: "Edit Label",
+          icon: "🏷️",
+          action: () => {
+            const newLabel = window.prompt(
+              "Relationship label:",
+              currentEdge.label?.text || "",
+            );
+            if (newLabel !== null) {
+              actions.edgeLabelEdit(currentEdge.id, newLabel.trim());
             }
           },
         });
+
         items.push({
-          label: "Send to Back",
-          icon: "⬇",
+          label: "Add Waypoint Here",
+          icon: "📍",
           action: () => {
-            if (diagram) {
-              const node = diagram.nodes.find((n) => n.id === selectedNodeId);
-              if (node) {
-                const others = diagram.nodes.filter(
-                  (n) => n.id !== selectedNodeId,
-                );
-                diagramHistory.set({ ...diagram, nodes: [node, ...others] });
-              }
-            }
+            actions.edgeWaypointAdd(currentEdge.id, 0, target.worldPos);
           },
         });
-        items.push({ separator: true, label: "", action: () => {} });
-        items.push({
-          label: "Delete",
-          icon: "🗑",
-          action: () => {
-            actions.deleteNode(selectedNodeId);
-            setSelectedNodeId(null);
-          },
-        });
-      } else if (selectedEdgeId && diagram) {
+
         const edgeTypes = [
           { label: "Association", type: "association" },
           { label: "Inheritance", type: "inheritance" },
@@ -690,62 +1142,256 @@ export default function App() {
           { label: "Dependency", type: "dependency" },
           { label: "Realization", type: "realization" },
         ];
-        const currentEdge = diagram.edges.find((e) => e.id === selectedEdgeId);
+
         items.push({
-          label: "Style Edge",
+          label: "Change Type",
+          icon: "🔀",
+          children: edgeTypes.map((et) => ({
+            label: et.label,
+            icon: currentEdge.type === et.type ? "✓" : undefined,
+            action: () => actions.edgeTypeChange(currentEdge.id, et.type),
+          })),
+        });
+
+        items.push({
+          label: "Reverse Direction",
+          icon: "⇄",
+          action: () => actions.edgeReverse(currentEdge.id),
+        });
+
+        items.push({
+          label: "Style Edge...",
           icon: "🎨",
           action: () => setShowStylePanel("edge"),
         });
+
         items.push({ separator: true, label: "", action: () => {} });
-        for (const et of edgeTypes) {
-          items.push({
-            label: `${currentEdge?.type === et.type ? "✓ " : "  "}${et.label}`,
-            icon: "",
-            action: () => actions.edgeTypeChange(selectedEdgeId, et.type),
-          });
-        }
-        items.push({ separator: true, label: "", action: () => {} });
+
         items.push({
-          label: "⇄ Reverse Direction",
-          icon: "",
-          action: () => actions.edgeReverse(selectedEdgeId),
-        });
-        items.push({ separator: true, label: "", action: () => {} });
-        items.push({
-          label: "Delete Edge",
+          label: "Delete Relationship",
           icon: "🗑",
+          shortcut: "Del",
+          danger: true,
           action: () => {
-            actions.deleteEdge(selectedEdgeId);
+            actions.deleteEdge(currentEdge.id);
             setSelectedEdgeId(null);
           },
         });
-      } else {
+      }
+
+      // TARGET: BLANK CANVAS
+      else if (target.type === "canvas" && diagram) {
+        const typeLabelMap: Record<string, string> = {
+          erd: "Entity",
+          class: "Class",
+          state: "State",
+          flowchart: "Step",
+          usecase: "Use Case",
+          component: "Component",
+          deployment: "Node",
+        };
+        const entityLabel = typeLabelMap[diagram.type] || "Node";
+
         items.push({
-          label: "Paste",
+          label: `Add ${entityLabel} Here`,
+          icon: "➕",
+          action: () => {
+            const count = diagram.nodes.length + 1;
+            const name = `${entityLabel}${count}`;
+            const id = `node_${Date.now()}`;
+            const vs = getVisualSize({
+              name,
+              type: diagram.type,
+              position: target.worldPos,
+            } as any);
+            const newNode = {
+              id,
+              name,
+              type: diagram.type,
+              position: target.worldPos,
+              size: vs,
+              attributes:
+                diagram.type === "erd"
+                  ? [
+                      {
+                        name: "id",
+                        type: "int",
+                        isPrimaryKey: true,
+                        isNullable: false,
+                        isForeignKey: false,
+                        isUnique: true,
+                      },
+                    ]
+                  : [],
+            };
+            diagramHistory.set({
+              ...diagram,
+              nodes: [...diagram.nodes, newNode as any],
+            });
+            setSelectedNodeId(id);
+          },
+        });
+
+        items.push({
+          label: "Add Sticky Note Here",
+          icon: "📝",
+          action: () => {
+            const id = `note_${Date.now()}`;
+            const newNote = {
+              id,
+              type: "note",
+              name: "Note",
+              content: "Sticky Note",
+              position: target.worldPos,
+              size: { width: 150, height: 90 },
+              style: { backgroundColor: "#fef9c3", borderColor: "#facc15" },
+            };
+            diagramHistory.set({
+              ...diagram,
+              nodes: [...diagram.nodes, newNote as any],
+            });
+            setSelectedNodeId(id);
+          },
+        });
+
+        items.push({ separator: true, label: "", action: () => {} });
+
+        items.push({
+          label: "Paste at Cursor",
           icon: "📋",
+          shortcut: "Ctrl+V",
           disabled: !hasClipboard,
           action: () => {
-            const p = paste();
-            if (p && diagram)
+            const p = paste(
+              target.worldPos.x - (diagram.nodes[0]?.position.x ?? 0),
+              target.worldPos.y - (diagram.nodes[0]?.position.y ?? 0),
+            );
+            if (p) {
               diagramHistory.set({
                 ...diagram,
                 nodes: [...diagram.nodes, ...p.nodes],
                 edges: [...diagram.edges, ...p.edges],
               });
+            }
+          },
+        });
+
+        items.push({ separator: true, label: "", action: () => {} });
+
+        // Auto Layout Submenu
+        items.push({
+          label: "Auto Layout",
+          icon: "📐",
+          children: [
+            {
+              label: "Hierarchical / Layered",
+              icon: "🌲",
+              action: () => handleLayout("layered"),
+            },
+            {
+              label: "Force-Directed",
+              icon: "🌐",
+              action: () => handleLayout("force"),
+            },
+            {
+              label: "Radial Rings",
+              icon: "🎯",
+              action: () => handleLayout("radial"),
+            },
+            {
+              label: "Grid Arrangement",
+              icon: "⊞",
+              action: () => handleLayout("grid"),
+            },
+            {
+              label: "Linear Stack",
+              icon: "📋",
+              action: () => handleLayout("linear"),
+            },
+          ],
+        });
+
+        // View Controls Submenu
+        items.push({
+          label: "View Controls",
+          icon: "🔍",
+          children: [
+            {
+              label: "Zoom to Fit",
+              icon: "⊡",
+              action: () =>
+                document
+                  .querySelector<HTMLButtonElement>(
+                    '[title="Zoom to fit diagram"]',
+                  )
+                  ?.click(),
+            },
+            {
+              label: "Reset Zoom (100%)",
+              icon: "⟲",
+              action: () =>
+                document
+                  .querySelector<HTMLButtonElement>(
+                    '[title="Reset zoom to 100%"]',
+                  )
+                  ?.click(),
+            },
+            {
+              label:
+                canvasTheme === "dark"
+                  ? "Switch to Light Theme"
+                  : "Switch to Dark Theme",
+              icon: canvasTheme === "dark" ? "☀️" : "🌙",
+              action: () => toggleCanvasTheme(),
+            },
+            {
+              label: snapEnabled ? "Disable Grid Snap" : "Enable Grid Snap",
+              icon: "🔲",
+              action: () => setSnapEnabled((v) => !v),
+            },
+            {
+              label:
+                edgeRouting === "orthogonal"
+                  ? "Switch to Straight Routing"
+                  : "Switch to Orthogonal Routing",
+              icon: "🔀",
+              action: () =>
+                setEdgeRouting((v) =>
+                  v === "straight" ? "orthogonal" : "straight",
+                ),
+            },
+          ],
+        });
+
+        items.push({ separator: true, label: "", action: () => {} });
+
+        items.push({
+          label: "Select All Nodes",
+          icon: "🗂️",
+          shortcut: "Ctrl+A",
+          action: () => {
+            if (diagram.nodes.length > 0) {
+              setSelectedNodeId(diagram.nodes[0].id);
+            }
           },
         });
       }
+
       setContextMenu({ x: e.clientX, y: e.clientY, items });
     },
     [
-      selectedNodeId,
-      selectedEdgeId,
       diagram,
       diagramHistory,
       actions,
       copy,
       paste,
       hasClipboard,
+      canvasTheme,
+      toggleCanvasTheme,
+      snapEnabled,
+      edgeRouting,
+      handleLayout,
+      handleQuickAddNode,
     ],
   );
 
@@ -757,7 +1403,6 @@ export default function App() {
     <div
       ref={appRef}
       className="flex flex-col h-screen overflow-hidden"
-      onContextMenu={handleContextMenu}
     >
       <Toolbar
         mode={mode}
@@ -776,6 +1421,8 @@ export default function App() {
         canRedo={diagramHistory.canRedo}
         autoCompile={autoCompile}
         onAutoCompileToggle={() => setAutoCompile((v) => !v)}
+        autoSyncCanvas={autoSyncCanvas}
+        onAutoSyncCanvasToggle={() => setAutoSyncCanvas((v) => !v)}
         snapEnabled={snapEnabled}
         onSnapToggle={() => setSnapEnabled((v) => !v)}
         edgeRouting={edgeRouting}
@@ -806,20 +1453,27 @@ export default function App() {
         onShowHistory={() => setShowHistory((v) => !v)}
         onPresentationMode={() => setShowPresentation(true)}
         onShowDiff={() => setShowDiff(true)}
+        onSaveCurrent={handleSaveCurrent}
+        onShareLink={handleShareLink}
+        onNewDiagram={handleNewTab}
+        onNavigateHome={props.onNavigateHome}
+        diagramName={diagram?.name || "Untitled"}
       />
 
-      {/* Diagram Tabs */}
-      <DiagramTabs
-        tabs={tabs}
-        activeId={activeTabId}
-        onSelect={(id) => {
-          const entry = storage.list().find((d) => d.id === id);
-          if (entry) handleOpenTab(entry);
-        }}
-        onNew={handleNewTab}
-        onClose={handleCloseTab}
-        onRename={handleRenameTab}
-      />
+      {/* Diagram Tabs: Only render when 2+ tabs are open to eliminate empty bar */}
+      {tabs.length > 1 && (
+        <DiagramTabs
+          tabs={tabs}
+          activeId={activeTabId}
+          onSelect={(id) => {
+            const entry = storage.list().find((d) => d.id === id);
+            if (entry) handleOpenTab(entry);
+          }}
+          onNew={handleNewTab}
+          onClose={handleCloseTab}
+          onRename={handleRenameTab}
+        />
+      )}
 
       <div className="flex flex-1 overflow-hidden relative">
         {/* Undo History side panel */}
@@ -843,6 +1497,7 @@ export default function App() {
               onChange={setCode}
               onCompile={handleCompile}
               errors={errors}
+              onSyncToCode={handleSyncToCode}
             />
           </div>
         )}
@@ -900,6 +1555,8 @@ export default function App() {
               snapEnabled={snapEnabled}
               edgeRouting={edgeRouting}
               activeEdgeTool={activeEdgeTool}
+              onQuickAddNode={handleQuickAddNode}
+              onContextMenu={handleCanvasContextMenu}
             />
           </div>
         )}

@@ -31,6 +31,11 @@ export function PresentationMode({ onExit }: Props) {
     // Disable pointer events on all elements inside clone
     clone.style.pointerEvents = "none";
 
+    const liveBg = liveSvg.style.backgroundColor || "#ffffff";
+    if (containerRef.current?.parentElement) {
+      containerRef.current.parentElement.style.backgroundColor = liveBg;
+    }
+
     containerRef.current.innerHTML = "";
     containerRef.current.appendChild(clone);
   }, []);

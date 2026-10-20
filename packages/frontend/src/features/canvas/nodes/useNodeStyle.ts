@@ -1,6 +1,6 @@
 /**
  * Shared hook/utility to merge node style with defaults.
- * Used by all node renderers to apply custom styling.
+ * Automatically adapts to canvas dark/light mode for sleek visuals.
  */
 
 export interface ResolvedStyle {
@@ -17,31 +17,42 @@ export interface ResolvedStyle {
   opacity: number;
 }
 
-const DEFAULTS: ResolvedStyle = {
-  fontFamily: "Inter, system-ui, sans-serif",
-  fontSize: 13,
-  fontColor: "#333333",
-  fontWeight: "normal",
-  fontStyle: "normal",
-  backgroundColor: "#ffffff",
-  borderColor: "#444444",
-  borderWidth: 1.5,
-  borderRadius: 4,
-  borderStyle: "solid",
-  opacity: 1,
-};
-
-/** Merges custom node style with defaults. */
 export function resolveStyle(nodeStyle?: Record<string, any>): ResolvedStyle {
-  return { ...DEFAULTS, ...(nodeStyle || {}) };
+  const isLight = typeof window !== "undefined" && localStorage.getItem("uml-canvas-theme") === "light";
+
+  const defaults: ResolvedStyle = {
+    fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+    fontSize: 13,
+    fontColor: isLight ? "#1e293b" : "#f1f5f9",
+    fontWeight: "normal",
+    fontStyle: "normal",
+    backgroundColor: isLight ? "#ffffff" : "#1e1e36",
+    borderColor: isLight ? "#cbd5e1" : "#43436d",
+    borderWidth: 1.5,
+    borderRadius: 8,
+    borderStyle: "solid",
+    opacity: 1,
+  };
+
+  return { ...defaults, ...(nodeStyle || {}) };
+}
+
+export function isDarkCanvas(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem("uml-canvas-theme") !== "light";
+}
+
+export function getThemeColor(lightColor: string, darkColor: string, customColor?: string): string {
+  if (customColor) return customColor;
+  return isDarkCanvas() ? darkColor : lightColor;
 }
 
 /** Returns the stroke color considering selection state. */
 export function getStroke(s: ResolvedStyle, isSelected: boolean): string {
-  return isSelected ? "#6366f1" : s.borderColor;
+  return isSelected ? "#818cf8" : s.borderColor;
 }
 
 /** Returns stroke width considering selection state. */
 export function getStrokeWidth(s: ResolvedStyle, isSelected: boolean): number {
-  return isSelected ? 2 : s.borderWidth;
+  return isSelected ? 2.5 : s.borderWidth;
 }
