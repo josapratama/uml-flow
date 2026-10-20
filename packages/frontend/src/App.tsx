@@ -39,6 +39,7 @@ import {
   saveTemplate,
   deleteTemplate,
   loadTemplateAsDiagram,
+  getTemplateById,
 } from "./services/templates";
 import type { DiagramTemplate } from "./services/templates";
 
@@ -279,23 +280,30 @@ export default function App(props: AppProps = {}) {
         showToast("No diagram to save as template", "error");
         return;
       }
-      saveTemplate(name, description, diagram);
+      saveTemplate(name, description, diagram, code);
       setTemplates(loadTemplates());
       showToast(`Template "${name}" saved`, "success");
     },
-    [diagram],
+    [diagram, code],
   );
 
   const handleLoadTemplate = useCallback(
     (id: string) => {
-      const d = loadTemplateAsDiagram(id);
-      if (!d) {
+      const tmpl = getTemplateById(id);
+      if (!tmpl) {
         showToast("Template not found", "error");
         return;
       }
+      const d = structuredClone(tmpl.diagram);
+      d.id = `diagram_${Date.now()}`;
+      d.metadata = { ...d.metadata, updatedAt: new Date().toISOString() };
       diagramHistory.set(d);
+      if (tmpl.dsl) {
+        lastCompiledCode.current = tmpl.dsl;
+        setCode(tmpl.dsl);
+      }
       setErrors([]);
-      showToast("Template loaded", "success");
+      showToast(`Template "${tmpl.name}" dimuat`, "success");
     },
     [diagramHistory],
   );

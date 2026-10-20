@@ -1,6 +1,7 @@
 import React from "react";
 import type { FlowchartNode } from "@uml-editor/shared";
 import { resolveStyle, getStroke, getStrokeWidth } from "./useNodeStyle";
+import { SvgMultilineText } from "./SvgMultilineText";
 
 interface Props {
   node: FlowchartNode;
@@ -43,18 +44,17 @@ export function FlowchartNodeRenderer({
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={cy + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-            >
-              {name}
-            </text>
+              maxWidth={size.width - 8}
+            />
           </g>
         );
       case "process":
@@ -72,18 +72,17 @@ export function FlowchartNodeRenderer({
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={cy + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-            >
-              {name}
-            </text>
+              maxWidth={size.width - 16}
+            />
           </g>
         );
       case "decision":
@@ -97,17 +96,16 @@ export function FlowchartNodeRenderer({
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={cy + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
-            >
-              {name}
-            </text>
+              maxWidth={size.width * 0.72}
+            />
           </g>
         );
       case "io": {
@@ -122,18 +120,17 @@ export function FlowchartNodeRenderer({
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={cy + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-            >
-              {name}
-            </text>
+              maxWidth={size.width - 32}
+            />
           </g>
         );
       }
@@ -148,18 +145,17 @@ export function FlowchartNodeRenderer({
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={cy}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy - 4}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-            >
-              {name}
-            </text>
+              maxWidth={size.width - 16}
+            />
           </g>
         );
       case "database":
@@ -198,18 +194,17 @@ export function FlowchartNodeRenderer({
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={cy + 5}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy + 4}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-            >
-              {name}
-            </text>
+              maxWidth={size.width - 16}
+            />
           </g>
         );
       case "subroutine":
@@ -243,18 +238,17 @@ export function FlowchartNodeRenderer({
               stroke={stroke}
               strokeWidth="1"
             />
-            <text
-              x={cx}
-              y={cy + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-            >
-              {name}
-            </text>
+              maxWidth={size.width - 28}
+            />
           </g>
         );
       case "connector":
@@ -268,16 +262,16 @@ export function FlowchartNodeRenderer({
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={cy + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
-            >
-              {name}
-            </text>
+              fontWeight={s.fontWeight}
+              maxWidth={size.width - 4}
+            />
           </g>
         );
       default:
@@ -293,18 +287,17 @@ export function FlowchartNodeRenderer({
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={cy + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-            >
-              {name}
-            </text>
+              maxWidth={size.width - 16}
+            />
           </g>
         );
     }

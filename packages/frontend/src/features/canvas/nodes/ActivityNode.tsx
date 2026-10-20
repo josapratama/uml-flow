@@ -1,6 +1,7 @@
 import React from "react";
 import type { ActivityNode } from "@uml-editor/shared";
 import { resolveStyle, getStroke, getStrokeWidth } from "./useNodeStyle";
+import { SvgMultilineText } from "./SvgMultilineText";
 
 interface Props {
   node: ActivityNode;
@@ -59,18 +60,17 @@ export function ActivityNodeRenderer({ node, isSelected, onDragStart }: Props) {
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={size.width / 2}
-              y={size.height / 2 + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={size.width / 2}
+              cy={size.height / 2}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-            >
-              {name}
-            </text>
+              maxWidth={size.width - 20}
+            />
           </g>
         );
       case "decision": {
@@ -84,17 +84,16 @@ export function ActivityNodeRenderer({ node, isSelected, onDragStart }: Props) {
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={cy + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
-            >
-              {name}
-            </text>
+              maxWidth={size.width * 0.72}
+            />
           </g>
         );
       }

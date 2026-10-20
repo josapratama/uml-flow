@@ -1,5 +1,6 @@
 import React from "react";
 import { resolveStyle, getStroke, getStrokeWidth } from "./useNodeStyle";
+import { SvgMultilineText } from "./SvgMultilineText";
 
 interface Props {
   node: any;
@@ -145,18 +146,16 @@ export function ComponentNodeRenderer({
           «component»
         </text>
         {!hideText && (
-          <text
-            x={size.width / 2 - 8}
-            y={size.height / 2 + 6}
-            textAnchor="middle"
+          <SvgMultilineText
+            text={node.stereotype ? `«${node.stereotype}»\n${name}` : name}
+            cx={size.width / 2 - 8}
+            cy={size.height / 2 + 6}
             fontSize={s.fontSize}
             fontFamily={s.fontFamily}
             fill={s.fontColor}
             fontWeight={s.fontWeight}
-          >
-            {node.stereotype ? `«${node.stereotype}»\n` : ""}
-            {name}
-          </text>
+            maxWidth={size.width - 32}
+          />
         )}
       </g>
     );

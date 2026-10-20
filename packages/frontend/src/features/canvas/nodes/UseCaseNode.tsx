@@ -1,6 +1,7 @@
 import React from "react";
 import type { UseCaseNode } from "@uml-editor/shared";
 import { resolveStyle, getStroke, getStrokeWidth } from "./useNodeStyle";
+import { SvgMultilineText } from "./SvgMultilineText";
 
 interface Props {
   node: UseCaseNode;
@@ -87,18 +88,17 @@ export function UseCaseNodeRenderer({ node, isSelected, onDragStart }: Props) {
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={cy + 4}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-            >
-              {name}
-            </text>
+              maxWidth={size.width - 24}
+            />
           </g>
         );
       case "system":

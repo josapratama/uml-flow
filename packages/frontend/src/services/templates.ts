@@ -10,6 +10,7 @@ export interface DiagramTemplate {
   tag?: string;
   isBuiltIn?: boolean;
   diagram: Diagram;
+  dsl?: string;
   createdAt: string;
 }
 
@@ -22,6 +23,20 @@ export const BUILT_IN_TEMPLATES: DiagramTemplate[] = [
     tag: "Skripsi Bab 2/3",
     isBuiltIn: true,
     createdAt: "2026-01-01T00:00:00.000Z",
+    dsl: `@diagram "Kerangka Berpikir Penelitian" flowchart
+
+start "Mulai Penelitian"
+process "1. INPUT: Masalah & Kebutuhan Sistem\\n• Analisis pencatatan manual\\n• Studi literatur & teori pendukung"
+process "2. PROSES: Pengembangan & Perancangan\\n• Desain UI/UX & Database ERD\\n• Pembuatan sistem & pengkodean"
+decision "Pengujian Valid?"
+process "3. OUTPUT: Sistem Terkomputerisasi\\n• Aplikasi terintegrasi siap pakai\\n• Peningkatan efisiensi waktu 80%"
+end "Selesai (Bab 5 Kesimpulan)"
+
+"Mulai Penelitian" -> "1. INPUT: Masalah & Kebutuhan Sistem\\n• Analisis pencatatan manual\\n• Studi literatur & teori pendukung"
+"1. INPUT: Masalah & Kebutuhan Sistem\\n• Analisis pencatatan manual\\n• Studi literatur & teori pendukung" -> "2. PROSES: Pengembangan & Perancangan\\n• Desain UI/UX & Database ERD\\n• Pembuatan sistem & pengkodean" : "Dasar Teori"
+"2. PROSES: Pengembangan & Perancangan\\n• Desain UI/UX & Database ERD\\n• Pembuatan sistem & pengkodean" -> "Pengujian Valid?" : "Black Box / UAT"
+"Pengujian Valid?" -> "3. OUTPUT: Sistem Terkomputerisasi\\n• Aplikasi terintegrasi siap pakai\\n• Peningkatan efisiensi waktu 80%" : "Ya (Lolos)"
+"3. OUTPUT: Sistem Terkomputerisasi\\n• Aplikasi terintegrasi siap pakai\\n• Peningkatan efisiensi waktu 80%" -> "Selesai (Bab 5 Kesimpulan)"`,
     diagram: {
       id: "diagram_kerangka_berpikir",
       name: "Kerangka Berpikir Penelitian",
@@ -31,46 +46,46 @@ export const BUILT_IN_TEMPLATES: DiagramTemplate[] = [
           id: "node_start",
           name: "Mulai Penelitian",
           type: "start" as any,
-          position: { x: 300, y: 40 },
-          size: { width: 150, height: 48 },
+          position: { x: 260, y: 40 },
+          size: { width: 180, height: 48 },
         },
         {
           id: "node_input",
           name: "1. INPUT: Masalah & Kebutuhan Sistem\n• Analisis pencatatan manual\n• Studi literatur & teori pendukung",
           type: "process" as any,
-          position: { x: 200, y: 130 },
-          size: { width: 350, height: 75 },
-          style: { backgroundColor: "#e0e7ff", borderColor: "#6366f1" },
+          position: { x: 140, y: 130 },
+          size: { width: 420, height: 85 },
+          style: { backgroundColor: "#eef2ff", borderColor: "#6366f1" },
         },
         {
           id: "node_process",
           name: "2. PROSES: Pengembangan & Perancangan\n• Desain UI/UX & Database ERD\n• Pembuatan sistem & pengkodean",
           type: "process" as any,
-          position: { x: 200, y: 250 },
-          size: { width: 350, height: 75 },
-          style: { backgroundColor: "#fef3c7", borderColor: "#f59e0b" },
+          position: { x: 140, y: 255 },
+          size: { width: 420, height: 85 },
+          style: { backgroundColor: "#fffbeb", borderColor: "#f59e0b" },
         },
         {
           id: "node_decision",
           name: "Pengujian Valid?",
           type: "decision" as any,
-          position: { x: 285, y: 370 },
-          size: { width: 180, height: 80 },
+          position: { x: 250, y: 380 },
+          size: { width: 200, height: 80 },
         },
         {
           id: "node_output",
           name: "3. OUTPUT: Sistem Terkomputerisasi\n• Aplikasi terintegrasi siap pakai\n• Peningkatan efisiensi waktu 80%",
           type: "process" as any,
-          position: { x: 200, y: 490 },
-          size: { width: 350, height: 75 },
-          style: { backgroundColor: "#d1fae5", borderColor: "#10b981" },
+          position: { x: 140, y: 500 },
+          size: { width: 420, height: 85 },
+          style: { backgroundColor: "#ecfdf5", borderColor: "#10b981" },
         },
         {
           id: "node_end",
           name: "Selesai (Bab 5 Kesimpulan)",
           type: "end" as any,
-          position: { x: 290, y: 610 },
-          size: { width: 170, height: 48 },
+          position: { x: 260, y: 625 },
+          size: { width: 180, height: 48 },
         },
       ],
       edges: [
@@ -91,16 +106,28 @@ export const BUILT_IN_TEMPLATES: DiagramTemplate[] = [
     tag: "Metodologi",
     isBuiltIn: true,
     createdAt: "2026-01-01T00:00:00.000Z",
+    dsl: `@diagram "Metodologi Waterfall" flowchart
+
+process "1. Analisis Kebutuhan\\n(Wawancara & Observasi)"
+process "2. Desain Sistem\\n(UML, ERD, Wireframe)"
+process "3. Implementasi Program\\n(Frontend & Backend API)"
+process "4. Pengujian Sistem\\n(Black Box & UAT User)"
+process "5. Pemeliharaan & Deploy\\n(Evaluasi Hasil Akhir)"
+
+"1. Analisis Kebutuhan\\n(Wawancara & Observasi)" -> "2. Desain Sistem\\n(UML, ERD, Wireframe)"
+"2. Desain Sistem\\n(UML, ERD, Wireframe)" -> "3. Implementasi Program\\n(Frontend & Backend API)"
+"3. Implementasi Program\\n(Frontend & Backend API)" -> "4. Pengujian Sistem\\n(Black Box & UAT User)"
+"4. Pengujian Sistem\\n(Black Box & UAT User)" -> "5. Pemeliharaan & Deploy\\n(Evaluasi Hasil Akhir)"`,
     diagram: {
       id: "diagram_waterfall",
       name: "Metodologi Waterfall",
       type: "flowchart",
       nodes: [
-        { id: "wf1", name: "1. Analisis Kebutuhan\n(Wawancara & Observasi)", type: "process" as any, position: { x: 60, y: 50 }, size: { width: 200, height: 60 }, style: { backgroundColor: "#ede9fe", borderColor: "#8b5cf6" } },
-        { id: "wf2", name: "2. Desain Sistem\n(UML, ERD, Wireframe)", type: "process" as any, position: { x: 180, y: 150 }, size: { width: 200, height: 60 }, style: { backgroundColor: "#e0e7ff", borderColor: "#6366f1" } },
-        { id: "wf3", name: "3. Implementasi Program\n(Frontend & Backend API)", type: "process" as any, position: { x: 300, y: 250 }, size: { width: 200, height: 60 }, style: { backgroundColor: "#dbeafe", borderColor: "#3b82f6" } },
-        { id: "wf4", name: "4. Pengujian Sistem\n(Black Box & UAT User)", type: "process" as any, position: { x: 420, y: 350 }, size: { width: 200, height: 60 }, style: { backgroundColor: "#fef3c7", borderColor: "#f59e0b" } },
-        { id: "wf5", name: "5. Pemeliharaan & Deploy\n(Evaluasi Hasil Akhir)", type: "process" as any, position: { x: 540, y: 450 }, size: { width: 200, height: 60 }, style: { backgroundColor: "#d1fae5", borderColor: "#10b981" } },
+        { id: "wf1", name: "1. Analisis Kebutuhan\n(Wawancara & Observasi)", type: "process" as any, position: { x: 60, y: 50 }, size: { width: 240, height: 65 }, style: { backgroundColor: "#ede9fe", borderColor: "#8b5cf6" } },
+        { id: "wf2", name: "2. Desain Sistem\n(UML, ERD, Wireframe)", type: "process" as any, position: { x: 170, y: 145 }, size: { width: 240, height: 65 }, style: { backgroundColor: "#e0e7ff", borderColor: "#6366f1" } },
+        { id: "wf3", name: "3. Implementasi Program\n(Frontend & Backend API)", type: "process" as any, position: { x: 280, y: 240 }, size: { width: 240, height: 65 }, style: { backgroundColor: "#dbeafe", borderColor: "#3b82f6" } },
+        { id: "wf4", name: "4. Pengujian Sistem\n(Black Box & UAT User)", type: "process" as any, position: { x: 390, y: 335 }, size: { width: 240, height: 65 }, style: { backgroundColor: "#fef3c7", borderColor: "#f59e0b" } },
+        { id: "wf5", name: "5. Pemeliharaan & Deploy\n(Evaluasi Hasil Akhir)", type: "process" as any, position: { x: 500, y: 430 }, size: { width: 240, height: 65 }, style: { backgroundColor: "#d1fae5", borderColor: "#10b981" } },
       ],
       edges: [
         { id: "we1", source: "wf1", target: "wf2", type: "flow" },
@@ -119,6 +146,38 @@ export const BUILT_IN_TEMPLATES: DiagramTemplate[] = [
     tag: "Database",
     isBuiltIn: true,
     createdAt: "2026-01-01T00:00:00.000Z",
+    dsl: `@diagram "ERD Sistem Informasi Akademik" erd
+
+entity Mahasiswa {
+  *nim: varchar(15) [unique]
+  nama: varchar(100)
+  prodi: varchar(50)
+  dosen_pa_id: int [fk]
+}
+
+entity Dosen {
+  *nidn: varchar(15) [unique]
+  nama_dosen: varchar(100)
+  email: varchar(100) [unique]
+}
+
+entity KRS {
+  *id: int [unique]
+  nim: varchar(15) [fk]
+  kode_mk: varchar(10) [fk]
+  semester: varchar(10)
+  nilai_huruf: char(2)
+}
+
+entity MataKuliah {
+  *kode_mk: varchar(10) [unique]
+  nama_mk: varchar(100)
+  sks: int
+}
+
+Mahasiswa ||--o{ KRS : takes
+MataKuliah ||--o{ KRS : enrolled
+Dosen ||--o{ Mahasiswa : advises`,
     diagram: {
       id: "diagram_erd_akademik",
       name: "ERD Sistem Akademik",
@@ -127,9 +186,9 @@ export const BUILT_IN_TEMPLATES: DiagramTemplate[] = [
         {
           id: "erd_mhs",
           name: "Mahasiswa",
-          type: "erd" as any,
-          position: { x: 80, y: 120 },
-          size: { width: 200, height: 160 },
+          type: "entity" as any,
+          position: { x: 60, y: 80 },
+          size: { width: 220, height: 160 },
           attributes: [
             { name: "nim", type: "varchar(15)", isPrimaryKey: true, isNullable: false, isForeignKey: false, isUnique: true },
             { name: "nama", type: "varchar(100)", isPrimaryKey: false, isNullable: false, isForeignKey: false, isUnique: false },
@@ -140,9 +199,9 @@ export const BUILT_IN_TEMPLATES: DiagramTemplate[] = [
         {
           id: "erd_dosen",
           name: "Dosen",
-          type: "erd" as any,
-          position: { x: 80, y: 360 },
-          size: { width: 200, height: 140 },
+          type: "entity" as any,
+          position: { x: 60, y: 320 },
+          size: { width: 220, height: 140 },
           attributes: [
             { name: "nidn", type: "varchar(15)", isPrimaryKey: true, isNullable: false, isForeignKey: false, isUnique: true },
             { name: "nama_dosen", type: "varchar(100)", isPrimaryKey: false, isNullable: false, isForeignKey: false, isUnique: false },
@@ -152,9 +211,9 @@ export const BUILT_IN_TEMPLATES: DiagramTemplate[] = [
         {
           id: "erd_krs",
           name: "KRS",
-          type: "erd" as any,
-          position: { x: 380, y: 120 },
-          size: { width: 200, height: 170 },
+          type: "entity" as any,
+          position: { x: 380, y: 80 },
+          size: { width: 220, height: 180 },
           attributes: [
             { name: "id", type: "int", isPrimaryKey: true, isNullable: false, isForeignKey: false, isUnique: true },
             { name: "nim", type: "varchar(15)", isPrimaryKey: false, isNullable: false, isForeignKey: true, isUnique: false },
@@ -166,9 +225,9 @@ export const BUILT_IN_TEMPLATES: DiagramTemplate[] = [
         {
           id: "erd_mk",
           name: "MataKuliah",
-          type: "erd" as any,
-          position: { x: 380, y: 360 },
-          size: { width: 200, height: 140 },
+          type: "entity" as any,
+          position: { x: 380, y: 320 },
+          size: { width: 220, height: 140 },
           attributes: [
             { name: "kode_mk", type: "varchar(10)", isPrimaryKey: true, isNullable: false, isForeignKey: false, isUnique: true },
             { name: "nama_mk", type: "varchar(100)", isPrimaryKey: false, isNullable: false, isForeignKey: false, isUnique: false },
@@ -192,15 +251,25 @@ export const BUILT_IN_TEMPLATES: DiagramTemplate[] = [
     tag: "Arsitektur",
     isBuiltIn: true,
     createdAt: "2026-01-01T00:00:00.000Z",
+    dsl: `@diagram "Arsitektur 3-Tier" component
+
+component "Presentation Layer\\n(React Web & Flutter Mobile)" as c_ui
+component "Application Layer\\n(REST API & Auth Service)" as c_api
+component "Data Layer\\n(PostgreSQL Database Server)" as c_db
+component "External Services\\n(Payment & Email Gateway)" as c_ext
+
+c_ui -> c_api : "HTTPS / JSON"
+c_api -> c_db : "SQL Query"
+c_api -> c_ext : "Third-party API"`,
     diagram: {
       id: "diagram_3tier",
       name: "Arsitektur 3-Tier",
       type: "component",
       nodes: [
-        { id: "c_ui", name: "Presentation Layer\n(React Web & Flutter Mobile)", type: "component" as any, position: { x: 80, y: 80 }, size: { width: 260, height: 75 }, style: { backgroundColor: "#e0e7ff", borderColor: "#6366f1" } },
-        { id: "c_api", name: "Application Layer\n(REST API & Auth Service)", type: "component" as any, position: { x: 80, y: 220 }, size: { width: 260, height: 75 }, style: { backgroundColor: "#fef3c7", borderColor: "#f59e0b" } },
-        { id: "c_db", name: "Data Layer\n(PostgreSQL Database Server)", type: "component" as any, position: { x: 80, y: 360 }, size: { width: 260, height: 75 }, style: { backgroundColor: "#d1fae5", borderColor: "#10b981" } },
-        { id: "c_ext", name: "External Services\n(Payment & Email Gateway)", type: "component" as any, position: { x: 420, y: 220 }, size: { width: 220, height: 75 }, style: { backgroundColor: "#ffe4e6", borderColor: "#f43f5e" } },
+        { id: "c_ui", name: "Presentation Layer\n(React Web & Flutter Mobile)", type: "component" as any, position: { x: 80, y: 70 }, size: { width: 280, height: 80 }, style: { backgroundColor: "#e0e7ff", borderColor: "#6366f1" } },
+        { id: "c_api", name: "Application Layer\n(REST API & Auth Service)", type: "component" as any, position: { x: 80, y: 200 }, size: { width: 280, height: 80 }, style: { backgroundColor: "#fef3c7", borderColor: "#f59e0b" } },
+        { id: "c_db", name: "Data Layer\n(PostgreSQL Database Server)", type: "component" as any, position: { x: 80, y: 330 }, size: { width: 280, height: 80 }, style: { backgroundColor: "#d1fae5", borderColor: "#10b981" } },
+        { id: "c_ext", name: "External Services\n(Payment & Email Gateway)", type: "component" as any, position: { x: 440, y: 200 }, size: { width: 240, height: 80 }, style: { backgroundColor: "#ffe4e6", borderColor: "#f43f5e" } },
       ],
       edges: [
         { id: "e_c1", source: "c_ui", target: "c_api", type: "flow", label: { text: "HTTPS / JSON" } },
@@ -218,19 +287,41 @@ export const BUILT_IN_TEMPLATES: DiagramTemplate[] = [
     tag: "UML Skripsi",
     isBuiltIn: true,
     createdAt: "2026-01-01T00:00:00.000Z",
+    dsl: `@diagram "Use Case Bimbingan Skripsi" usecase
+
+actor Mahasiswa
+actor "Dosen Pembimbing"
+actor "Admin Jurusan"
+
+system "Sistem Bimbingan Skripsi" {
+  usecase "Login Akun"
+  usecase "Pengajuan Bimbingan"
+  usecase "Catatan Revisi & Feedback"
+  usecase "ACC / Persetujuan Sidang"
+  usecase "Kelola Master Data & Sidang"
+}
+
+Mahasiswa --> "Login Akun"
+Mahasiswa --> "Pengajuan Bimbingan"
+"Dosen Pembimbing" --> "Login Akun"
+"Dosen Pembimbing" --> "Catatan Revisi & Feedback"
+"Dosen Pembimbing" --> "ACC / Persetujuan Sidang"
+"Admin Jurusan" --> "Login Akun"
+"Admin Jurusan" --> "Kelola Master Data & Sidang"`,
     diagram: {
       id: "diagram_usecase_skripsi",
       name: "Use Case Bimbingan Skripsi",
       type: "usecase",
       nodes: [
-        { id: "act_mhs", name: "Mahasiswa", type: "actor" as any, position: { x: 60, y: 140 }, size: { width: 90, height: 90 } },
-        { id: "act_dosen", name: "Dosen Pembimbing", type: "actor" as any, position: { x: 60, y: 340 }, size: { width: 110, height: 90 } },
-        { id: "act_admin", name: "Admin Jurusan", type: "actor" as any, position: { x: 620, y: 240 }, size: { width: 100, height: 90 } },
-        { id: "uc_login", name: "Login Akun", type: "usecase" as any, position: { x: 260, y: 70 }, size: { width: 160, height: 55 } },
-        { id: "uc_bimbingan", name: "Pengajuan Bimbingan", type: "usecase" as any, position: { x: 260, y: 160 }, size: { width: 180, height: 55 } },
-        { id: "uc_revisi", name: "Catatan Revisi & Feedback", type: "usecase" as any, position: { x: 260, y: 260 }, size: { width: 190, height: 55 } },
-        { id: "uc_acc", name: "ACC / Persetujuan Sidang", type: "usecase" as any, position: { x: 260, y: 360 }, size: { width: 180, height: 55 } },
-        { id: "uc_master", name: "Kelola Master Data & Sidang", type: "usecase" as any, position: { x: 380, y: 460 }, size: { width: 200, height: 55 } },
+        { id: "sys_boundary", name: "Sistem Informasi Bimbingan Skripsi", type: "system" as any, position: { x: 230, y: 30 }, size: { width: 340, height: 490 } },
+        { id: "act_mhs", name: "Mahasiswa", type: "actor" as any, position: { x: 50, y: 130 }, size: { width: 90, height: 90 } },
+        { id: "act_dosen", name: "Dosen Pembimbing", type: "actor" as any, position: { x: 50, y: 330 }, size: { width: 110, height: 90 } },
+        { id: "act_admin", name: "Admin Jurusan", type: "actor" as any, position: { x: 640, y: 230 }, size: { width: 100, height: 90 } },
+        { id: "uc_login", name: "Login Akun", type: "usecase" as any, position: { x: 300, y: 70 }, size: { width: 200, height: 55 } },
+        { id: "uc_bimbingan", name: "Pengajuan Bimbingan", type: "usecase" as any, position: { x: 300, y: 160 }, size: { width: 200, height: 55 } },
+        { id: "uc_revisi", name: "Catatan Revisi & Feedback", type: "usecase" as any, position: { x: 300, y: 250 }, size: { width: 200, height: 55 } },
+        { id: "uc_acc", name: "ACC / Persetujuan Sidang", type: "usecase" as any, position: { x: 300, y: 340 }, size: { width: 200, height: 55 } },
+        { id: "uc_master", name: "Kelola Master Data & Sidang", type: "usecase" as any, position: { x: 300, y: 430 }, size: { width: 200, height: 55 } },
       ],
       edges: [
         { id: "ue1", source: "act_mhs", target: "uc_login", type: "association" },
@@ -251,6 +342,7 @@ export function saveTemplate(
   name: string,
   description: string,
   diagram: Diagram,
+  dsl?: string,
 ): DiagramTemplate {
   const customTemplates = loadCustomTemplates();
   const template: DiagramTemplate = {
@@ -261,6 +353,7 @@ export function saveTemplate(
     tag: "Custom",
     isBuiltIn: false,
     diagram: structuredClone(diagram),
+    dsl,
     createdAt: new Date().toISOString(),
   };
   customTemplates.unshift(template);
@@ -284,6 +377,12 @@ export function loadTemplates(): DiagramTemplate[] {
   return [...BUILT_IN_TEMPLATES, ...custom];
 }
 
+/** Get a single template by ID. */
+export function getTemplateById(id: string): DiagramTemplate | null {
+  const all = loadTemplates();
+  return all.find((t) => t.id === id) || null;
+}
+
 /** Delete a user template by ID (built-in templates cannot be deleted). */
 export function deleteTemplate(id: string): void {
   const templates = loadCustomTemplates().filter((t) => t.id !== id);
@@ -292,8 +391,7 @@ export function deleteTemplate(id: string): void {
 
 /** Load a template and return a fresh diagram copy with new ID. */
 export function loadTemplateAsDiagram(id: string): Diagram | null {
-  const all = loadTemplates();
-  const tmpl = all.find((t) => t.id === id);
+  const tmpl = getTemplateById(id);
   if (!tmpl) return null;
   const diagram = structuredClone(tmpl.diagram);
   diagram.id = `diagram_${Date.now()}`;

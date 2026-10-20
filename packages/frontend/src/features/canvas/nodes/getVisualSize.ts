@@ -81,6 +81,28 @@ export function getVisualSize(node: DiagramNode): Size {
     return { width: totalW, height: totalH };
   }
 
-  // For all other node types, use the stored size
+  // For all other node types, adapt size to multiline text if needed
+  if (node.name && node.size) {
+    const lines = node.name.split("\n");
+    if (lines.length > 1) {
+      const s = resolveStyle((node as any).style);
+      const fs = s.fontSize || 12;
+      const charW = fs * 0.58;
+      let maxLineLen = 0;
+      for (const line of lines) {
+        maxLineLen = Math.max(maxLineLen, line.length);
+      }
+      const neededW = Math.max(
+        node.size.width,
+        Math.round(maxLineLen * charW + 28),
+      );
+      const neededH = Math.max(
+        node.size.height,
+        Math.round(lines.length * (fs + 6) + 20),
+      );
+      return { width: neededW, height: neededH };
+    }
+  }
+
   return node.size;
 }
