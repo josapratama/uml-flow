@@ -1,6 +1,7 @@
 import React from "react";
 import type { ERDEntity } from "@uml-editor/shared";
 import { resolveStyle, getStroke, getStrokeWidth, isDarkCanvas } from "./useNodeStyle";
+import { getVisualSize } from "./getVisualSize";
 
 interface Props {
   node: ERDEntity;
@@ -15,7 +16,8 @@ export function ERDNodeRenderer({
   hideText,
   onDragStart,
 }: Props) {
-  const { position, size, name, attributes, type } = node;
+  const { position, name, attributes, type } = node;
+  const size = getVisualSize(node);
   const s = resolveStyle((node as any).style);
   const stroke = getStroke(s, isSelected);
   const sw = getStrokeWidth(s, isSelected);

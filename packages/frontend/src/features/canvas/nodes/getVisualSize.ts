@@ -74,10 +74,15 @@ export function getVisualSize(node: DiagramNode): Size {
     const nameW = erd.name.length * 9 + 40;
     let maxAttrW = 0;
     for (const a of erd.attributes || []) {
-      const len = `${a.name}: ${a.type || ""}`.length;
-      maxAttrW = Math.max(maxAttrW, len * 7 + 40);
+      const iconW = a.isPrimaryKey || a.isForeignKey ? 24 : 12;
+      const attrNameW = (a.name || "").length * 7.5;
+      const typeStr = `${a.type || ""}${a.isNullable ? " ?" : ""}${a.isUnique ? " UQ" : ""}`;
+      const typeW = typeStr.length * 7.0;
+      // icon + name + comfortable column gap (28px) + type + right margin (12px)
+      const rowW = iconW + attrNameW + 28 + typeW + 12;
+      maxAttrW = Math.max(maxAttrW, rowW);
     }
-    const totalW = Math.max(160, nameW, maxAttrW);
+    const totalW = Math.max(180, nameW, Math.round(maxAttrW));
     return { width: totalW, height: totalH };
   }
 

@@ -152,7 +152,7 @@ entity Mahasiswa {
   *nim: varchar(15) [unique]
   nama: varchar(100)
   prodi: varchar(50)
-  dosen_pa_id: int [fk]
+  dosen_nidn: varchar(15) [fk]
 }
 
 entity Dosen {
@@ -193,7 +193,7 @@ Dosen ||--o{ Mahasiswa : advises`,
             { name: "nim", type: "varchar(15)", isPrimaryKey: true, isNullable: false, isForeignKey: false, isUnique: true },
             { name: "nama", type: "varchar(100)", isPrimaryKey: false, isNullable: false, isForeignKey: false, isUnique: false },
             { name: "prodi", type: "varchar(50)", isPrimaryKey: false, isNullable: false, isForeignKey: false, isUnique: false },
-            { name: "dosen_pa_id", type: "int", isPrimaryKey: false, isNullable: true, isForeignKey: true, isUnique: false },
+            { name: "dosen_nidn", type: "varchar(15)", isPrimaryKey: false, isNullable: true, isForeignKey: true, isUnique: false },
           ],
         },
         {
