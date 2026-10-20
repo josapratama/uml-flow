@@ -116,6 +116,7 @@ export function buildAnchorAwarePath(
   targetNode?: DiagramNode,
   parallelOffset: number = 0,
   allNodes?: DiagramNode[],
+  channelOffset: number = 0,
 ): Position[] {
   const PAD = 20;
 
@@ -173,6 +174,7 @@ export function buildAnchorAwarePath(
       parallelOffset,
       allNodes,
       excludeIds,
+      channelOffset,
     );
   } else if (!sourceIsHoriz && !targetIsHoriz) {
     routeBothVertical(
@@ -182,6 +184,7 @@ export function buildAnchorAwarePath(
       parallelOffset,
       allNodes,
       excludeIds,
+      channelOffset,
     );
   } else if (!sourceIsHoriz && targetIsHoriz) {
     routeVerticalToHorizontal(
@@ -194,6 +197,7 @@ export function buildAnchorAwarePath(
       PAD,
       allNodes,
       excludeIds,
+      channelOffset,
     );
   } else {
     routeHorizontalToVertical(
@@ -206,6 +210,7 @@ export function buildAnchorAwarePath(
       PAD,
       allNodes,
       excludeIds,
+      channelOffset,
     );
   }
 
@@ -222,9 +227,12 @@ function routeBothHorizontal(
   parallelOffset: number = 0,
   allNodes?: DiagramNode[],
   excludeIds?: Set<string>,
+  channelOffset: number = 0,
 ) {
   if (Math.abs(sExit.y - tEntry.y) < 2) return; // Same Y — straight
-  let midX = (sExit.x + tEntry.x) / 2 + parallelOffset * 0.7;
+  const effectiveOffset =
+    channelOffset !== 0 ? channelOffset : parallelOffset * 0.7;
+  let midX = (sExit.x + tEntry.x) / 2 + effectiveOffset;
 
   // Check obstacle collision on vertical segment
   if (allNodes && allNodes.length > 0) {
@@ -262,9 +270,12 @@ function routeBothVertical(
   parallelOffset: number = 0,
   allNodes?: DiagramNode[],
   excludeIds?: Set<string>,
+  channelOffset: number = 0,
 ) {
   if (Math.abs(sExit.x - tEntry.x) < 2) return; // Same X — straight
-  let midY = (sExit.y + tEntry.y) / 2 + parallelOffset * 0.7;
+  const effectiveOffset =
+    channelOffset !== 0 ? channelOffset : parallelOffset * 0.7;
+  let midY = (sExit.y + tEntry.y) / 2 + effectiveOffset;
 
   // Check obstacle collision on horizontal segment
   if (allNodes && allNodes.length > 0) {
@@ -305,6 +316,7 @@ function routeVerticalToHorizontal(
   pad: number,
   allNodes?: DiagramNode[],
   excludeIds?: Set<string>,
+  channelOffset: number = 0,
 ) {
   const goingDown = sourceAnchor === "bottom";
   const cornerL: Position = { x: sExit.x, y: tEntry.y };
@@ -327,9 +339,11 @@ function routeVerticalToHorizontal(
   if (canL && cornerClear) {
     points.push(cornerL);
   } else {
-    const extendY = goingDown
-      ? Math.max(sBounds?.bottom ?? sExit.y, tBounds?.bottom ?? tEntry.y) + pad
-      : Math.min(sBounds?.top ?? sExit.y, tBounds?.top ?? tEntry.y) - pad;
+    const extendY =
+      (goingDown
+        ? Math.max(sBounds?.bottom ?? sExit.y, tBounds?.bottom ?? tEntry.y) + pad
+        : Math.min(sBounds?.top ?? sExit.y, tBounds?.top ?? tEntry.y) - pad) +
+      channelOffset;
     points.push({ x: sExit.x, y: extendY });
     points.push({ x: tEntry.x, y: extendY });
   }
@@ -345,6 +359,7 @@ function routeHorizontalToVertical(
   pad: number,
   allNodes?: DiagramNode[],
   excludeIds?: Set<string>,
+  channelOffset: number = 0,
 ) {
   const goingRight = sourceAnchor === "right";
   const cornerL: Position = { x: tEntry.x, y: sExit.y };
@@ -367,9 +382,11 @@ function routeHorizontalToVertical(
   if (canL && cornerClear) {
     points.push(cornerL);
   } else {
-    const extendX = goingRight
-      ? Math.max(sBounds?.right ?? sExit.x, tBounds?.right ?? tEntry.x) + pad
-      : Math.min(sBounds?.left ?? sExit.x, tBounds?.left ?? tEntry.x) - pad;
+    const extendX =
+      (goingRight
+        ? Math.max(sBounds?.right ?? sExit.x, tBounds?.right ?? tEntry.x) + pad
+        : Math.min(sBounds?.left ?? sExit.x, tBounds?.left ?? tEntry.x) - pad) +
+      channelOffset;
     points.push({ x: extendX, y: sExit.y });
     points.push({ x: extendX, y: tEntry.y });
   }

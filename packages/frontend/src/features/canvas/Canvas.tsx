@@ -979,6 +979,136 @@ export function Canvas({
                   }
                 }
 
+                // 3. Calculate corridor channel offsets for orthogonal routing to prevent shared spines
+                const channelOffsetMap = new Map<string, number>();
+
+                if (isOrthogonal) {
+                  interface CorridorConn {
+                    edgeId: string;
+                    partnerCoord: number;
+                    dir: number;
+                  }
+                  const hCorridors = new Map<string, CorridorConn[]>();
+                  const vCorridors = new Map<string, CorridorConn[]>();
+
+                  for (const edge of diagram.edges) {
+                    const sNode = nodeMap.get(edge.source);
+                    const tNode = nodeMap.get(edge.target);
+                    if (!sNode || !tNode || sNode.id === tNode.id) continue;
+
+                    const sSize = getVisualSize(sNode);
+                    const tSize = getVisualSize(tNode);
+                    const sCenter = {
+                      x: sNode.position.x + sSize.width / 2,
+                      y: sNode.position.y + sSize.height / 2,
+                    };
+                    const tCenter = {
+                      x: tNode.position.x + tSize.width / 2,
+                      y: tNode.position.y + tSize.height / 2,
+                    };
+
+                    const sAnchor =
+                      edge.sourceAnchor ||
+                      getBestTargetAnchor(sNode, tNode, diagram.nodes);
+                    const tAnchor =
+                      edge.targetAnchor ||
+                      getBestTargetAnchor(tNode, sNode, diagram.nodes);
+
+                    const sIsHoriz = sAnchor === "left" || sAnchor === "right";
+                    const tIsHoriz = tAnchor === "left" || tAnchor === "right";
+
+                    if (sIsHoriz && tIsHoriz) {
+                      const leftBound = Math.min(
+                        sNode.position.x + sSize.width,
+                        tNode.position.x + tSize.width,
+                      );
+                      const rightBound = Math.max(
+                        sNode.position.x,
+                        tNode.position.x,
+                      );
+                      const gap = rightBound - leftBound;
+                      if (gap > 20) {
+                        const key = `${Math.round(leftBound / 50) * 50}-${Math.round(rightBound / 50) * 50}`;
+                        const list = hCorridors.get(key) || [];
+                        const partnerCoord =
+                          sNode.position.x > tNode.position.x
+                            ? sCenter.y
+                            : tCenter.y;
+                        const dir =
+                          sNode.position.x < tNode.position.x ? 1 : -1;
+                        list.push({ edgeId: edge.id, partnerCoord, dir });
+                        hCorridors.set(key, list);
+                      }
+                    } else if (!sIsHoriz && !tIsHoriz) {
+                      const topBound = Math.min(
+                        sNode.position.y + sSize.height,
+                        tNode.position.y + tSize.height,
+                      );
+                      const bottomBound = Math.max(
+                        sNode.position.y,
+                        tNode.position.y,
+                      );
+                      const gap = bottomBound - topBound;
+                      if (gap > 20) {
+                        const key = `${Math.round(topBound / 50) * 50}-${Math.round(bottomBound / 50) * 50}`;
+                        const list = vCorridors.get(key) || [];
+                        const partnerCoord =
+                          sNode.position.y > tNode.position.y
+                            ? sCenter.x
+                            : tCenter.x;
+                        const dir =
+                          sNode.position.y < tNode.position.y ? 1 : -1;
+                        list.push({ edgeId: edge.id, partnerCoord, dir });
+                        vCorridors.set(key, list);
+                      }
+                    }
+                  }
+
+                  // Allocate channel tracks across horizontal corridors
+                  for (const [, conns] of hCorridors) {
+                    if (conns.length <= 1) continue;
+                    conns.sort((a, b) => {
+                      if (Math.abs(a.partnerCoord - b.partnerCoord) > 2) {
+                        return a.partnerCoord - b.partnerCoord;
+                      }
+                      if (a.dir !== b.dir) return a.dir - b.dir;
+                      return a.edgeId.localeCompare(b.edgeId);
+                    });
+                    const n = conns.length;
+                    const spacing = Math.min(26, Math.max(16, 120 / (n + 1)));
+                    const totalSpan = (n - 1) * spacing;
+                    const start = -totalSpan / 2;
+                    for (let i = 0; i < n; i++) {
+                      channelOffsetMap.set(
+                        conns[i].edgeId,
+                        Math.round(start + i * spacing),
+                      );
+                    }
+                  }
+
+                  // Allocate channel tracks across vertical corridors
+                  for (const [, conns] of vCorridors) {
+                    if (conns.length <= 1) continue;
+                    conns.sort((a, b) => {
+                      if (Math.abs(a.partnerCoord - b.partnerCoord) > 2) {
+                        return a.partnerCoord - b.partnerCoord;
+                      }
+                      if (a.dir !== b.dir) return a.dir - b.dir;
+                      return a.edgeId.localeCompare(b.edgeId);
+                    });
+                    const n = conns.length;
+                    const spacing = Math.min(24, Math.max(14, 100 / (n + 1)));
+                    const totalSpan = (n - 1) * spacing;
+                    const start = -totalSpan / 2;
+                    for (let i = 0; i < n; i++) {
+                      channelOffsetMap.set(
+                        conns[i].edgeId,
+                        Math.round(start + i * spacing),
+                      );
+                    }
+                  }
+                }
+
                 return diagram.edges.map((edge) => {
                   const cfg = edgeConfigs.get(edge.id) || {
                     laneOffset: 0,
@@ -989,6 +1119,7 @@ export function Canvas({
                     portFractionMap.get(`${edge.id}:source`) ?? 0.5;
                   const tFrac =
                     portFractionMap.get(`${edge.id}:target`) ?? 0.5;
+                  const chOffset = channelOffsetMap.get(edge.id) ?? 0;
 
                   return (
                     <EdgeRenderer
@@ -1006,6 +1137,7 @@ export function Canvas({
                       labelShift={cfg.labelShift}
                       sourcePortFraction={sFrac}
                       targetPortFraction={tFrac}
+                      channelOffset={chOffset}
                       onClick={(e) => {
                         e.stopPropagation();
                         if (e.shiftKey && onEdgeShiftSelect) {

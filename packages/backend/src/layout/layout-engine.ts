@@ -61,10 +61,19 @@ export class LayoutEngine {
       case "flowchart":
         return layoutLinear(diagram, this.options);
       case "usecase":
-        // Use case works well with force layout
-        return layoutForce(diagram, this.options);
+        return layoutLayered(diagram, {
+          ...this.options,
+          direction: "LR",
+          rankSpacing: 180,
+          nodeSpacing: 70,
+        });
       case "state":
-        return layoutLayered(diagram, { ...this.options, direction: "LR" });
+        return layoutLayered(diagram, {
+          ...this.options,
+          direction: "LR",
+          rankSpacing: 200,
+          nodeSpacing: 90,
+        });
       case "component":
         return layoutLayered(diagram, this.options);
       case "deployment":

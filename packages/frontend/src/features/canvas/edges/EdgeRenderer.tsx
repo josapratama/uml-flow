@@ -31,6 +31,7 @@ interface EdgeRendererProps {
   labelShift?: number;
   sourcePortFraction?: number;
   targetPortFraction?: number;
+  channelOffset?: number;
   onClick: (e: React.MouseEvent) => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
@@ -59,6 +60,7 @@ export function EdgeRenderer({
   labelShift,
   sourcePortFraction = 0.5,
   targetPortFraction = 0.5,
+  channelOffset = 0,
   onClick,
   onDoubleClick,
   onWaypointDragStart,
@@ -180,6 +182,7 @@ export function EdgeRenderer({
         targetNode,
         effectiveLaneOffset,
         nodes,
+        channelOffset,
       );
     } else {
       allPoints = routeWithObstacleAvoidance(
@@ -495,8 +498,13 @@ function EdgeLabels({
         labelY >= n.position.y - pad &&
         labelY <= n.position.y + n.size.height + pad
       ) {
-        // Shift label clear to the right of the obstacle
-        labelX = n.position.x + n.size.width + 16;
+        // Shift label cleanly above or below the obstacle along its edge
+        const nCenterY = n.position.y + n.size.height / 2;
+        if (labelY < nCenterY) {
+          labelY = n.position.y - 14;
+        } else {
+          labelY = n.position.y + n.size.height + 14;
+        }
         break;
       }
     }

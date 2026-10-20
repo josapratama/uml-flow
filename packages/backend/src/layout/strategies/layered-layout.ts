@@ -57,7 +57,8 @@ export function layoutLayered(
     if (comp.type === "composite" && (comp as any).substates) {
       const subs: any[] = (comp as any).substates;
       if (subs.length > 0) {
-        let currentX = comp.position.x + 24;
+        const subGap = 84;
+        let currentX = comp.position.x + 32;
         const subY = comp.position.y + 54;
         let maxHeight = 44;
 
@@ -86,15 +87,15 @@ export function layoutLayered(
               size: { width: subW, height: subH },
             };
           }
-          currentX += subW + 28;
+          currentX += subW + subGap;
         }
 
         // Auto-size composite container to comfortably fit all substates
         const neededWidth = Math.max(
           comp.size.width,
-          currentX - comp.position.x + 20,
+          currentX - subGap + 32 - comp.position.x,
         );
-        const neededHeight = Math.max(comp.size.height, 54 + maxHeight + 28);
+        const neededHeight = Math.max(comp.size.height, 54 + maxHeight + 32);
         result.nodes[i] = {
           ...result.nodes[i],
           size: { width: neededWidth, height: neededHeight },
@@ -159,9 +160,13 @@ function assignRanks(
   }
 
   const ranks = new Map<string, number>();
+  for (const id of queue) {
+    ranks.set(id, 0);
+  }
   while (queue.length > 0) {
     const id = queue.shift()!;
     const rank = ranks.get(id) || 0;
+    ranks.set(id, rank);
     const node = graph.get(id);
     if (node) node.rank = rank;
 
@@ -288,6 +293,46 @@ function assignPositions(
       }
     }
     primaryOffset += maxPrimary + options.rankSpacing;
+  }
+
+  // Barycentric alignment refinement pass:
+  // Align single-node ranks or hub nodes with the centroid of their connected neighbors
+  // in adjacent ranks to create clean, symmetrical fan-out transitions and prevent line crossings
+  const adj = new Map<string, string[]>();
+  for (const [id] of graph) adj.set(id, []);
+  for (const edge of edges) {
+    if (graph.has(edge.source) && graph.has(edge.target)) {
+      adj.get(edge.source)?.push(edge.target);
+      adj.get(edge.target)?.push(edge.source);
+    }
+  }
+
+  for (let pass = 0; pass < 2; pass++) {
+    for (const rank of ranks) {
+      const group = rankGroups.get(rank)!;
+      if (group.length === 1) {
+        const node = group[0];
+        const neighbors = (adj.get(node.id) || [])
+          .map((id) => graph.get(id)!)
+          .filter((n) => n && n.rank !== node.rank);
+
+        if (neighbors.length > 0) {
+          const avgCenter =
+            neighbors.reduce((sum, n) => {
+              const c = isHorizontal
+                ? n.position.y + n.height / 2
+                : n.position.x + n.width / 2;
+              return sum + c;
+            }, 0) / neighbors.length;
+
+          if (isHorizontal) {
+            node.position.y = Math.max(60, Math.round(avgCenter - node.height / 2));
+          } else {
+            node.position.x = Math.max(60, Math.round(avgCenter - node.width / 2));
+          }
+        }
+      }
+    }
   }
 }
 
