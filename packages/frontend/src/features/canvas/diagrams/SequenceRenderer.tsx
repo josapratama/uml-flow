@@ -30,6 +30,7 @@ interface Props {
 export function SequenceRenderer(props: Props) {
   const {
     diagram,
+    theme = "dark",
     selectedParticipantId,
     selectedMessageId,
     onParticipantSelect,
@@ -39,6 +40,8 @@ export function SequenceRenderer(props: Props) {
     onMessageEdit,
     onMessageDelete,
   } = props;
+
+  const isDark = theme === "dark";
 
   const participants = diagram.participants || [];
   const messages = diagram.messages || [];
@@ -81,6 +84,7 @@ export function SequenceRenderer(props: Props) {
         <ParticipantBox
           key={p.id}
           participant={p}
+          theme={theme}
           isSelected={p.id === selectedParticipantId}
           isEditing={editingId === p.id}
           editValue={editingId === p.id ? editValue : ""}
@@ -105,9 +109,10 @@ export function SequenceRenderer(props: Props) {
           y1={startY - 10}
           x2={p.position.x}
           y2={lifelineEnd}
-          stroke="#999"
-          strokeWidth="1"
+          stroke={isDark ? "#6366f1" : "#94a3b8"}
+          strokeWidth="1.5"
           strokeDasharray="4,4"
+          opacity={isDark ? "0.75" : "0.9"}
         />
       ))}
 
@@ -116,6 +121,7 @@ export function SequenceRenderer(props: Props) {
         <FragmentBox
           key={frag.id}
           fragment={frag}
+          theme={theme}
           participants={participants}
           messages={messages}
           startY={startY}
@@ -136,6 +142,7 @@ export function SequenceRenderer(props: Props) {
           <MessageArrow
             key={msg.id}
             message={msg}
+            theme={theme}
             fromX={fromP.position.x}
             toX={toP.position.x}
             y={y}
@@ -168,6 +175,7 @@ export function SequenceRenderer(props: Props) {
         <ParticipantBox
           key={`bottom_${p.id}`}
           participant={{ ...p, position: { ...p.position, y: lifelineEnd } }}
+          theme={theme}
           isSelected={false}
           isEditing={false}
           editValue=""

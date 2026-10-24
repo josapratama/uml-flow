@@ -1,6 +1,11 @@
 import React from "react";
 
-export function ArrowDefs() {
+export function ArrowDefs({ theme = "dark" }: { theme?: "light" | "dark" }) {
+  const isDark = theme === "dark";
+  const markerStroke = isDark ? "#cbd5e1" : "#555";
+  const markerFill = isDark ? "#cbd5e1" : "#555";
+  const hollowFill = isDark ? "#12121f" : "white";
+
   return (
     <>
       {/* Inheritance - hollow triangle */}
@@ -15,8 +20,8 @@ export function ArrowDefs() {
       >
         <path
           d="M 2 2 L 14 8 L 2 14 Z"
-          fill="white"
-          stroke="#555"
+          fill={hollowFill}
+          stroke={markerStroke}
           strokeWidth="2"
         />
       </marker>
@@ -33,8 +38,8 @@ export function ArrowDefs() {
       >
         <path
           d="M 2 2 L 14 8 L 2 14 Z"
-          fill="white"
-          stroke="#555"
+          fill={hollowFill}
+          stroke={markerStroke}
           strokeWidth="2"
         />
       </marker>
@@ -52,7 +57,7 @@ export function ArrowDefs() {
         <path
           d="M 2 2 L 12 7 L 2 12"
           fill="none"
-          stroke="#555"
+          stroke={markerStroke}
           strokeWidth="2"
         />
       </marker>
@@ -70,7 +75,7 @@ export function ArrowDefs() {
         <path
           d="M 2 2 L 12 7 L 2 12"
           fill="none"
-          stroke="#555"
+          stroke={markerStroke}
           strokeWidth="2"
         />
       </marker>
@@ -87,8 +92,8 @@ export function ArrowDefs() {
       >
         <path
           d="M 1 7 L 9 1 L 17 7 L 9 13 Z"
-          fill="white"
-          stroke="#555"
+          fill={hollowFill}
+          stroke={markerStroke}
           strokeWidth="1.5"
         />
       </marker>
@@ -105,8 +110,8 @@ export function ArrowDefs() {
       >
         <path
           d="M 1 7 L 9 1 L 17 7 L 9 13 Z"
-          fill="#555"
-          stroke="#555"
+          fill={markerFill}
+          stroke={markerStroke}
           strokeWidth="1.5"
         />
       </marker>
@@ -121,7 +126,7 @@ export function ArrowDefs() {
         orient="auto"
         markerUnits="userSpaceOnUse"
       >
-        <path d="M 2 2 L 10 6 L 2 10 Z" fill="#555" />
+        <path d="M 2 2 L 10 6 L 2 10 Z" fill={markerFill} />
       </marker>
 
       {/* Transition - filled arrow (state) */}
@@ -134,7 +139,7 @@ export function ArrowDefs() {
         orient="auto"
         markerUnits="userSpaceOnUse"
       >
-        <path d="M 2 2 L 10 6 L 2 10 Z" fill="#555" />
+        <path d="M 2 2 L 10 6 L 2 10 Z" fill={markerFill} />
       </marker>
 
       {/* Include/Extend */}
@@ -150,7 +155,7 @@ export function ArrowDefs() {
         <path
           d="M 2 2 L 12 7 L 2 12"
           fill="none"
-          stroke="#555"
+          stroke={markerStroke}
           strokeWidth="2"
         />
       </marker>
@@ -166,7 +171,7 @@ export function ArrowDefs() {
         <path
           d="M 2 2 L 12 7 L 2 12"
           fill="none"
-          stroke="#555"
+          stroke={markerStroke}
           strokeWidth="2"
         />
       </marker>
@@ -194,7 +199,7 @@ export function ArrowDefs() {
         <path
           d="M 6 2 L 12 7 L 6 12"
           fill="none"
-          stroke="#555"
+          stroke={markerStroke}
           strokeWidth="2"
         />
       </marker>
@@ -210,7 +215,7 @@ export function ArrowDefs() {
         <path
           d="M 6 2 L 12 7 L 6 12"
           fill="none"
-          stroke="#555"
+          stroke={markerStroke}
           strokeWidth="2"
         />
       </marker>

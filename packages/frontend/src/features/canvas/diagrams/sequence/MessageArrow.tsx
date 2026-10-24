@@ -4,6 +4,7 @@ import { SvgInlineInput } from "./SvgInlineInput";
 
 export function MessageArrow({
   message,
+  theme = "dark",
   fromX,
   toX,
   y,
@@ -21,6 +22,7 @@ export function MessageArrow({
   onContextMenu,
 }: {
   message: SequenceMessage;
+  theme?: "light" | "dark";
   fromX: number;
   toX: number;
   y: number;
@@ -37,9 +39,13 @@ export function MessageArrow({
   onMouseLeave: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
 }) {
+  const isDark = theme === "dark";
   const isSelf = message.type === "self" || fromX === toX;
   const isReturn = message.type === "return" || message.type === "async";
-  const color = isSelected ? "#6366f1" : isHovered ? "#818cf8" : "#555";
+  const defaultColor = isDark ? "#cbd5e1" : "#555";
+  const hoverColor = isDark ? "#a5b4fc" : "#818cf8";
+  const selectColor = isDark ? "#818cf8" : "#6366f1";
+  const color = isSelected ? selectColor : isHovered ? hoverColor : defaultColor;
   const sw = isSelected ? 2 : 1.5;
   const midX = (fromX + toX) / 2;
 

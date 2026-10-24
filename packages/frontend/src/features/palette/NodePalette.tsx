@@ -154,7 +154,7 @@ export function NodePalette({
   };
 
   return (
-    <div className="w-44 bg-surface-2 border-r border-border flex flex-col shrink-0">
+    <div className="w-48 bg-surface-2 border-r border-border flex flex-col shrink-0">
       {/* Palette Header with Diagram Type Switcher */}
       <div className="p-2 border-b border-border bg-surface-1/40 space-y-1.5">
         <div className="flex items-center justify-between px-0.5">

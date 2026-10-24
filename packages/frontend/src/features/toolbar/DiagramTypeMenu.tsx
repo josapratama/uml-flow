@@ -37,7 +37,9 @@ export function DiagramTypeMenu({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`h-8 px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 ${
+        className={`h-8 px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center ${
+          variant === "palette" ? "w-full justify-between" : "gap-1.5"
+        } ${
           open
             ? "bg-surface-4 text-text border-accent shadow-xs"
             : "bg-surface-3 text-text-muted hover:text-text hover:bg-surface-4 border-border"
@@ -48,15 +50,23 @@ export function DiagramTypeMenu({
             : "Choose diagram type or create new visually"
         }
       >
-        <span className="text-sm">{activeInfo.icon}</span>
-        <span className="font-semibold text-text truncate max-w-[85px] sm:max-w-[110px] xl:max-w-[140px]">
-          {activeInfo.label}
+        <span className="flex items-center gap-1.5 min-w-0">
+          <span className="text-sm shrink-0">{activeInfo.icon}</span>
+          <span
+            className={`font-semibold text-text truncate ${
+              variant === "palette"
+                ? "max-w-[110px]"
+                : "max-w-[85px] sm:max-w-[110px] xl:max-w-[140px]"
+            }`}
+          >
+            {activeInfo.label}
+          </span>
         </span>
         <svg
           width="8"
           height="8"
           viewBox="0 0 10 10"
-          className={`transition-transform opacity-60 ${open ? "rotate-180" : ""}`}
+          className={`shrink-0 transition-transform opacity-60 ${open ? "rotate-180" : ""}`}
         >
           <path
             d="M2 3.5 L5 6.5 L8 3.5"
@@ -72,10 +82,12 @@ export function DiagramTypeMenu({
       {open && (
         <div
           className={`absolute ${
-            variant === "palette" ? "left-0" : "left-0 sm:left-auto"
-          } top-full mt-1.5 w-76 sm:w-84 max-h-[min(520px,calc(100vh-80px))] overflow-y-auto custom-scrollbar bg-surface-2/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150`}
+            variant === "palette"
+              ? "left-0 top-full mt-1.5 w-72 sm:w-80 max-h-[calc(100dvh-150px)]"
+              : "left-0 sm:left-auto top-full mt-1.5 w-76 sm:w-84 max-h-[calc(100dvh-75px)]"
+          } overflow-y-auto custom-scrollbar bg-surface-2/95 backdrop-blur-xl border border-border rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150`}
         >
-          <div className="px-3 pb-2 border-b border-border/60">
+          <div className="px-3 pb-1.5 pt-0.5 border-b border-border/60">
             <div className="text-xs font-semibold text-text flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span>🎨</span>
@@ -92,7 +104,7 @@ export function DiagramTypeMenu({
             </p>
           </div>
 
-          <div className="p-1.5 space-y-1">
+          <div className="p-1 space-y-0.5">
             {DIAGRAM_TYPES.map((d: DiagramTypeInfo) => {
               const isSelected = d.id === currentType;
               return (
@@ -102,13 +114,13 @@ export function DiagramTypeMenu({
                     onSelectType(d.id);
                     setOpen(false);
                   }}
-                  className={`w-full flex items-start gap-2.5 p-2 rounded-lg text-left transition-all group ${
+                  className={`w-full flex items-start gap-2 p-1.5 rounded-lg text-left transition-all group ${
                     isSelected
                       ? "bg-accent/15 border border-accent/40 text-text shadow-2xs"
                       : "hover:bg-surface-3 border border-transparent text-text-muted hover:text-text"
                   }`}
                 >
-                  <span className="text-lg p-1 rounded-md bg-surface-3/80 shrink-0 group-hover:scale-110 transition-transform">
+                  <span className="text-base p-1 rounded-md bg-surface-3/80 shrink-0 group-hover:scale-110 transition-transform">
                     {d.icon}
                   </span>
                   <div className="min-w-0 flex-1">

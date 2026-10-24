@@ -484,7 +484,7 @@ export function Canvas({
               />
             )}
           </pattern>
-          <ArrowDefs />
+          <ArrowDefs theme={canvasTheme} />
         </defs>
 
         {/* Marquee */}

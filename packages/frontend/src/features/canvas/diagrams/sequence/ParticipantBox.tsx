@@ -4,6 +4,7 @@ import { SvgInlineInput } from "./SvgInlineInput";
 
 export function ParticipantBox({
   participant,
+  theme = "dark",
   isSelected,
   isEditing,
   editValue,
@@ -14,6 +15,7 @@ export function ParticipantBox({
   onDoubleClick,
 }: {
   participant: SequenceParticipant;
+  theme?: "light" | "dark";
   isSelected?: boolean;
   isEditing: boolean;
   editValue: string;
@@ -24,9 +26,34 @@ export function ParticipantBox({
   onDoubleClick?: () => void;
 }) {
   const { position, name, type } = participant;
+  const isDark = theme === "dark";
   const boxW = Math.max(80, name.length * 8 + 20);
-  const stroke = isSelected ? "#6366f1" : "#444";
+  const stroke = isSelected
+    ? "#6366f1"
+    : isDark
+    ? "#c7d2fe"
+    : "#475569";
   const sw = isSelected ? 2.5 : 1.5;
+  const textColor = isDark ? "#f1f5f9" : "#0f172a";
+  const shapeBg = isSelected
+    ? isDark
+      ? "#312e81"
+      : "#EDE9FE"
+    : isDark
+    ? "#1e293b"
+    : "white";
+  const boxBg = isSelected
+    ? isDark
+      ? "#312e81"
+      : "#EDE9FE"
+    : isDark
+    ? "#1e293b"
+    : "#E3F2FD";
+  const boxStroke = isSelected
+    ? "#6366f1"
+    : isDark
+    ? "#4f46e5"
+    : stroke;
 
   if (type === "actor") {
     return (
@@ -46,14 +73,14 @@ export function ParticipantBox({
             stroke="#6366f1"
             strokeWidth="2"
             strokeDasharray="4,2"
-            opacity="0.5"
+            opacity="0.6"
           />
         )}
         <circle
           cx={position.x}
           cy={position.y - 20}
           r={10}
-          fill="none"
+          fill={isDark ? "#1e1e38" : "white"}
           stroke={stroke}
           strokeWidth={sw}
         />
@@ -105,7 +132,8 @@ export function ParticipantBox({
             y={position.y + 36}
             textAnchor="middle"
             fontSize="11"
-            fill="#333"
+            fill={textColor}
+            fontWeight="500"
           >
             {name}
           </text>
@@ -126,7 +154,7 @@ export function ParticipantBox({
             cx={position.x}
             cy={position.y}
             r={14}
-            fill={isSelected ? "#EDE9FE" : "white"}
+            fill={shapeBg}
             stroke={stroke}
             strokeWidth={sw}
           />
@@ -162,7 +190,8 @@ export function ParticipantBox({
               y={position.y + 28}
               textAnchor="middle"
               fontSize="11"
-              fill="#333"
+              fill={textColor}
+              fontWeight="500"
             >
               {name}
             </text>
@@ -174,7 +203,7 @@ export function ParticipantBox({
             cx={position.x}
             cy={position.y}
             r={14}
-            fill={isSelected ? "#EDE9FE" : "white"}
+            fill={shapeBg}
             stroke={stroke}
             strokeWidth={sw}
           />
@@ -202,7 +231,8 @@ export function ParticipantBox({
               y={position.y + 32}
               textAnchor="middle"
               fontSize="11"
-              fill="#333"
+              fill={textColor}
+              fontWeight="500"
             >
               {name}
             </text>
@@ -214,7 +244,7 @@ export function ParticipantBox({
             cx={position.x}
             cy={position.y}
             r={14}
-            fill={isSelected ? "#EDE9FE" : "white"}
+            fill={shapeBg}
             stroke={stroke}
             strokeWidth={sw}
           />
@@ -240,7 +270,8 @@ export function ParticipantBox({
               y={position.y + 28}
               textAnchor="middle"
               fontSize="11"
-              fill="#333"
+              fill={textColor}
+              fontWeight="500"
             >
               {name}
             </text>
@@ -253,13 +284,13 @@ export function ParticipantBox({
             cy={position.y - 6}
             rx={16}
             ry={6}
-            fill={isSelected ? "#EDE9FE" : "white"}
+            fill={shapeBg}
             stroke={stroke}
             strokeWidth={sw}
           />
           <path
             d={`M ${position.x - 16} ${position.y - 6} v 14 a 16 6 0 0 0 32 0 v -14`}
-            fill={isSelected ? "#EDE9FE" : "white"}
+            fill={shapeBg}
             stroke={stroke}
             strokeWidth={sw}
           />
@@ -279,7 +310,8 @@ export function ParticipantBox({
               y={position.y + 24}
               textAnchor="middle"
               fontSize="11"
-              fill="#333"
+              fill={textColor}
+              fontWeight="500"
             >
               {name}
             </text>
@@ -292,10 +324,10 @@ export function ParticipantBox({
             y={position.y - 16}
             width={boxW}
             height={32}
-            fill={isSelected ? "#EDE9FE" : "#E3F2FD"}
-            stroke={stroke}
+            fill={boxBg}
+            stroke={boxStroke}
             strokeWidth={sw}
-            rx={2}
+            rx={4}
           />
           {isEditing ? (
             <SvgInlineInput
@@ -313,8 +345,8 @@ export function ParticipantBox({
               y={position.y + 4}
               textAnchor="middle"
               fontSize="12"
-              fill="#333"
-              fontWeight={isSelected ? "600" : "normal"}
+              fill={textColor}
+              fontWeight={isSelected ? "600" : "500"}
             >
               {name}
             </text>
