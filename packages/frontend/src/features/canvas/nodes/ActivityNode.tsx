@@ -1,17 +1,19 @@
 import React from "react";
 import type { ActivityNode } from "@uml-editor/shared";
-import { resolveStyle, getStroke, getStrokeWidth } from "./useNodeStyle";
+import { resolveStyle, getStroke, getStrokeWidth, isDarkCanvas, getContrastTextColor } from "./useNodeStyle";
 import { SvgMultilineText } from "./SvgMultilineText";
 
 interface Props {
   node: ActivityNode;
   isSelected: boolean;
   onDragStart: (e: React.MouseEvent) => void;
+  canvasTheme?: string;
 }
 
-export function ActivityNodeRenderer({ node, isSelected, onDragStart }: Props) {
+export function ActivityNodeRenderer({ node, isSelected, onDragStart, canvasTheme }: Props) {
   const { position, size, name, type } = node;
-  const s = resolveStyle((node as any).style);
+  const isDark = isDarkCanvas(canvasTheme);
+  const s = resolveStyle((node as any).style, canvasTheme);
   const stroke = getStroke(s, isSelected);
   const sw = getStrokeWidth(s, isSelected);
 
@@ -23,7 +25,7 @@ export function ActivityNodeRenderer({ node, isSelected, onDragStart }: Props) {
             cx={size.width / 2}
             cy={size.height / 2}
             r={12}
-            fill={s.borderColor}
+            fill={isDark ? "#22c55e" : s.borderColor}
             stroke={stroke}
             strokeWidth={sw}
           />
@@ -36,14 +38,14 @@ export function ActivityNodeRenderer({ node, isSelected, onDragStart }: Props) {
               cy={size.height / 2}
               r={14}
               fill="none"
-              stroke={s.borderColor}
+              stroke={isDark ? "#ef4444" : s.borderColor}
               strokeWidth="2"
             />
             <circle
               cx={size.width / 2}
               cy={size.height / 2}
               r={9}
-              fill={s.borderColor}
+              fill={isDark ? "#ef4444" : s.borderColor}
             />
           </g>
         );
@@ -76,12 +78,15 @@ export function ActivityNodeRenderer({ node, isSelected, onDragStart }: Props) {
       case "decision": {
         const cx = size.width / 2,
           cy = size.height / 2;
+        const decBg = (node as any).style?.backgroundColor || (isDark ? "#262014" : "#FFF9C4");
+        const decBorder = isSelected ? "#818cf8" : (node as any).style?.borderColor || (isDark ? "#eab308" : "#facc15");
+        const decFont = (node as any).style?.fontColor || (isDark ? "#fef08a" : getContrastTextColor(decBg));
         return (
           <g>
             <polygon
               points={`${cx},0 ${size.width},${cy} ${cx},${size.height} 0,${cy}`}
-              fill={(node as any).style ? s.backgroundColor : "#FFF9C4"}
-              stroke={stroke}
+              fill={decBg}
+              stroke={decBorder}
               strokeWidth={sw}
             />
             <SvgMultilineText
@@ -90,7 +95,7 @@ export function ActivityNodeRenderer({ node, isSelected, onDragStart }: Props) {
               cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
-              fill={s.fontColor}
+              fill={decFont}
               fontWeight={s.fontWeight}
               maxWidth={size.width * 0.72}
             />

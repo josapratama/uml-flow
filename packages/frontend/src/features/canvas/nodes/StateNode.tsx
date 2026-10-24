@@ -1,20 +1,21 @@
 import React from "react";
 import type { StateNode } from "@uml-editor/shared";
-import { resolveStyle, getStroke, getStrokeWidth, isDarkCanvas } from "./useNodeStyle";
+import { resolveStyle, getStroke, getStrokeWidth, isDarkCanvas, getContrastTextColor } from "./useNodeStyle";
 import { SvgMultilineText } from "./SvgMultilineText";
 
 interface Props {
   node: StateNode;
   isSelected: boolean;
   onDragStart: (e: React.MouseEvent) => void;
+  canvasTheme?: string;
 }
 
-export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
+export function StateNodeRenderer({ node, isSelected, onDragStart, canvasTheme }: Props) {
   const { position, size, name, type } = node;
-  const s = resolveStyle((node as any).style);
+  const isDark = isDarkCanvas(canvasTheme);
+  const s = resolveStyle((node as any).style, canvasTheme);
   const stroke = getStroke(s, isSelected);
   const sw = getStrokeWidth(s, isSelected);
-  const isDark = isDarkCanvas();
   const cx = size.width / 2,
     cy = size.height / 2;
 
@@ -26,7 +27,7 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
             cx={cx}
             cy={cy}
             r={10}
-            fill={s.borderColor}
+            fill={isDark ? "#818cf8" : s.borderColor}
             stroke={stroke}
             strokeWidth={sw}
           />
@@ -39,10 +40,10 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
               cy={cy}
               r={12}
               fill="none"
-              stroke={s.borderColor}
+              stroke={isDark ? "#818cf8" : s.borderColor}
               strokeWidth="2"
             />
-            <circle cx={cx} cy={cy} r={8} fill={s.borderColor} />
+            <circle cx={cx} cy={cy} r={8} fill={isDark ? "#818cf8" : s.borderColor} />
           </g>
         );
       case "state":
@@ -71,13 +72,16 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
             />
           </g>
         );
-      case "choice":
+      case "choice": {
+        const choiceBg = (node as any).style?.backgroundColor || (isDark ? "#262014" : "#FFF9C4");
+        const choiceBorder = isSelected ? "#818cf8" : (node as any).style?.borderColor || (isDark ? "#eab308" : "#facc15");
+        const choiceFont = (node as any).style?.fontColor || (isDark ? "#fef08a" : getContrastTextColor(choiceBg));
         return (
           <g>
             <polygon
               points={`${cx},0 ${size.width},${cy} ${cx},${size.height} 0,${cy}`}
-              fill={(node as any).style ? s.backgroundColor : "#FFF9C4"}
-              stroke={stroke}
+              fill={choiceBg}
+              stroke={choiceBorder}
               strokeWidth={sw}
             />
             <SvgMultilineText
@@ -86,11 +90,12 @@ export function StateNodeRenderer({ node, isSelected, onDragStart }: Props) {
               cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
-              fill={s.fontColor}
+              fill={choiceFont}
               maxWidth={size.width * 0.72}
             />
           </g>
         );
+      }
       case "composite": {
         const headerH = 32;
         return (

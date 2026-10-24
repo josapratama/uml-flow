@@ -1,23 +1,34 @@
 import React from "react";
 import type { FlowchartNode } from "@uml-editor/shared";
-import { resolveStyle, getStroke, getStrokeWidth } from "./useNodeStyle";
+import {
+  resolveStyle,
+  getStrokeWidth,
+  isDarkCanvas,
+  getFlowchartColors,
+} from "./useNodeStyle";
 import { SvgMultilineText } from "./SvgMultilineText";
 
 interface Props {
   node: FlowchartNode;
   isSelected: boolean;
   onDragStart: (e: React.MouseEvent) => void;
+  canvasTheme?: string;
 }
 
 export function FlowchartNodeRenderer({
   node,
   isSelected,
   onDragStart,
+  canvasTheme,
 }: Props) {
   const { position, size, name, type } = node;
-  const s = resolveStyle((node as any).style);
-  const stroke = getStroke(s, isSelected);
+  const isDark = isDarkCanvas(canvasTheme);
+  const colors = getFlowchartColors(type, isDark, (node as any).style);
+  const s = resolveStyle((node as any).style, canvasTheme);
+  const stroke = isSelected ? "#818cf8" : colors.border;
   const sw = getStrokeWidth(s, isSelected);
+  const fill = colors.bg;
+  const fontFill = colors.font;
   const cx = size.width / 2,
     cy = size.height / 2;
 
@@ -32,15 +43,7 @@ export function FlowchartNodeRenderer({
               cy={cy}
               rx={cx - 2}
               ry={cy - 2}
-              fill={
-                type === "start"
-                  ? s.backgroundColor === "#ffffff"
-                    ? "#C8E6C9"
-                    : s.backgroundColor
-                  : s.backgroundColor === "#ffffff"
-                    ? "#FFCDD2"
-                    : s.backgroundColor
-              }
+              fill={fill}
               stroke={stroke}
               strokeWidth={sw}
             />
@@ -50,7 +53,7 @@ export function FlowchartNodeRenderer({
               cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
-              fill={s.fontColor}
+              fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
               maxWidth={size.width - 8}
@@ -66,9 +69,7 @@ export function FlowchartNodeRenderer({
               width={size.width}
               height={size.height}
               rx={s.borderRadius}
-              fill={
-                (node as any).style ? s.backgroundColor : "#E3F2FD"
-              }
+              fill={fill}
               stroke={stroke}
               strokeWidth={sw}
             />
@@ -78,7 +79,7 @@ export function FlowchartNodeRenderer({
               cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
-              fill={s.fontColor}
+              fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
               maxWidth={size.width - 16}
@@ -90,9 +91,7 @@ export function FlowchartNodeRenderer({
           <g>
             <polygon
               points={`${cx},2 ${size.width - 2},${cy} ${cx},${size.height - 2} 2,${cy}`}
-              fill={
-                (node as any).style ? s.backgroundColor : "#FFF9C4"
-              }
+              fill={fill}
               stroke={stroke}
               strokeWidth={sw}
             />
@@ -102,7 +101,7 @@ export function FlowchartNodeRenderer({
               cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
-              fill={s.fontColor}
+              fill={fontFill}
               fontWeight={s.fontWeight}
               maxWidth={size.width * 0.72}
             />
@@ -114,9 +113,7 @@ export function FlowchartNodeRenderer({
           <g>
             <polygon
               points={`${skew},0 ${size.width},0 ${size.width - skew},${size.height} 0,${size.height}`}
-              fill={
-                (node as any).style ? s.backgroundColor : "#F3E5F5"
-              }
+              fill={fill}
               stroke={stroke}
               strokeWidth={sw}
             />
@@ -126,7 +123,7 @@ export function FlowchartNodeRenderer({
               cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
-              fill={s.fontColor}
+              fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
               maxWidth={size.width - 32}
@@ -139,9 +136,7 @@ export function FlowchartNodeRenderer({
           <g>
             <path
               d={`M 0 0 H ${size.width} V ${size.height - 10} Q ${size.width * 0.75} ${size.height - 20} ${size.width / 2} ${size.height - 10} Q ${size.width * 0.25} ${size.height} 0 ${size.height - 10} Z`}
-              fill={
-                (node as any).style ? s.backgroundColor : "#FFF3E0"
-              }
+              fill={fill}
               stroke={stroke}
               strokeWidth={sw}
             />
@@ -151,7 +146,7 @@ export function FlowchartNodeRenderer({
               cy={cy - 4}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
-              fill={s.fontColor}
+              fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
               maxWidth={size.width - 16}
@@ -166,9 +161,7 @@ export function FlowchartNodeRenderer({
               cy={10}
               rx={cx - 2}
               ry={10}
-              fill={
-                (node as any).style ? s.backgroundColor : "#E8F5E9"
-              }
+              fill={fill}
               stroke={stroke}
               strokeWidth={sw}
             />
@@ -177,9 +170,7 @@ export function FlowchartNodeRenderer({
               y="10"
               width={size.width - 4}
               height={size.height - 20}
-              fill={
-                (node as any).style ? s.backgroundColor : "#E8F5E9"
-              }
+              fill={fill}
               stroke={stroke}
               strokeWidth={sw}
             />
@@ -188,9 +179,7 @@ export function FlowchartNodeRenderer({
               cy={size.height - 10}
               rx={cx - 2}
               ry={10}
-              fill={
-                (node as any).style ? s.backgroundColor : "#E8F5E9"
-              }
+              fill={fill}
               stroke={stroke}
               strokeWidth={sw}
             />
@@ -200,7 +189,7 @@ export function FlowchartNodeRenderer({
               cy={cy + 4}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
-              fill={s.fontColor}
+              fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
               maxWidth={size.width - 16}
@@ -216,9 +205,7 @@ export function FlowchartNodeRenderer({
               width={size.width}
               height={size.height}
               rx={s.borderRadius}
-              fill={
-                (node as any).style ? s.backgroundColor : "#E0F7FA"
-              }
+              fill={fill}
               stroke={stroke}
               strokeWidth={sw}
             />
@@ -244,7 +231,7 @@ export function FlowchartNodeRenderer({
               cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
-              fill={s.fontColor}
+              fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
               maxWidth={size.width - 28}
@@ -258,7 +245,7 @@ export function FlowchartNodeRenderer({
               cx={cx}
               cy={cy}
               r={Math.min(cx, cy) - 2}
-              fill={s.backgroundColor}
+              fill={fill}
               stroke={stroke}
               strokeWidth={sw}
             />
@@ -268,7 +255,7 @@ export function FlowchartNodeRenderer({
               cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
-              fill={s.fontColor}
+              fill={fontFill}
               fontWeight={s.fontWeight}
               maxWidth={size.width - 4}
             />
@@ -283,7 +270,7 @@ export function FlowchartNodeRenderer({
               width={size.width}
               height={size.height}
               rx={s.borderRadius}
-              fill={s.backgroundColor}
+              fill={fill}
               stroke={stroke}
               strokeWidth={sw}
             />
@@ -293,7 +280,7 @@ export function FlowchartNodeRenderer({
               cy={cy}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
-              fill={s.fontColor}
+              fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
               maxWidth={size.width - 16}

@@ -156,6 +156,7 @@ export function CanvasLayers(props: CanvasLayersProps) {
       connectingSourceId={connecting?.sourceId}
       isEditing={editingNodeId === node.id}
       hasMultiSelection={multiSelected.size > 0}
+      canvasTheme={canvasTheme}
       onSetHovered={(hovered) =>
         setHoveredNodeId(hovered ? node.id : null)
       }

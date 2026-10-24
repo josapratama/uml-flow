@@ -17,6 +17,7 @@ interface Props {
   hideText?: boolean;
   onDragStart: (e: React.MouseEvent) => void;
   onDoubleClick?: () => void;
+  canvasTheme?: string;
 }
 
 /** Routes to the correct node renderer based on diagram type. */
@@ -27,8 +28,9 @@ export function NodeRenderer({
   hideText,
   onDragStart,
   onDoubleClick,
+  canvasTheme,
 }: Props) {
-  const props = { node: node as any, isSelected, onDragStart, hideText };
+  const props = { node: node as any, isSelected, onDragStart, hideText, canvasTheme };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();

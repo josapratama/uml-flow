@@ -26,6 +26,7 @@ interface CanvasNodeItemProps {
   onQuickAddNode?: (nodeId: string) => void;
   onRenameSubmit: (val: string) => void;
   onRenameCancel: () => void;
+  canvasTheme?: string;
 }
 
 export function CanvasNodeItem({
@@ -48,6 +49,7 @@ export function CanvasNodeItem({
   onQuickAddNode,
   onRenameSubmit,
   onRenameCancel,
+  canvasTheme,
 }: CanvasNodeItemProps) {
   const visualSize = getVisualSize(node);
 
@@ -65,6 +67,7 @@ export function CanvasNodeItem({
           hideText={isEditing}
           onDragStart={onDragStart}
           onDoubleClick={onDoubleClick}
+          canvasTheme={canvasTheme}
         />
 
         {/* Drop target highlights */}

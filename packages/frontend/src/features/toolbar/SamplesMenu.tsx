@@ -49,7 +49,8 @@ export function SamplesMenu({ onSampleChange }: Props) {
         title={t("samples.menuTooltip")}
       >
         <span>📐</span>
-        <span className="hidden sm:inline">{t("samples.menuTitle")}</span>
+        <span className="hidden sm:inline md:hidden xl:inline">{t("samples.menuTitle")}</span>
+        <span className="hidden md:inline xl:hidden">Contoh</span>
         <svg
           width="8"
           height="8"
