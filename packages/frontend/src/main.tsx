@@ -58,6 +58,19 @@ function Root() {
     return () => window.removeEventListener("hashchange", handler);
   }, []);
 
+  // Scroll to top and reset overflow on page change
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    if (page === "editor") {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [page]);
+
   const handleOpenEditor = (code?: string) => {
     if (code) setInitialEditorCode(code);
     setPage("editor");

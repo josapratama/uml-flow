@@ -737,11 +737,15 @@ export default function App(props: AppProps = {}) {
     onToggleShortcuts: () => setShowShortcuts((v) => !v),
   });
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const selectedNode =
     diagram?.nodes.find((n) => n.id === selectedNodeId) || null;
 
   return (
-    <div ref={appRef} className="flex flex-col h-screen overflow-hidden">
+    <div ref={appRef} className="fixed inset-0 flex flex-col w-full h-full overflow-hidden">
       <Toolbar
         mode={mode}
         onModeChange={setMode}

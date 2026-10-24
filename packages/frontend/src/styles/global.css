@@ -16,12 +16,17 @@
 }
 
 /* Base */
+html,
 body {
-  @apply bg-surface text-text font-sans h-screen antialiased;
+  @apply bg-surface text-text font-sans antialiased;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
 }
 
 #root {
-  @apply h-screen flex flex-col;
+  @apply h-full w-full min-h-full flex flex-col;
 }
 
 /* Code editor overlay technique */
