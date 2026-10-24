@@ -102,7 +102,7 @@ export function Toolbar(props: ToolbarProps) {
     onNavigateHome,
     onApplyPalette,
   } = props;
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const handleGoHome = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -111,9 +111,9 @@ export function Toolbar(props: ToolbarProps) {
   };
 
   return (
-    <header className="flex items-center justify-between px-3 h-12 bg-surface-2 border-b border-border shrink-0 gap-2 z-50 relative select-none">
+    <header className="flex items-center justify-between px-2 sm:px-3 h-12 bg-surface-2 border-b border-border shrink-0 gap-1.5 sm:gap-2 z-50 relative select-none max-w-full">
       {/* --- Left Zone: Brand & Document Management --- */}
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
         {/* Brand / Logo */}
         <button
           onClick={handleGoHome}
@@ -134,12 +134,12 @@ export function Toolbar(props: ToolbarProps) {
               <rect x="8" y="14" width="7" height="7" rx="1.5" />
             </svg>
           </div>
-          <span className="font-bold text-xs tracking-tight text-text group-hover:text-accent transition-colors hidden sm:inline">
+          <span className="font-bold text-xs tracking-tight text-text group-hover:text-accent transition-colors hidden xl:inline">
             UML Flow
           </span>
         </button>
 
-        <div className="w-px h-5 bg-border/60 mx-0.5 hidden sm:block" />
+        <div className="w-px h-5 bg-border/60 mx-0.5 hidden xl:block" />
 
         {/* Project File Menu */}
         <ProjectMenu
@@ -194,7 +194,7 @@ export function Toolbar(props: ToolbarProps) {
       <div className="flex items-center justify-center shrink-0">
         <div className="flex items-center h-8 bg-surface-3 border border-border rounded-lg p-0.5 shadow-2xs">
           <button
-            className={`h-7 px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+            className={`h-7 px-2 sm:px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${
               mode === "code"
                 ? "bg-accent text-white shadow-xs"
                 : "text-text-muted hover:text-text"
@@ -203,10 +203,10 @@ export function Toolbar(props: ToolbarProps) {
             title={t("toolbar.codeMode")}
           >
             <span>📝</span>
-            <span>{t("toolbar.codeMode")}</span>
+            <span className="hidden sm:inline">{t("toolbar.codeMode")}</span>
           </button>
           <button
-            className={`h-7 px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+            className={`h-7 px-2 sm:px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${
               mode === "split"
                 ? "bg-accent text-white shadow-xs"
                 : "text-text-muted hover:text-text"
@@ -215,10 +215,10 @@ export function Toolbar(props: ToolbarProps) {
             title={t("toolbar.splitMode")}
           >
             <span>◫</span>
-            <span>{t("toolbar.splitMode")}</span>
+            <span className="hidden sm:inline">{t("toolbar.splitMode")}</span>
           </button>
           <button
-            className={`h-7 px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+            className={`h-7 px-2 sm:px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${
               mode === "visual"
                 ? "bg-accent text-white shadow-xs"
                 : "text-text-muted hover:text-text"
@@ -227,7 +227,7 @@ export function Toolbar(props: ToolbarProps) {
             title={t("toolbar.visualMode")}
           >
             <span>🎨</span>
-            <span>{t("toolbar.visualMode")}</span>
+            <span className="hidden sm:inline">{t("toolbar.visualMode")}</span>
           </button>
         </div>
       </div>
@@ -312,16 +312,16 @@ export function Toolbar(props: ToolbarProps) {
             <button
               onClick={onSyncToCode}
               disabled={!hasDiagram}
-              title={`${t("toolbar.syncFromCanvas")} - Sinkronkan perubahan visual ke kode`}
-              className="h-8 px-3 bg-linear-to-r from-accent to-indigo-500 hover:from-accent-hover hover:to-indigo-400 text-white text-xs font-semibold rounded-lg transition-all shadow-xs hover:shadow-accent/25 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
+              title={`${t("toolbar.syncFromCanvas")} - Sinkronkan perubahan kanvas ke kode`}
+              className="h-8 px-2.5 sm:px-3 bg-linear-to-r from-accent to-indigo-500 hover:from-accent-hover hover:to-indigo-400 text-white text-xs font-semibold rounded-lg transition-all shadow-xs hover:shadow-accent/25 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
             >
               <span className="text-sm">⟳</span>
-              <span className="hidden sm:inline">{t("toolbar.syncFromCanvas")}</span>
+              <span>{locale === "id" ? "Sinkron" : "Sync"}</span>
             </button>
           )
         ) : (
           <button
-            className="h-8 px-3 sm:px-3.5 bg-linear-to-r from-accent to-indigo-500 hover:from-accent-hover hover:to-indigo-400 text-white text-xs font-semibold rounded-lg transition-all shadow-xs hover:shadow-accent/25 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
+            className="h-8 px-2.5 sm:px-3.5 bg-linear-to-r from-accent to-indigo-500 hover:from-accent-hover hover:to-indigo-400 text-white text-xs font-semibold rounded-lg transition-all shadow-xs hover:shadow-accent/25 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
             onClick={onCompile}
             disabled={isCompiling}
             title={`${t("toolbar.compile")} (Ctrl+Enter)`}

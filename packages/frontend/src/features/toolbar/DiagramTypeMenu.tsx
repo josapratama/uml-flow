@@ -49,7 +49,7 @@ export function DiagramTypeMenu({
         }
       >
         <span className="text-sm">{activeInfo.icon}</span>
-        <span className="font-semibold text-text truncate max-w-[110px] sm:max-w-[140px]">
+        <span className="font-semibold text-text truncate max-w-[85px] sm:max-w-[110px] xl:max-w-[140px]">
           {activeInfo.label}
         </span>
         <svg

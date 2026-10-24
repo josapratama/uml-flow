@@ -51,7 +51,7 @@ export function ProjectMenu({
         title={t("toolbar.projectMenuDesc")}
       >
         <span className="text-sm">📁</span>
-        <span>{t("toolbar.projectMenu")}</span>
+        <span className="hidden sm:inline">{t("toolbar.projectMenu")}</span>
         <svg
           width="8"
           height="8"
