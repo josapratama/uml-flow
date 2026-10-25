@@ -17,11 +17,13 @@ export function downloadFile(content: string, filename: string, mime: string) {
 interface UseAppExportOptions {
   diagram: Diagram | null;
   onOpenAcademicCaption: () => void;
+  onOpenSQLExport?: () => void;
 }
 
 export function useAppExport({
   diagram,
   onOpenAcademicCaption,
+  onOpenSQLExport,
 }: UseAppExportOptions) {
   const { locale } = useI18n();
   const isId = locale === "id";
@@ -177,11 +179,15 @@ export function useAppExport({
               showToast(isId ? "Ekspor SQL hanya didukung untuk Diagram ERD" : "SQL export only works for ERD diagrams", "error");
               break;
             }
+            if (onOpenSQLExport) {
+              onOpenSQLExport();
+              break;
+            }
             const { generateSQL } = await import(
               "../../services/code-generator"
             );
             const sql = generateSQL(diagram);
-            if (!sql || sql.startsWith("-- Only ERD")) {
+            if (!sql || sql.startsWith("-- No entities")) {
               showToast(isId ? "Tidak ada entitas yang ditemukan untuk diekspor" : "No entities found to export", "error");
               break;
             }

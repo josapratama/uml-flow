@@ -1,11 +1,15 @@
 import type { Diagram, ERDEntity } from "@uml-editor/shared";
 
+export type SqlDialect = "postgres" | "mysql" | "sqlite";
+
 function sanitizeSqlIdentifier(name: string): string {
   return (name || "unnamed").replace(/[^a-zA-Z0-9_]/g, "_").toLowerCase();
 }
 
-function mapSqlType(type: string): string {
-  if (!type || type.trim() === "") return "VARCHAR(255)";
+function mapSqlType(type: string, dialect: SqlDialect): string {
+  if (!type || type.trim() === "") {
+    return dialect === "sqlite" ? "TEXT" : "VARCHAR(255)";
+  }
   const t = type.trim();
 
   if (/\w+\s*\([^)]+\)/.test(t)) {
@@ -16,7 +20,7 @@ function mapSqlType(type: string): string {
   switch (lower) {
     case "string":
     case "varchar":
-      return "VARCHAR(255)";
+      return dialect === "sqlite" ? "TEXT" : "VARCHAR(255)";
     case "text":
     case "longtext":
     case "mediumtext":
@@ -24,73 +28,94 @@ function mapSqlType(type: string): string {
     case "int":
     case "integer":
     case "number":
-      return "INT";
+      return dialect === "postgres" ? "INTEGER" : dialect === "sqlite" ? "INTEGER" : "INT";
     case "bigint":
     case "long":
-      return "BIGINT";
+      return dialect === "sqlite" ? "INTEGER" : "BIGINT";
     case "smallint":
     case "short":
-      return "SMALLINT";
+      return dialect === "sqlite" ? "INTEGER" : "SMALLINT";
     case "serial":
     case "auto_increment":
-      return "SERIAL";
+      if (dialect === "postgres") return "SERIAL";
+      if (dialect === "sqlite") return "INTEGER";
+      return "INT AUTO_INCREMENT";
     case "bool":
     case "boolean":
+      if (dialect === "sqlite") return "INTEGER";
+      if (dialect === "mysql") return "TINYINT(1)";
       return "BOOLEAN";
     case "date":
-      return "DATE";
+      return dialect === "sqlite" ? "TEXT" : "DATE";
     case "time":
-      return "TIME";
+      return dialect === "sqlite" ? "TEXT" : "TIME";
     case "datetime":
     case "timestamp":
-      return "TIMESTAMP";
+      if (dialect === "postgres") return "TIMESTAMP WITH TIME ZONE";
+      if (dialect === "sqlite") return "TEXT";
+      return "DATETIME";
     case "float":
-      return "FLOAT";
+      return dialect === "sqlite" ? "REAL" : "FLOAT";
     case "double":
     case "real":
-      return "DOUBLE PRECISION";
+      return dialect === "sqlite" ? "REAL" : dialect === "postgres" ? "DOUBLE PRECISION" : "DOUBLE";
     case "decimal":
     case "numeric":
     case "money":
-      return "DECIMAL(10, 2)";
+      return dialect === "sqlite" ? "NUMERIC" : "DECIMAL(12, 2)";
     case "uuid":
-      return "UUID";
+      if (dialect === "postgres") return "UUID";
+      if (dialect === "mysql") return "VARCHAR(36)";
+      return "TEXT";
     case "json":
     case "jsonb":
+      if (dialect === "postgres") return "JSONB";
+      if (dialect === "sqlite") return "TEXT";
       return "JSON";
-    case "blob":
-    case "binary":
-    case "bytea":
-      return "BYTEA";
     default:
-      return t.toUpperCase();
+      return dialect === "sqlite" ? "TEXT" : "VARCHAR(255)";
   }
 }
 
 /**
- * Generate SQL DDL (CREATE TABLE, PRIMARY KEY, FOREIGN KEY) from an ERD diagram.
+ * Universal SQL DDL Schema Generator
+ * Supports PostgreSQL, MySQL, and SQLite dialects.
  */
-export function generateSQL(diagram: Diagram): string {
+export function generateSQL(
+  diagram: Diagram | null | undefined,
+  dialect: SqlDialect = "postgres"
+): string {
+  if (!diagram) return "-- No diagram provided";
   if (diagram.type !== "erd") {
-    return "-- Only ERD diagrams can generate SQL DDL";
+    return `-- Only ERD diagrams are supported for SQL DDL export (current: ${diagram.type})`;
   }
 
   const entities = (diagram.nodes || []).filter(
-    (n): n is ERDEntity => n.type === "entity" || "attributes" in n,
+    (n): n is ERDEntity => n.type === "erd-entity" || (n as any).type === "entity",
   );
 
   if (entities.length === 0) {
     return "-- No entities found in ERD diagram";
   }
 
+  const dialectNames: Record<SqlDialect, string> = {
+    postgres: "PostgreSQL",
+    mysql: "MySQL",
+    sqlite: "SQLite",
+  };
+
   const lines: string[] = [
     "-- ===================================================",
-    `-- Auto-generated SQL DDL Schema`,
+    `-- Auto-generated SQL DDL Schema (${dialectNames[dialect]})`,
     `-- Diagram: ${diagram.name || "ERD Diagram"}`,
     `-- Generated: ${new Date().toISOString()}`,
     "-- ===================================================",
     "",
   ];
+
+  if (dialect === "sqlite") {
+    lines.push("PRAGMA foreign_keys = ON;\n");
+  }
 
   const entityMap = new Map<string, ERDEntity>();
   for (const ent of entities) {
@@ -115,20 +140,26 @@ export function generateSQL(diagram: Diagram): string {
     const attrs = ent.attributes || [];
     for (const attr of attrs) {
       const colName = sanitizeSqlIdentifier(attr.name);
-      const colType = mapSqlType(attr.type);
+      let colType = mapSqlType(attr.type, dialect);
       const isPk = !!attr.isPrimaryKey;
       const isUnique = !!attr.isUnique;
       const isNullable = isPk ? false : !!attr.isNullable;
 
+      // SQLite special primary key auto increment
+      if (dialect === "sqlite" && isPk && (attr.type.toLowerCase().includes("int") || attr.type.toLowerCase().includes("serial"))) {
+        colDefs.push(`  ${colName} INTEGER PRIMARY KEY AUTOINCREMENT`);
+        continue;
+      }
+
       let def = `  ${colName} ${colType}`;
-      if (!isNullable) def += " NOT NULL";
+      if (!isNullable && !isPk) def += " NOT NULL";
       colDefs.push(def);
 
       if (isPk) pks.push(colName);
       else if (isUnique) uniques.push(colName);
     }
 
-    if (pks.length > 0) {
+    if (pks.length > 0 && !(dialect === "sqlite" && pks.length === 1 && colDefs.some((c) => c.includes("PRIMARY KEY AUTOINCREMENT")))) {
       colDefs.push(`  PRIMARY KEY (${pks.join(", ")})`);
     }
 
@@ -191,7 +222,11 @@ export function generateSQL(diagram: Diagram): string {
 
     colDefs.push(...fks);
     lines.push(colDefs.join(",\n"));
-    lines.push(");", "");
+    if (dialect === "mysql") {
+      lines.push(") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;", "");
+    } else {
+      lines.push(");", "");
+    }
   }
 
   // Handle many-to-many edges
@@ -221,7 +256,11 @@ export function generateSQL(diagram: Diagram): string {
     lines.push(
       `  CONSTRAINT fk_${juncName}_${sanitizeSqlIdentifier(tgt.name)} FOREIGN KEY (${tgtCol}) REFERENCES ${sanitizeSqlIdentifier(tgt.name)}(${sanitizeSqlIdentifier(tgtPk)}) ON DELETE CASCADE`,
     );
-    lines.push(");", "");
+    if (dialect === "mysql") {
+      lines.push(") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;", "");
+    } else {
+      lines.push(");", "");
+    }
   }
 
   return lines.join("\n");

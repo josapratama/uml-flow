@@ -31,6 +31,13 @@ function getExportOptions(locale: Locale): ExportOption[] {
 
     // --- Gambar Visual ---
     {
+      id: "clipboard-png",
+      label: isId ? "Salin PNG ke Clipboard" : "Copy PNG to Clipboard",
+      icon: "📋",
+      description: isId ? "Salin gambar langsung untuk di-paste (Ctrl+V)" : "Direct copy to paste into Docs/Notion",
+      category: "image",
+    },
+    {
       id: "png",
       label: "PNG Image (2x)",
       icon: "🖼️",
@@ -42,6 +49,13 @@ function getExportOptions(locale: Locale): ExportOption[] {
       label: "SVG Vector",
       icon: "📐",
       description: isId ? "Grafik vektor tajam tanpa pecah" : "Crisp scalable vector graphic",
+      category: "image",
+    },
+    {
+      id: "clipboard-svg",
+      label: isId ? "Salin SVG Markup" : "Copy SVG Code",
+      icon: "📋",
+      description: isId ? "Salin teks markup SVG ke clipboard" : "Copy raw SVG markup to clipboard",
       category: "image",
     },
 

@@ -57,6 +57,7 @@ export interface AppWorkspaceProps {
   globalStyle: Record<string, any>;
   onGlobalStyleChange: (s: any) => void;
   onCreateNewDiagram?: (type: DiagramType) => void;
+  onCopyPNG?: () => void;
 }
 
 export function AppWorkspace(props: AppWorkspaceProps) {
@@ -178,6 +179,7 @@ export function AppWorkspace(props: AppWorkspaceProps) {
               onEdgeRoutingToggle={onEdgeRoutingToggle}
               activeEdgeTool={activeEdgeTool}
               onQuickAddNode={onQuickAddNode}
+              onCopyPNG={props.onCopyPNG}
               onContextMenu={onCanvasContextMenu}
             />
           </div>

@@ -10,6 +10,7 @@ import { AIAssistant } from "../ui/AIAssistant";
 import { PresentationMode } from "../ui/PresentationMode";
 import { DiagramDiffPanel } from "../ui/DiagramDiffPanel";
 import { AcademicCaptionModal } from "../ui/AcademicCaptionModal";
+import { SQLExportModal } from "../ui/SQLExportModal";
 import { ImportModal } from "../ui/ImportModal";
 import { ShareModal } from "../ui/ShareModal";
 
@@ -42,6 +43,8 @@ interface AppModalsProps {
   onLoadDiffVersion: (d: Diagram) => void;
   showAcademicCaption: boolean;
   onCloseAcademicCaption: () => void;
+  showSQLExport?: boolean;
+  onCloseSQLExport?: () => void;
   showImportModal: boolean;
   onCloseImportModal: () => void;
   onImportDSL: (dsl: string) => void;
@@ -79,6 +82,8 @@ export function AppModals({
   onLoadDiffVersion,
   showAcademicCaption,
   onCloseAcademicCaption,
+  showSQLExport = false,
+  onCloseSQLExport,
   showImportModal,
   onCloseImportModal,
   onImportDSL,
@@ -137,6 +142,12 @@ export function AppModals({
       <AcademicCaptionModal
         isOpen={showAcademicCaption}
         onClose={onCloseAcademicCaption}
+        diagram={diagram}
+      />
+
+      <SQLExportModal
+        isOpen={showSQLExport}
+        onClose={onCloseSQLExport || (() => {})}
         diagram={diagram}
       />
 

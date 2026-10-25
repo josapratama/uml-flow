@@ -6,7 +6,7 @@ import { LayoutDropdown } from "./LayoutDropdown";
 import { ProjectMenu } from "./ProjectMenu";
 import { CanvasOptionsMenu } from "./CanvasOptionsMenu";
 import { SamplesMenu } from "./SamplesMenu";
-import { DiagramTypeMenu } from "./DiagramTypeMenu";
+import { DiagramTypeBadge } from "./DiagramTypeBadge";
 import { useI18n } from "../../i18n";
 
 type EditorMode = "visual" | "code" | "split";
@@ -22,8 +22,8 @@ interface ToolbarProps {
   hasDiagram: boolean;
   diagramName?: string;
   diagramType?: string;
-  onSelectDiagramType?: (type: DiagramType) => void;
-  onSampleChange: (sample: string) => void;
+  onSelectDiagramType?: (type: DiagramType, inNewTab?: boolean) => void;
+  onSampleChange: (sample: string, inNewTab?: boolean) => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -154,8 +154,8 @@ export function Toolbar(props: ToolbarProps) {
           hasDiagram={hasDiagram}
         />
 
-        {/* Diagram Type Selector & Visual Creator */}
-        <DiagramTypeMenu
+        {/* Active Diagram Type Badge */}
+        <DiagramTypeBadge
           currentType={diagramType}
           onSelectType={onSelectDiagramType || (() => {})}
         />

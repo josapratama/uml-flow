@@ -11,6 +11,7 @@ import { CanvasEmptyState } from "./CanvasEmptyState";
 import { CanvasLayers } from "./CanvasLayers";
 import { getVisualSize } from "./nodes/getVisualSize";
 import { computeEdgeRoutingLayout } from "./utils/edgeRoutingLayout";
+import { DIAGRAM_TYPES } from "../../data/starter-diagrams";
 import { useCanvasState } from "./hooks/useCanvasState";
 import { useCanvasHandlers } from "./hooks/useCanvasHandlers";
 import { useCanvasZoom } from "./hooks/useCanvasZoom";
@@ -88,6 +89,7 @@ interface CanvasProps {
   activeEdgeTool?: string | null;
   onQuickAddNode?: (sourceNodeId: string) => void;
   onCreateNewDiagram?: (type: DiagramType) => void;
+  onCopyPNG?: () => void;
   onContextMenu?: (
     e: React.MouseEvent,
     target: {
@@ -135,8 +137,28 @@ export function Canvas({
   activeEdgeTool,
   onQuickAddNode,
   onCreateNewDiagram,
+  onCopyPNG,
   onContextMenu,
 }: CanvasProps) {
+  // --- Watermark State ---
+  const [showWatermark, setShowWatermark] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("uml_canvas_watermark") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleWatermark = useCallback(() => {
+    setShowWatermark((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem("uml_canvas_watermark", String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
   // --- State ---
   const state = useCanvasState();
   const {
@@ -387,7 +409,7 @@ export function Canvas({
 
   return (
     <div className="w-full h-full relative">
-      {/* Zoom & Search controls */}
+      {/* Zoom, Copy, Search & Watermark controls */}
       <CanvasControls
         canvasTheme={canvasTheme}
         scale={view.scale}
@@ -399,7 +421,35 @@ export function Canvas({
         onZoomToFit={zoomToFit}
         edgeRouting={edgeRouting}
         onEdgeRoutingToggle={onEdgeRoutingToggle}
+        onCopyPNG={onCopyPNG}
+        showWatermark={showWatermark}
+        onToggleWatermark={handleToggleWatermark}
       />
+
+      {/* Canvas Info / Watermark Badge */}
+      {showWatermark && (
+        <div
+          className={`absolute bottom-3 left-3 flex items-center gap-2 rounded-xl px-3 py-1.5 shadow-lg backdrop-blur-md z-10 border transition-all ${
+            canvasTheme === "dark"
+              ? "bg-surface-2/90 border-border/80 text-text"
+              : "bg-white/90 border-slate-200 text-slate-800"
+          }`}
+        >
+          <span className="text-base">
+            {DIAGRAM_TYPES.find((d) => d.id === diagram.type)?.icon || "📐"}
+          </span>
+          <div className="flex flex-col min-w-0">
+            <div className="text-xs font-bold truncate max-w-[200px]">
+              {diagram.name || "Diagram"}
+            </div>
+            <div className="text-[10px] text-text-muted flex items-center gap-1">
+              <span>{DIAGRAM_TYPES.find((d) => d.id === diagram.type)?.label || diagram.type}</span>
+              <span>·</span>
+              <span className="font-semibold text-accent">UML Flow</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Canvas Search Bar */}
       <CanvasSearchBar

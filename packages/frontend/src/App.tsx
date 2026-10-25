@@ -12,7 +12,7 @@ import { useDiagramActions } from "./hooks/useDiagramActions";
 import { api } from "./services/api";
 import { storage } from "./services/storage";
 import type { SavedDiagram } from "./services/storage";
-import { SAMPLES } from "./data/samples";
+import { SAMPLES, RICH_SAMPLES } from "./data/samples";
 import { STARTER_DSL, DIAGRAM_TYPES } from "./data/starter-diagrams";
 import { createDefaultNode } from "./data/node-factory";
 import { getVisualSize } from "./features/canvas/nodes/getVisualSize";
@@ -57,6 +57,7 @@ export default function App(props: AppProps = {}) {
   const [errors, setErrors] = useState<any[]>([]);
   const [isCompiling, setIsCompiling] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showSQLExport, setShowSQLExport] = useState(false);
   const [showStylePanel, setShowStylePanel] = useState<
     "node" | "global" | "edge" | null
   >(null);
@@ -459,7 +460,12 @@ export default function App(props: AppProps = {}) {
   const { handleExport } = useAppExport({
     diagram,
     onOpenAcademicCaption: () => setShowAcademicCaption(true),
+    onOpenSQLExport: () => setShowSQLExport(true),
   });
+
+  const handleCopyPNG = useCallback(() => {
+    handleExport("clipboard-png");
+  }, [handleExport]);
 
   const handleApplyPalette = useCallback(
     (palette: { bg: string; border: string; font: string; name: string }) => {
@@ -524,34 +530,98 @@ export default function App(props: AppProps = {}) {
 
   // --- Samples ---
   const handleSampleChange = useCallback(
-    (key: string) => {
-      if (SAMPLES[key]) {
-        setCode(SAMPLES[key]);
+    (key: string, inNewTab?: boolean) => {
+      const sampleItem = RICH_SAMPLES.find((s) => s.id === key);
+      const sampleCode = sampleItem?.dsl || SAMPLES[key];
+      if (!sampleCode) return;
+
+      if (inNewTab) {
+        const title = sampleItem
+          ? `${sampleItem.title} (${sampleItem.category.toUpperCase()})`
+          : `Sample: ${key}`;
+        const newId = `diagram_${Date.now()}`;
+        const entry: SavedDiagram = {
+          id: newId,
+          name: title,
+          code: sampleCode,
+          diagram: null,
+          updatedAt: new Date().toISOString(),
+        };
+        storage.save(entry);
+        refreshTabs();
+        setActiveTabId(newId);
+        setCode(sampleCode);
+        lastCompiledCode.current = sampleCode;
         diagramHistory.set(null);
         setErrors([]);
+        handleCompile(sampleCode);
+        showToast(
+          isId
+            ? `Contoh "${title}" dibuka di tab baru!`
+            : `Sample "${title}" opened in a new tab!`,
+          "success"
+        );
+      } else {
+        setCode(sampleCode);
+        lastCompiledCode.current = sampleCode;
+        diagramHistory.set(null);
+        setErrors([]);
+        handleCompile(sampleCode);
+        showToast(
+          isId
+            ? `Memuat contoh diagram: ${sampleItem?.title || key}`
+            : `Loaded sample diagram: ${sampleItem?.title || key}`,
+          "info"
+        );
       }
     },
-    [diagramHistory]
+    [diagramHistory, handleCompile, isId, refreshTabs]
   );
 
   // --- Create Diagram by Type (Direct Visual or DSL) ---
   const handleCreateNewDiagram = useCallback(
-    async (type: DiagramType) => {
+    async (type: DiagramType, inNewTab?: boolean) => {
       const dsl = STARTER_DSL[type] || STARTER_DSL.class;
-      setCode(dsl);
-      lastCompiledCode.current = dsl;
-      setActiveTabId(null);
-      await handleCompile(dsl);
       const typeInfo = DIAGRAM_TYPES.find((t) => t.id === type);
       const name = typeInfo?.label || type;
-      showToast(
-        isId
-          ? `Diagram ${name} baru siap digunakan!`
-          : `New ${name} diagram ready!`,
-        "success"
-      );
+
+      if (inNewTab) {
+        const newId = `diagram_${Date.now()}`;
+        const entry: SavedDiagram = {
+          id: newId,
+          name: `New ${name}`,
+          code: dsl,
+          diagram: null,
+          updatedAt: new Date().toISOString(),
+        };
+        storage.save(entry);
+        refreshTabs();
+        setActiveTabId(newId);
+        setCode(dsl);
+        lastCompiledCode.current = dsl;
+        diagramHistory.set(null);
+        setErrors([]);
+        await handleCompile(dsl);
+        showToast(
+          isId
+            ? `Diagram ${name} baru dibuka di tab baru!`
+            : `New ${name} diagram opened in new tab!`,
+          "success"
+        );
+      } else {
+        setCode(dsl);
+        lastCompiledCode.current = dsl;
+        setActiveTabId(null);
+        await handleCompile(dsl);
+        showToast(
+          isId
+            ? `Diagram ${name} baru siap digunakan!`
+            : `New ${name} diagram ready!`,
+          "success"
+        );
+      }
     },
-    [handleCompile, isId]
+    [handleCompile, isId, refreshTabs]
   );
 
   const handleEdgeRoutingToggle = useCallback(() => {
@@ -867,6 +937,7 @@ export default function App(props: AppProps = {}) {
         onOpenStylePanel={setShowStylePanel}
         globalStyle={globalStyle}
         onGlobalStyleChange={handleGlobalStyleChange}
+        onCopyPNG={handleCopyPNG}
       />
 
       <StatusBar
@@ -915,6 +986,8 @@ export default function App(props: AppProps = {}) {
         }}
         showAcademicCaption={showAcademicCaption}
         onCloseAcademicCaption={() => setShowAcademicCaption(false)}
+        showSQLExport={showSQLExport}
+        onCloseSQLExport={() => setShowSQLExport(false)}
         showImportModal={showImportModal}
         onCloseImportModal={() => setShowImportModal(false)}
         onImportDSL={(dsl) => {

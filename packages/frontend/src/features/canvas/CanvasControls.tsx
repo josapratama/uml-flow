@@ -13,6 +13,9 @@ interface CanvasControlsProps {
   onZoomToFit: () => void;
   edgeRouting?: "straight" | "orthogonal";
   onEdgeRoutingToggle?: () => void;
+  onCopyPNG?: () => void;
+  showWatermark?: boolean;
+  onToggleWatermark?: () => void;
 }
 
 export function CanvasControls({
@@ -26,8 +29,12 @@ export function CanvasControls({
   onZoomToFit,
   edgeRouting,
   onEdgeRoutingToggle,
+  onCopyPNG,
+  showWatermark,
+  onToggleWatermark,
 }: CanvasControlsProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const isId = locale === "id";
 
   return (
     <div
@@ -131,6 +138,41 @@ export function CanvasControls({
             </span>
           </button>
         </>
+      )}
+
+      {onCopyPNG && (
+        <>
+          <div className="w-px h-4 bg-border/60 mx-0.5" />
+          <button
+            onClick={onCopyPNG}
+            className={`h-7 px-2 flex items-center justify-center gap-1 rounded-lg text-xs font-medium transition-all ${
+              canvasTheme === "dark"
+                ? "hover:bg-surface-3 text-text"
+                : "hover:bg-slate-100 text-slate-700"
+            }`}
+            title={isId ? "Salin Gambar PNG ke Clipboard (1-Klik)" : "Copy PNG to Clipboard (1-Click)"}
+          >
+            <span>📋</span>
+            <span className="text-[10px] hidden sm:inline">{isId ? "Salin" : "Copy"}</span>
+          </button>
+        </>
+      )}
+
+      {onToggleWatermark && (
+        <button
+          onClick={onToggleWatermark}
+          className={`h-7 px-2 flex items-center justify-center gap-1 rounded-lg text-xs font-medium transition-all ${
+            showWatermark
+              ? "bg-accent/20 text-accent font-semibold border border-accent/40 shadow-2xs"
+              : canvasTheme === "dark"
+              ? "hover:bg-surface-3 text-text opacity-70 hover:opacity-100"
+              : "hover:bg-slate-100 text-slate-700 opacity-70 hover:opacity-100"
+          }`}
+          title={isId ? "Tampilkan/Sembunyikan Info Judul Diagram di Kanvas" : "Toggle Diagram Title Info on Canvas"}
+        >
+          <span>🏷️</span>
+          <span className="text-[10px] hidden md:inline">{isId ? "Info" : "Title"}</span>
+        </button>
       )}
     </div>
   );
