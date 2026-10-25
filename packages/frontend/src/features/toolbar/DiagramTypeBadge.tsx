@@ -1,16 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
 import type { DiagramType } from "@uml-editor/shared";
+import type { SavedDiagram } from "../../services/storage";
 import { DIAGRAM_TYPES, type DiagramTypeInfo } from "../../data/starter-diagrams";
 import { useI18n } from "../../i18n";
 
 interface DiagramTypeBadgeProps {
   currentType?: string;
   onSelectType: (type: DiagramType, inNewTab?: boolean) => void;
+  tabs?: SavedDiagram[];
+  activeTabId?: string | null;
+  onOpenTab?: (d: SavedDiagram) => void;
 }
 
 export function DiagramTypeBadge({
   currentType = "class",
   onSelectType,
+  tabs,
+  activeTabId,
+  onOpenTab,
 }: DiagramTypeBadgeProps) {
   const { locale } = useI18n();
   const isId = locale === "id";
@@ -40,28 +47,25 @@ export function DiagramTypeBadge({
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative shrink-0">
       {/* Topbar Badge Button */}
       <button
         onClick={() => setOpen(!open)}
-        className={`h-8 px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 ${
+        className={`h-8 px-2 sm:px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 ${
           open
             ? "bg-accent/15 text-accent border-accent shadow-xs"
             : "bg-surface-3/80 hover:bg-surface-4 text-text border-border hover:border-accent/40"
         }`}
         title={
           isId
-            ? `Tipe Diagram Aktif: ${activeInfo.label}. Klik untuk melihat info atau membuat kanvas baru.`
-            : `Active Diagram Type: ${activeInfo.label}. Click for info or to switch diagram type.`
+            ? `Tipe Diagram Aktif: ${activeInfo.label}. Klik untuk berpindah tab atau membuat kanvas baru.`
+            : `Active Diagram Type: ${activeInfo.label}. Click to switch tabs or start a new canvas.`
         }
       >
         <span className="text-sm shrink-0">{activeInfo.icon}</span>
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="font-semibold text-text truncate max-w-[120px] sm:max-w-[140px]">
+        <div className="flex items-center gap-1 min-w-0">
+          <span className="font-semibold text-text truncate max-w-[75px] sm:max-w-[95px] xl:max-w-[125px]">
             {activeInfo.label}
-          </span>
-          <span className="text-[9px] font-mono px-1 py-0.2 rounded font-medium bg-accent/15 text-accent uppercase hidden sm:inline">
-            {isId ? "Tipe" : "Type"}
           </span>
         </div>
         <svg
@@ -108,6 +112,54 @@ export function DiagramTypeBadge({
               </div>
             </div>
           </div>
+
+          {/* Section: Tab Diagram Terbuka */}
+          {tabs && tabs.length > 0 && (
+            <div className="p-2 rounded-lg bg-surface-3/60 border border-border/60 mb-2">
+              <div className="flex items-center justify-between mb-1.5 px-0.5">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-text-muted flex items-center gap-1">
+                  <span>📑</span>
+                  <span>{isId ? `Tab Terbuka (${tabs.length})` : `Open Tabs (${tabs.length})`}</span>
+                </span>
+                <span className="text-[9px] text-accent">
+                  {isId ? "Pindah tab" : "Switch tab"}
+                </span>
+              </div>
+              <div className="space-y-1 max-h-36 overflow-y-auto custom-scrollbar pr-0.5">
+                {tabs.map((tab) => {
+                  const isActive = tab.id === activeTabId;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        if (onOpenTab) onOpenTab(tab);
+                        setOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-md transition-all text-left group ${
+                        isActive
+                          ? "bg-accent/15 text-accent font-semibold border border-accent/40 shadow-2xs"
+                          : "text-text hover:bg-surface-4 border border-transparent"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs">📄</span>
+                        <span className="truncate max-w-[170px] sm:max-w-[200px]">{tab.name}</span>
+                      </div>
+                      {isActive ? (
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-accent/20 text-accent font-bold shrink-0">
+                          {isId ? "Aktif" : "Active"}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-accent opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                          {isId ? "Buka ↗" : "Open ↗"}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Section: Buat / Ganti Tipe Diagram */}
           <div className="px-1 py-1">

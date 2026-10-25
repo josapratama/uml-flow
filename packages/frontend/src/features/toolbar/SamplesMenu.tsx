@@ -48,10 +48,10 @@ export function SamplesMenu({ onSampleChange }: Props) {
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative shrink-0">
       <button
         onClick={() => setOpen(!open)}
-        className={`h-8 px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 ${
+        className={`h-8 px-2 sm:px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 ${
           open
             ? "bg-surface-4 text-text border-accent shadow-xs"
             : "bg-surface-3 text-text-muted hover:text-text hover:bg-surface-4 border-border"
@@ -59,8 +59,7 @@ export function SamplesMenu({ onSampleChange }: Props) {
         title={t("samples.menuTooltip")}
       >
         <span>📚</span>
-        <span className="hidden sm:inline md:hidden xl:inline">{t("samples.menuTitle")}</span>
-        <span className="hidden md:inline xl:hidden">Contoh</span>
+        <span className="hidden sm:inline font-medium">{isId ? "Contoh" : "Samples"}</span>
         <svg
           width="8"
           height="8"

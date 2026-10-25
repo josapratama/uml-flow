@@ -94,8 +94,25 @@ export default function App(props: AppProps = {}) {
   const appRef = useRef<HTMLDivElement>(null);
 
   // --- Multi-diagram tabs ---
-  const [tabs, setTabs] = useState<SavedDiagram[]>(() => storage.list());
-  const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [tabs, setTabs] = useState<SavedDiagram[]>(() => {
+    const list = storage.list();
+    if (list.length > 0) return list;
+    const initialCode = storage.loadCode() || SAMPLES.class;
+    const initialDiagram = storage.loadCurrent();
+    const entry: SavedDiagram = {
+      id: "diagram_main",
+      name: initialDiagram?.name || "Class Diagram",
+      code: initialCode,
+      diagram: initialDiagram,
+      updatedAt: new Date().toISOString(),
+    };
+    storage.save(entry);
+    return [entry];
+  });
+  const [activeTabId, setActiveTabId] = useState<string | null>(() => {
+    const list = storage.list();
+    return list.length > 0 ? list[0].id : "diagram_main";
+  });
 
   // --- UI panels ---
   const [showLibrary, setShowLibrary] = useState(false);
@@ -181,6 +198,19 @@ export default function App(props: AppProps = {}) {
 
   const handleOpenTab = useCallback(
     async (entry: SavedDiagram) => {
+      // Auto-save current active tab before switching so work is not lost
+      if (activeTabId && (diagram || code)) {
+        const current = storage.list().find((d) => d.id === activeTabId);
+        if (current) {
+          storage.save({
+            ...current,
+            code,
+            diagram: diagram || null,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+
       let currentCode = entry.code;
       if (!currentCode && entry.diagram) {
         try {
@@ -192,25 +222,57 @@ export default function App(props: AppProps = {}) {
         }
       }
       setCode(currentCode);
+      lastCompiledCode.current = currentCode;
       if (entry.diagram) {
         diagramHistory.set(entry.diagram);
       } else if (currentCode) {
         handleCompile(currentCode);
       }
       setActiveTabId(entry.id);
+      refreshTabs();
       setErrors([]);
+      showToast(
+        isId
+          ? `Beralih ke tab: ${entry.name}`
+          : `Switched to tab: ${entry.name}`,
+        "info"
+      );
     },
-    [diagramHistory, handleCompile]
+    [activeTabId, diagram, code, diagramHistory, handleCompile, isId, refreshTabs]
   );
 
   const handleNewTab = useCallback(() => {
+    // Auto-save current active tab before creating new one
+    if (activeTabId && (diagram || code)) {
+      const current = storage.list().find((d) => d.id === activeTabId);
+      if (current) {
+        storage.save({
+          ...current,
+          code,
+          diagram: diagram || null,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+    const newId = `diagram_${Date.now()}`;
     const newCode = SAMPLES.class;
+    const newEntry: SavedDiagram = {
+      id: newId,
+      name: "Class Diagram",
+      code: newCode,
+      diagram: null,
+      updatedAt: new Date().toISOString(),
+    };
+    storage.save(newEntry);
+    refreshTabs();
+    setActiveTabId(newId);
     setCode(newCode);
+    lastCompiledCode.current = newCode;
     diagramHistory.set(null);
-    setActiveTabId(null);
     setErrors([]);
+    handleCompile(newCode);
     showToast(isId ? "Tab diagram baru berhasil dibuat" : "New diagram created", "success");
-  }, [diagramHistory, isId]);
+  }, [activeTabId, diagram, code, diagramHistory, handleCompile, isId, refreshTabs]);
 
   const handleCloseTab = useCallback(
     (id: string) => {
@@ -535,10 +597,24 @@ export default function App(props: AppProps = {}) {
       const sampleCode = sampleItem?.dsl || SAMPLES[key];
       if (!sampleCode) return;
 
+      const title = sampleItem
+        ? `${sampleItem.title}`
+        : `Sample: ${key}`;
+
+      // Save current active tab before switching/creating
+      if (activeTabId && (diagram || code)) {
+        const current = storage.list().find((d) => d.id === activeTabId);
+        if (current) {
+          storage.save({
+            ...current,
+            code,
+            diagram: diagram || null,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+
       if (inNewTab) {
-        const title = sampleItem
-          ? `${sampleItem.title} (${sampleItem.category.toUpperCase()})`
-          : `Sample: ${key}`;
         const newId = `diagram_${Date.now()}`;
         const entry: SavedDiagram = {
           id: newId,
@@ -562,6 +638,19 @@ export default function App(props: AppProps = {}) {
           "success"
         );
       } else {
+        if (activeTabId) {
+          const current = storage.list().find((d) => d.id === activeTabId);
+          if (current) {
+            storage.save({
+              ...current,
+              name: title,
+              code: sampleCode,
+              diagram: null,
+              updatedAt: new Date().toISOString(),
+            });
+            refreshTabs();
+          }
+        }
         setCode(sampleCode);
         lastCompiledCode.current = sampleCode;
         diagramHistory.set(null);
@@ -569,13 +658,13 @@ export default function App(props: AppProps = {}) {
         handleCompile(sampleCode);
         showToast(
           isId
-            ? `Memuat contoh diagram: ${sampleItem?.title || key}`
-            : `Loaded sample diagram: ${sampleItem?.title || key}`,
+            ? `Memuat contoh diagram: ${title}`
+            : `Loaded sample diagram: ${title}`,
           "info"
         );
       }
     },
-    [diagramHistory, handleCompile, isId, refreshTabs]
+    [activeTabId, diagram, code, diagramHistory, handleCompile, isId, refreshTabs]
   );
 
   // --- Create Diagram by Type (Direct Visual or DSL) ---
@@ -585,11 +674,24 @@ export default function App(props: AppProps = {}) {
       const typeInfo = DIAGRAM_TYPES.find((t) => t.id === type);
       const name = typeInfo?.label || type;
 
+      // Save current active tab before switching/creating
+      if (activeTabId && (diagram || code)) {
+        const current = storage.list().find((d) => d.id === activeTabId);
+        if (current) {
+          storage.save({
+            ...current,
+            code,
+            diagram: diagram || null,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+
       if (inNewTab) {
         const newId = `diagram_${Date.now()}`;
         const entry: SavedDiagram = {
           id: newId,
-          name: `New ${name}`,
+          name: `${name}`,
           code: dsl,
           diagram: null,
           updatedAt: new Date().toISOString(),
@@ -609,9 +711,21 @@ export default function App(props: AppProps = {}) {
           "success"
         );
       } else {
+        if (activeTabId) {
+          const current = storage.list().find((d) => d.id === activeTabId);
+          if (current) {
+            storage.save({
+              ...current,
+              name: `${name}`,
+              code: dsl,
+              diagram: null,
+              updatedAt: new Date().toISOString(),
+            });
+            refreshTabs();
+          }
+        }
         setCode(dsl);
         lastCompiledCode.current = dsl;
-        setActiveTabId(null);
         await handleCompile(dsl);
         showToast(
           isId
@@ -621,7 +735,7 @@ export default function App(props: AppProps = {}) {
         );
       }
     },
-    [handleCompile, isId, refreshTabs]
+    [activeTabId, diagram, code, handleCompile, isId, refreshTabs]
   );
 
   const handleEdgeRoutingToggle = useCallback(() => {
@@ -871,10 +985,13 @@ export default function App(props: AppProps = {}) {
         onNavigateHome={props.onNavigateHome}
         onApplyPalette={handleApplyPalette}
         diagramName={diagram?.name || "Untitled"}
+        tabs={tabs}
+        activeTabId={activeTabId}
+        onOpenTab={handleOpenTab}
       />
 
-      {/* Diagram Tabs */}
-      {tabs.length > 1 && (
+      {/* Diagram Tabs: Always visible so users can seamlessly switch & manage multiple diagrams */}
+      {tabs.length > 0 && (
         <DiagramTabs
           tabs={tabs}
           activeId={activeTabId}

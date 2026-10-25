@@ -1,6 +1,7 @@
 import React from "react";
 import type { CanvasTheme } from "../../hooks/useTheme";
 import type { DiagramType } from "@uml-editor/shared";
+import type { SavedDiagram } from "../../services/storage";
 import { ExportDropdown } from "./ExportDropdown";
 import { LayoutDropdown } from "./LayoutDropdown";
 import { ProjectMenu } from "./ProjectMenu";
@@ -24,6 +25,9 @@ interface ToolbarProps {
   diagramType?: string;
   onSelectDiagramType?: (type: DiagramType, inNewTab?: boolean) => void;
   onSampleChange: (sample: string, inNewTab?: boolean) => void;
+  tabs?: SavedDiagram[];
+  activeTabId?: string | null;
+  onOpenTab?: (d: SavedDiagram) => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -70,6 +74,9 @@ export function Toolbar(props: ToolbarProps) {
     diagramType,
     onSelectDiagramType,
     onSampleChange,
+    tabs,
+    activeTabId,
+    onOpenTab,
     onUndo,
     onRedo,
     canUndo,
@@ -111,7 +118,7 @@ export function Toolbar(props: ToolbarProps) {
   };
 
   return (
-    <header className="flex items-center justify-between px-2 sm:px-3 h-12 bg-surface-2 border-b border-border shrink-0 gap-1.5 sm:gap-2 z-50 relative select-none max-w-full">
+    <header className="flex items-center justify-between px-2 sm:px-3 h-12 bg-surface-2 border-b border-border shrink-0 gap-1.5 sm:gap-2 z-50 relative select-none w-full min-w-0 overflow-x-auto no-scrollbar">
       {/* --- Left Zone: Brand & Document Management --- */}
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
         {/* Brand / Logo */}
@@ -158,6 +165,9 @@ export function Toolbar(props: ToolbarProps) {
         <DiagramTypeBadge
           currentType={diagramType}
           onSelectType={onSelectDiagramType || (() => {})}
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onOpenTab={onOpenTab}
         />
 
         {/* Samples Custom Dropdown */}
@@ -203,10 +213,10 @@ export function Toolbar(props: ToolbarProps) {
             title={t("toolbar.codeMode")}
           >
             <span>📝</span>
-            <span className="hidden sm:inline">{t("toolbar.codeMode")}</span>
+            <span className="hidden md:inline">{t("toolbar.codeMode")}</span>
           </button>
           <button
-            className={`h-7 px-2 sm:px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${
+            className={`h-7 px-2 sm:px-2.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${
               mode === "split"
                 ? "bg-accent text-white shadow-xs"
                 : "text-text-muted hover:text-text"
@@ -215,10 +225,10 @@ export function Toolbar(props: ToolbarProps) {
             title={t("toolbar.splitMode")}
           >
             <span>◫</span>
-            <span className="hidden sm:inline">{t("toolbar.splitMode")}</span>
+            <span className="hidden md:inline">{t("toolbar.splitMode")}</span>
           </button>
           <button
-            className={`h-7 px-2 sm:px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${
+            className={`h-7 px-2 sm:px-2.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${
               mode === "visual"
                 ? "bg-accent text-white shadow-xs"
                 : "text-text-muted hover:text-text"
@@ -227,7 +237,7 @@ export function Toolbar(props: ToolbarProps) {
             title={t("toolbar.visualMode")}
           >
             <span>🎨</span>
-            <span className="hidden sm:inline">{t("toolbar.visualMode")}</span>
+            <span className="hidden md:inline">{t("toolbar.visualMode")}</span>
           </button>
         </div>
       </div>
