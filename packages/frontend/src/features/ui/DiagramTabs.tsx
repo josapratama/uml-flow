@@ -72,7 +72,7 @@ export function DiagramTabs({
   };
 
   return (
-    <div className="flex items-center bg-surface-2 border-b border-border overflow-x-auto no-scrollbar shrink-0 h-8 px-1">
+    <div className="flex items-center bg-surface-2 border-b border-border overflow-x-auto no-scrollbar shrink-0 h-8 px-1 relative z-20">
       {tabs.map((tab) => {
         const isActive = tab.id === activeId;
         const icon = getTabIcon(tab);

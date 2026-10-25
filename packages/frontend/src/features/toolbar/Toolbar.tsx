@@ -118,7 +118,7 @@ export function Toolbar(props: ToolbarProps) {
   };
 
   return (
-    <header className="flex items-center justify-between px-2 sm:px-3 h-12 bg-surface-2 border-b border-border shrink-0 gap-1.5 sm:gap-2 z-50 relative select-none w-full min-w-0 overflow-x-auto no-scrollbar">
+    <header className="flex items-center justify-between px-2 sm:px-3 h-12 bg-surface-2 border-b border-border shrink-0 gap-1.5 sm:gap-2 z-50 relative select-none w-full min-w-0 overflow-visible">
       {/* --- Left Zone: Brand & Document Management --- */}
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
         {/* Brand / Logo */}
