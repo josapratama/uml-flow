@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "sync:i18n": "node scripts/sync-i18n.js uml-flow src/i18n/locales https://polyglot-hub.josapratama.com",
+    "prebuild": "npm run sync:i18n",
+    "predev": "npm run sync:i18n",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

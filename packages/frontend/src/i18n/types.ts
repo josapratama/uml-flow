@@ -1,4 +1,4 @@
-export type Locale = "id" | "en";
+export type Locale = "id" | "en" | "ja";
 
 export interface TranslationDictionary {
   common: {

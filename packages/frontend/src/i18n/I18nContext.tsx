@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { Locale, TranslationDictionary } from "./types";
-import { id } from "./locales/id";
-import { en } from "./locales/en";
+import id from "./locales/id.json";
+import en from "./locales/en.json";
+import ja from "./locales/ja.json";
 import { APP_CONFIG } from "../config/app.config";
 
-const LOCALES: Record<Locale, TranslationDictionary> = { id, en };
+const LOCALES: Record<Locale, TranslationDictionary> = {
+  id: id as unknown as TranslationDictionary,
+  en: en as unknown as TranslationDictionary,
+  ja: ja as unknown as TranslationDictionary,
+};
 
 interface I18nContextType {
   locale: Locale;
@@ -19,9 +24,9 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => {
     try {
       const saved = localStorage.getItem("uml_locale");
-      if (saved === "id" || saved === "en") return saved;
+      if (saved === "id" || saved === "en" || saved === "ja") return saved;
     } catch {}
-    return APP_CONFIG.app.defaultLocale;
+    return (APP_CONFIG.app.defaultLocale as Locale) || "id";
   });
 
   const setLocale = useCallback((newLocale: Locale) => {
@@ -92,7 +97,7 @@ export function useI18n() {
 
 /**
  * Modern Language Switcher UI component
- * Can be placed in Header, Navbar, or Modals
+ * Supports ID, EN, and JA
  */
 export function LanguageSwitcher({
   variant = "pill",
@@ -104,17 +109,19 @@ export function LanguageSwitcher({
   const { locale, setLocale } = useI18n();
 
   if (variant === "compact") {
+    const flags: Record<Locale, string> = { id: "🇮🇩", en: "🇬🇧", ja: "🇯🇵" };
+    const nextMap: Record<Locale, Locale> = { id: "en", en: "ja", ja: "id" };
     return (
       <button
-        onClick={() => setLocale(locale === "id" ? "en" : "id")}
+        onClick={() => setLocale(nextMap[locale] || "id")}
         className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all ${
           locale === "id"
             ? "bg-accent/15 text-accent border border-accent/30"
             : "bg-surface-3/80 hover:bg-surface-3 text-text border border-border/60"
         } ${className}`}
-        title={`Ganti Bahasa (Sekarang: ${locale === "id" ? "Bahasa Indonesia" : "English"})`}
+        title={`Ganti Bahasa (Sekarang: ${locale.toUpperCase()})`}
       >
-        <span className="text-sm">{locale === "id" ? "🇮🇩" : "🇬🇧"}</span>
+        <span className="text-sm">{flags[locale] || "🌐"}</span>
         <span className="font-semibold uppercase text-[11px]">{locale}</span>
       </button>
     );
@@ -145,6 +152,17 @@ export function LanguageSwitcher({
       >
         <span>🇬🇧</span>
         <span>EN</span>
+      </button>
+      <button
+        onClick={() => setLocale("ja")}
+        className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all ${
+          locale === "ja"
+            ? "bg-accent text-white shadow-xs font-semibold"
+            : "text-text-muted hover:text-text hover:bg-surface-2/60"
+        }`}
+      >
+        <span>🇯🇵</span>
+        <span>JA</span>
       </button>
     </div>
   );
