@@ -369,24 +369,21 @@ Cancelled -> [*] : Release stock reservation`}
         <DocCodeBlock
           code={`@diagram "Library Book Borrowing Workflow" activity
 
-|Student|
-start
-:Browse Books on Shelf;
-:Present Library Card & Book;
+swimlane "Student"
+[start]
+action "Browse Books on Shelf"
+action "Present Library Card & Book"
 
-|Librarian|
-:Scan Barcode on Book;
-if (Overdue Fines Exist?) then (Yes)
-  :Display Fine Amount;
-  :Collect Fine Payment;
-else (No)
-endif
-:Record Loan Transaction;
-:Hand Book to Student;
+swimlane "Librarian"
+action "Scan Barcode on Book"
+decision "Overdue Fines Exist?"
+  [yes] action "Collect Fine Payment"
+  [no] action "Record Loan Transaction"
+action "Hand Book to Student"
 
-|Student|
-:Receive Borrowed Book;
-stop`}
+swimlane "Student"
+action "Receive Borrowed Book"
+[end]`}
           diagramType="activity"
           title="Library Borrowing Flow with Swimlanes"
           onOpenEditor={onOpenEditor}

@@ -31,6 +31,14 @@ export class FlowchartParser extends BaseDiagramParser {
     "preparation",
   ];
 
+  private currentDecision: FlowchartNode | null = null;
+
+  private hasExplicitRelations(): boolean {
+    return this.tokens.some(
+      (t) => t.type === "symbol" && ["-->", "->", "..>"].includes(t.value),
+    );
+  }
+
   parseElement(): void {
     const token = this.currentToken();
     if (!token) return;
@@ -44,7 +52,7 @@ export class FlowchartParser extends BaseDiagramParser {
     }
 
     if (token.type === "bracket") {
-      const val = token.value.toLowerCase();
+      const condition = token.value;
       this.advance();
       this.skipNewlines();
       // Condition label for decision branch
@@ -52,9 +60,22 @@ export class FlowchartParser extends BaseDiagramParser {
         this.currentToken()?.type === "keyword" &&
         FlowchartParser.VALID_TYPES.includes(this.currentToken()!.value)
       ) {
-        this.parseElement();
-        const lastEdge = this.diagram.edges[this.diagram.edges.length - 1];
-        if (lastEdge) lastEdge.condition = val;
+        this.parseFlowNode(this.currentToken()!.value as FlowchartNode["type"]);
+        const newNode = this.diagram.nodes[this.diagram.nodes.length - 1];
+        if (this.currentDecision && newNode) {
+          // Rewire connection: from decision directly to this branch node
+          this.diagram.edges = this.diagram.edges.filter(
+            (e) => e.target !== newNode.id,
+          );
+          this.diagram.edges.push({
+            id: `edge_${this.currentDecision.id}_${newNode.id}`,
+            source: this.currentDecision.id,
+            target: newNode.id,
+            type: "flow",
+            condition,
+            label: { text: condition },
+          });
+        }
       }
       return;
     }
@@ -85,18 +106,28 @@ export class FlowchartParser extends BaseDiagramParser {
       size,
     };
 
-    // Auto-connect to previous node
-    if (this.diagram.nodes.length > 0) {
+    // Auto-connect to previous node ONLY if there are no explicit edges defined in diagram
+    if (!this.hasExplicitRelations() && this.diagram.nodes.length > 0) {
       const prev = this.diagram.nodes[this.diagram.nodes.length - 1];
-      this.diagram.edges.push({
-        id: `edge_${prev.id}_${id}`,
-        source: prev.id,
-        target: id,
-        type: "flow",
-      });
+      if (
+        !this.diagram.edges.some(
+          (e) => e.source === prev.id && e.target === id,
+        )
+      ) {
+        this.diagram.edges.push({
+          id: `edge_${prev.id}_${id}`,
+          source: prev.id,
+          target: id,
+          type: "flow",
+        });
+      }
     }
 
     this.diagram.nodes.push(node);
+
+    if (type === "decision") {
+      this.currentDecision = node;
+    }
   }
 
   private getSize(

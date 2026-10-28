@@ -126,6 +126,16 @@ export function useHistory<T>(initialState: T) {
     });
   }, []);
 
+  const reset = useCallback((newPresent: T) => {
+    presentRef.current = newPresent;
+    snapshotRef.current = null;
+    setHistory({
+      past: [],
+      present: newPresent,
+      future: [],
+    });
+  }, []);
+
   const canUndo = history.past.length > 0;
   const canRedo = history.future.length > 0;
   const historyLength = history.past.length;
@@ -135,6 +145,7 @@ export function useHistory<T>(initialState: T) {
     state: history.present,
     set,
     replace,
+    reset,
     snapshot,
     commit,
     undo,

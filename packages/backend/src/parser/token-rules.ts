@@ -67,9 +67,9 @@ export const PUNCTUATION = new Set(["{", "}", "(", ")", ":", ",", ";"]);
 export const OPERATOR_CHARS = new Set(["<", ">", "-", ".", "*", "o", "|", "}"]);
 
 export function isIdentStart(ch: string): boolean {
-  return /[a-zA-Z_]/.test(ch);
+  return /[\p{L}_]/u.test(ch);
 }
 
 export function isIdentChar(ch: string): boolean {
-  return /[a-zA-Z0-9_]/.test(ch);
+  return /[\p{L}\p{N}_-]/u.test(ch);
 }

@@ -224,8 +224,9 @@ export default function App(props: AppProps = {}) {
       setCode(currentCode);
       lastCompiledCode.current = currentCode;
       if (entry.diagram) {
-        diagramHistory.set(entry.diagram);
+        diagramHistory.reset(entry.diagram);
       } else if (currentCode) {
+        diagramHistory.reset(null);
         handleCompile(currentCode);
       }
       setActiveTabId(entry.id);
@@ -268,7 +269,7 @@ export default function App(props: AppProps = {}) {
     setActiveTabId(newId);
     setCode(newCode);
     lastCompiledCode.current = newCode;
-    diagramHistory.set(null);
+    diagramHistory.reset(null);
     setErrors([]);
     handleCompile(newCode);
     showToast(isId ? "Tab diagram baru berhasil dibuat" : "New diagram created", "success");
@@ -276,15 +277,30 @@ export default function App(props: AppProps = {}) {
 
   const handleCloseTab = useCallback(
     (id: string) => {
-      storage.remove(id);
-      refreshTabs();
-      if (activeTabId === id) {
-        const remaining = storage.list();
-        if (remaining.length > 0) handleOpenTab(remaining[0]);
-        else handleNewTab();
+      // Auto-save current tab before closing if active
+      if (activeTabId === id && (diagram || code)) {
+        const current = storage.list().find((d) => d.id === id);
+        if (current) {
+          storage.save({
+            ...current,
+            code,
+            diagram: diagram || null,
+            updatedAt: new Date().toISOString(),
+          });
+        }
       }
+      const remaining = tabs.filter((t) => t.id !== id);
+      if (remaining.length === 0) {
+        handleNewTab();
+        return;
+      }
+      setTabs(remaining);
+      if (activeTabId === id) {
+        handleOpenTab(remaining[0]);
+      }
+      showToast(isId ? "Tab ditutup (tersimpan di Library)" : "Tab closed (saved in Library)", "info");
     },
-    [activeTabId, refreshTabs, handleOpenTab, handleNewTab]
+    [tabs, activeTabId, diagram, code, isId, handleOpenTab, handleNewTab]
   );
 
   const handleRenameTab = useCallback(
@@ -380,13 +396,25 @@ export default function App(props: AppProps = {}) {
     import("./services/share-link").then(({ getSharedCodeFromLocation }) => {
       getSharedCodeFromLocation().then((sharedCode) => {
         if (sharedCode) {
+          const newId = `shared_${Date.now()}`;
+          const sharedEntry: SavedDiagram = {
+            id: newId,
+            name: "Shared Diagram",
+            code: sharedCode,
+            diagram: null,
+            updatedAt: new Date().toISOString(),
+          };
+          storage.save(sharedEntry);
+          setTabs((prev) => [...prev, sharedEntry]);
+          setActiveTabId(newId);
           setCode(sharedCode);
           lastCompiledCode.current = sharedCode;
+          diagramHistory.reset(null);
           handleCompile(sharedCode);
           showToast(
             isId
-              ? "Diagram bersama berhasil dimuat dari tautan"
-              : "Shared diagram loaded from link",
+              ? "Diagram bersama berhasil dimuat di tab baru"
+              : "Shared diagram loaded into a new tab",
             "success"
           );
           try {

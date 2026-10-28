@@ -382,24 +382,21 @@ LulusSidang -> [*] : Terbitkan Ijazah`}
         <DocCodeBlock
           code={`@diagram "Peminjaman Buku Perpustakaan" activity
 
-|Mahasiswa|
-start
-:Pilih Buku di Rak;
-:Serahkan Kartu & Buku;
+swimlane "Mahasiswa"
+[start]
+action "Pilih Buku di Rak"
+action "Serahkan Kartu & Buku"
 
-|Petugas Perpustakaan|
-:Scan Barcode Buku;
-if (Ada Denda Keterlambatan?) then (Ya)
-  :Tampilkan Nominal Denda;
-  :Terima Pembayaran Denda;
-else (Tidak)
-endif
-:Simpan Riwayat Peminjaman;
-:Serahkan Buku ke Mahasiswa;
+swimlane "Petugas Perpustakaan"
+action "Scan Barcode Buku"
+decision "Ada Denda Keterlambatan?"
+  [ya] action "Terima Pembayaran Denda"
+  [tidak] action "Simpan Riwayat Peminjaman"
+action "Serahkan Buku ke Mahasiswa"
 
-|Mahasiswa|
-:Terima Buku Pinjaman;
-stop`}
+swimlane "Mahasiswa"
+action "Terima Buku Pinjaman"
+[end]`}
           diagramType="activity"
           title="Contoh Activity Diagram dengan Swimlanes"
           onOpenEditor={onOpenEditor}

@@ -7,10 +7,34 @@ import { validateDiagram } from "../validation";
 
 const app = new Hono();
 
+async function parseJsonBody<T>(
+  c: any,
+): Promise<{ data?: T; error?: string }> {
+  try {
+    const data = await c.req.json<T>();
+    if (!data || typeof data !== "object") {
+      return { error: "Request body must be a JSON object" };
+    }
+    return { data };
+  } catch {
+    return { error: "Invalid JSON in request body" };
+  }
+}
+
 /** Parse DSL to Diagram */
 app.post("/parse", async (c) => {
-  const { code } = await c.req.json<{ code: string }>();
-  if (!code)
+  const { data, error } = await parseJsonBody<{ code: string }>(c);
+  if (error || !data) {
+    return c.json(
+      {
+        success: false,
+        errors: [{ line: 0, column: 0, message: error || "No body provided", severity: "error" }],
+      },
+      400,
+    );
+  }
+  const { code } = data;
+  if (!code) {
     return c.json(
       {
         success: false,
@@ -25,30 +49,44 @@ app.post("/parse", async (c) => {
       },
       400,
     );
+  }
   const parser = new Parser();
   return c.json(parser.parse(code));
 });
 
 /** Auto-layout a diagram */
 app.post("/layout", async (c) => {
-  const { diagram, options, preset } = await c.req.json<{
+  const { data, error } = await parseJsonBody<{
     diagram: Diagram;
     options?: Partial<LayoutOptions>;
     preset?: string;
-  }>();
-  if (!diagram) return c.json({ error: "No diagram provided" }, 400);
+  }>(c);
+  if (error || !data?.diagram) {
+    return c.json({ error: error || "No diagram provided" }, 400);
+  }
+  const { diagram, options, preset } = data;
   const engine = new LayoutEngine(options, preset as any);
   return c.json({ diagram: engine.layout(diagram) });
 });
 
 /** Parse + Layout in one step */
 app.post("/compile", async (c) => {
-  const { code, layoutOptions, preset } = await c.req.json<{
+  const { data, error } = await parseJsonBody<{
     code: string;
     layoutOptions?: Partial<LayoutOptions>;
     preset?: string;
-  }>();
-  if (!code)
+  }>(c);
+  if (error || !data) {
+    return c.json(
+      {
+        success: false,
+        errors: [{ line: 0, column: 0, message: error || "No body provided", severity: "error" }],
+      },
+      400,
+    );
+  }
+  const { code, layoutOptions, preset } = data;
+  if (!code) {
     return c.json(
       {
         success: false,
@@ -63,6 +101,7 @@ app.post("/compile", async (c) => {
       },
       400,
     );
+  }
 
   const parser = new Parser();
   const result = parser.parse(code);
@@ -75,11 +114,17 @@ app.post("/compile", async (c) => {
 
 /** Export diagram to various formats */
 app.post("/export", async (c) => {
-  const { diagram, options } = await c.req.json<{
+  const { data, error } = await parseJsonBody<{
     diagram: Diagram;
     options: ExportOptions;
-  }>();
-  if (!diagram) return c.json({ error: "No diagram provided" }, 400);
+  }>(c);
+  if (error || !data?.diagram) {
+    return c.json({ error: error || "No diagram provided" }, 400);
+  }
+  const { diagram, options } = data;
+  if (!options?.format) {
+    return c.json({ error: "Missing export format option" }, 400);
+  }
 
   switch (options.format) {
     case "json":
@@ -99,8 +144,11 @@ app.post("/export", async (c) => {
 
 /** Validate diagram against rules */
 app.post("/validate", async (c) => {
-  const { diagram } = await c.req.json<{ diagram: Diagram }>();
-  if (!diagram) return c.json({ error: "No diagram provided" }, 400);
+  const { data, error } = await parseJsonBody<{ diagram: Diagram }>(c);
+  if (error || !data?.diagram) {
+    return c.json({ error: error || "No diagram provided" }, 400);
+  }
+  const { diagram } = data;
   const issues = validateDiagram(diagram);
   return c.json({
     issues,

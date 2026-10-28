@@ -380,10 +380,11 @@ function generateStateDSL(diagram: Diagram): string {
 function generateUseCaseDSL(diagram: Diagram): string {
   let dsl = "";
   for (const node of diagram.nodes as any[]) {
+    const aliasStr = node.alias ? ` as ${node.alias}` : "";
     if (node.type === "actor") {
-      dsl += `actor ${node.name}\n`;
+      dsl += `actor ${formatName(node.name)}${aliasStr}\n`;
     } else if (node.type === "usecase") {
-      dsl += `usecase "${node.name}"\n`;
+      dsl += `usecase "${node.name}"${aliasStr}\n`;
     } else if (node.type === "system") {
       dsl += `system "${node.name}"\n`;
     }
@@ -391,11 +392,15 @@ function generateUseCaseDSL(diagram: Diagram): string {
   dsl += "\n";
   const nodeMap = new Map(diagram.nodes.map((n) => [n.id, n]));
   for (const edge of diagram.edges) {
-    const src = nodeMap.get(edge.source);
-    const tgt = nodeMap.get(edge.target);
+    const src = nodeMap.get(edge.source) as any;
+    const tgt = nodeMap.get(edge.target) as any;
     if (src && tgt) {
-      const srcName = src.type === "usecase" ? `"${src.name}"` : src.name;
-      const tgtName = tgt.type === "usecase" ? `"${tgt.name}"` : tgt.name;
+      const srcName =
+        src.alias ||
+        (src.type === "usecase" ? `"${src.name}"` : formatName(src.name));
+      const tgtName =
+        tgt.alias ||
+        (tgt.type === "usecase" ? `"${tgt.name}"` : formatName(tgt.name));
       if (edge.type === "include") {
         dsl += `${srcName} <<include>> ${tgtName}\n`;
       } else if (edge.type === "extend") {
@@ -413,18 +418,31 @@ function generateUseCaseDSL(diagram: Diagram): string {
 function generateComponentDSL(diagram: Diagram): string {
   let dsl = "";
   for (const node of diagram.nodes as any[]) {
+    const aliasStr = node.alias ? ` as ${node.alias}` : "";
     if (node.type === "component") {
       dsl += `component "${node.name}"`;
       if (node.stereotype) dsl += ` <<${node.stereotype}>>`;
-      dsl += "\n";
+      dsl += `${aliasStr}\n`;
     } else if (node.type === "interface-provided") {
-      dsl += `interface "${node.name}" provided\n`;
+      dsl += `interface "${node.name}" provided${aliasStr}\n`;
     } else if (node.type === "interface-required") {
-      dsl += `interface "${node.name}" required\n`;
+      dsl += `interface "${node.name}" required${aliasStr}\n`;
     }
   }
   dsl += "\n";
-  dsl += generateEdgesDSL(diagram);
+  const nodeMap = new Map(diagram.nodes.map((n) => [n.id, n]));
+  for (const edge of diagram.edges) {
+    const source = nodeMap.get(edge.source) as any;
+    const target = nodeMap.get(edge.target) as any;
+    if (source && target) {
+      const srcName = source.alias || formatName(source.name);
+      const tgtName = target.alias || formatName(target.name);
+      const symbol = getRelationSymbol(edge.type);
+      dsl += `${srcName} ${symbol} ${tgtName}`;
+      if (edge.label) dsl += ` : ${edge.label.text}`;
+      dsl += "\n";
+    }
+  }
   return dsl;
 }
 

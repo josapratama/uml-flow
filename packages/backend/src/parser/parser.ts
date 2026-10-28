@@ -32,7 +32,7 @@ export class Parser {
     let pos = 0;
 
     // First pass: find @diagram declaration
-    pos = this.parseDiagramDeclaration(tokens, pos, diagram);
+    pos = this.parseDiagramDeclaration(tokens, pos, diagram, errors);
 
     // Second pass: parse elements using diagram-specific parser
     while (pos < tokens.length) {
@@ -78,37 +78,56 @@ export class Parser {
     tokens: DSLToken[],
     pos: number,
     diagram: Diagram,
+    errors: any[],
   ): number {
-    // Scan for @diagram directive
+    const validTypes = [
+      "class",
+      "sequence",
+      "usecase",
+      "activity",
+      "state",
+      "flowchart",
+      "erd",
+      "component",
+      "deployment",
+    ];
+
     for (let i = 0; i < tokens.length; i++) {
       if (tokens[i].type === "keyword" && tokens[i].value === "@diagram") {
         i++;
-        // Skip newlines
         while (i < tokens.length && tokens[i].type === "newline") i++;
-        // Read name
-        if (i < tokens.length && tokens[i].type === "string") {
-          diagram.name = tokens[i].value;
-          i++;
+
+        let name: string | undefined;
+        let type: string | undefined;
+
+        if (i < tokens.length) {
+          const tok1 = tokens[i];
+          if (validTypes.includes(tok1.value.toLowerCase())) {
+            type = tok1.value.toLowerCase();
+            i++;
+          } else {
+            name = tok1.value;
+            i++;
+            while (i < tokens.length && tokens[i].type === "newline") i++;
+            if (i < tokens.length) {
+              type = tokens[i].value.toLowerCase();
+              i++;
+            }
+          }
         }
-        while (i < tokens.length && tokens[i].type === "newline") i++;
-        // Read type
-        if (
-          i < tokens.length &&
-          (tokens[i].type === "keyword" || tokens[i].type === "identifier")
-        ) {
-          const t = tokens[i].value as DiagramType;
-          const validTypes = [
-            "class",
-            "sequence",
-            "usecase",
-            "activity",
-            "state",
-            "flowchart",
-            "erd",
-            "component",
-            "deployment",
-          ];
-          if (validTypes.includes(t)) diagram.type = t;
+
+        if (name) diagram.name = name;
+        if (type) {
+          if (validTypes.includes(type)) {
+            diagram.type = type as DiagramType;
+          } else {
+            errors.push({
+              line: tokens[i - 1]?.line ?? 1,
+              column: tokens[i - 1]?.column ?? 1,
+              message: `Unknown diagram type "${type}". Expected one of: ${validTypes.join(", ")}`,
+              severity: "warning",
+            });
+          }
         }
         break;
       }

@@ -49,15 +49,18 @@ export async function decodeShareCode(encoded: string): Promise<string> {
     bytes[i] = binary.charCodeAt(i);
   }
 
-  if (isGz && typeof DecompressionStream !== "undefined") {
-    try {
-      const stream = new Blob([bytes])
-        .stream()
-        .pipeThrough(new DecompressionStream("gzip"));
-      return await new Response(stream).text();
-    } catch {
-      // Fallback
+  if (isGz) {
+    if (typeof DecompressionStream !== "undefined") {
+      try {
+        const stream = new Blob([bytes])
+          .stream()
+          .pipeThrough(new DecompressionStream("gzip"));
+        return await new Response(stream).text();
+      } catch {
+        throw new Error("Failed to decompress shared diagram link");
+      }
     }
+    throw new Error("DecompressionStream is not supported in this browser");
   }
 
   return new TextDecoder().decode(bytes);

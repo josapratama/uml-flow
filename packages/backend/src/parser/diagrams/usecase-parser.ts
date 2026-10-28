@@ -35,13 +35,28 @@ export class UseCaseDiagramParser extends BaseDiagramParser {
         ? this.currentToken()!.value
         : this.currentToken()?.value || "Actor";
     this.advance();
+    this.skipNewlines();
+
+    let alias: string | undefined;
+    if (this.currentToken()?.value === "as") {
+      this.advance();
+      this.skipNewlines();
+      alias = this.currentToken()?.value;
+      this.advance();
+    }
+
+    const id = `node_actor_${name.replace(/\s+/g, "_")}_${this.diagram.nodes.length}`;
     const node: UseCaseNode = {
-      id: `node_actor_${name}_${this.diagram.nodes.length}`,
+      id,
       type: "actor",
       name,
       position: { x: 0, y: 0 },
       size: { width: 60, height: 100 },
     };
+    if (alias) {
+      (node as any).alias = alias;
+      this.aliasMap.set(alias, id);
+    }
     this.diagram.nodes.push(node);
   }
 
@@ -53,13 +68,28 @@ export class UseCaseDiagramParser extends BaseDiagramParser {
         ? this.currentToken()!.value
         : this.currentToken()?.value || "UseCase";
     this.advance();
+    this.skipNewlines();
+
+    let alias: string | undefined;
+    if (this.currentToken()?.value === "as") {
+      this.advance();
+      this.skipNewlines();
+      alias = this.currentToken()?.value;
+      this.advance();
+    }
+
+    const id = `node_usecase_${name.replace(/\s+/g, "_")}_${this.diagram.nodes.length}`;
     const node: UseCaseNode = {
-      id: `node_usecase_${name}_${this.diagram.nodes.length}`,
+      id,
       type: "usecase",
       name,
       position: { x: 0, y: 0 },
       size: { width: Math.max(120, name.length * 9 + 40), height: 50 },
     };
+    if (alias) {
+      (node as any).alias = alias;
+      this.aliasMap.set(alias, id);
+    }
     this.diagram.nodes.push(node);
   }
 
@@ -72,8 +102,10 @@ export class UseCaseDiagramParser extends BaseDiagramParser {
         : this.currentToken()?.value || "System";
     this.advance();
     this.skipNewlines();
+
+    const id = `node_system_${name.replace(/\s+/g, "_")}_${this.diagram.nodes.length}`;
     const node: UseCaseNode = {
-      id: `node_system_${name}_${this.diagram.nodes.length}`,
+      id,
       type: "system",
       name,
       position: { x: 0, y: 0 },

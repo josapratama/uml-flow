@@ -7,6 +7,19 @@ import type {
 
 const BASE_URL = "/api";
 
+function getClientId(): string {
+  try {
+    let id = localStorage.getItem("uml_flow_client_id");
+    if (!id) {
+      id = "client_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem("uml_flow_client_id", id);
+    }
+    return id;
+  } catch {
+    return "default_client";
+  }
+}
+
 export const api = {
   async parse(code: string): Promise<ParseResult> {
     const res = await fetch(`${BASE_URL}/parse`, {
@@ -80,15 +93,19 @@ export const api = {
     return this.layout(diagram, undefined, preset);
   },
 
-  // --- Diagram Storage API ---
+  // --- Diagram Storage API (Isolated by client ID) ---
   async getDiagrams(): Promise<Diagram[]> {
-    const res = await fetch(`${BASE_URL}/diagrams`);
+    const res = await fetch(`${BASE_URL}/diagrams`, {
+      headers: { "x-client-id": getClientId() },
+    });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     return res.json();
   },
 
   async getDiagram(id: string): Promise<Diagram> {
-    const res = await fetch(`${BASE_URL}/diagrams/${encodeURIComponent(id)}`);
+    const res = await fetch(`${BASE_URL}/diagrams/${encodeURIComponent(id)}`, {
+      headers: { "x-client-id": getClientId() },
+    });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     return res.json();
   },
@@ -96,7 +113,10 @@ export const api = {
   async saveServerDiagram(diagram: Diagram): Promise<Diagram> {
     const res = await fetch(`${BASE_URL}/diagrams`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-client-id": getClientId(),
+      },
       body: JSON.stringify(diagram),
     });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -106,7 +126,10 @@ export const api = {
   async updateServerDiagram(id: string, diagram: Diagram): Promise<Diagram> {
     const res = await fetch(`${BASE_URL}/diagrams/${encodeURIComponent(id)}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-client-id": getClientId(),
+      },
       body: JSON.stringify(diagram),
     });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -116,6 +139,7 @@ export const api = {
   async deleteServerDiagram(id: string): Promise<boolean> {
     const res = await fetch(`${BASE_URL}/diagrams/${encodeURIComponent(id)}`, {
       method: "DELETE",
+      headers: { "x-client-id": getClientId() },
     });
     return res.ok;
   },

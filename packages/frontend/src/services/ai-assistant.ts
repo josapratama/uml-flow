@@ -19,6 +19,10 @@ interface Identifiable {
   +getId(): string
 }
 
+class Role {
+  +name: string
+}
+
 User ..|> Identifiable
 User --> Role : has`,
 
@@ -178,42 +182,51 @@ export async function generateDiagramFromDescription(
   diagramType?: string,
   apiKey?: string,
   endpoint?: string,
+  model?: string,
 ): Promise<string> {
   // If API key provided, call the LLM endpoint
   if (apiKey && endpoint) {
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [
-            { role: "system", content: getSystemPrompt(diagramType) },
-            {
-              role: "user",
-              content: diagramType
-                ? `Create a ${diagramType} diagram for: ${description}`
-                : description,
-            },
-          ],
-          temperature: 0.7,
-          max_tokens: 1200,
-        }),
-      });
+    const selectedModel = model?.trim() || "gpt-4o-mini";
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: selectedModel,
+        messages: [
+          { role: "system", content: getSystemPrompt(diagramType) },
+          {
+            role: "user",
+            content: diagramType
+              ? `Create a ${diagramType} diagram for: ${description}`
+              : description,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 1200,
+      }),
+    });
 
-      if (response.ok) {
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) {
-          return stripMarkdownFences(content);
-        }
+    if (!response.ok) {
+      const errBody = await response.text().catch(() => "");
+      let errMsg = `AI API Error (${response.status})`;
+      try {
+        const parsed = JSON.parse(errBody);
+        if (parsed.error?.message) errMsg += `: ${parsed.error.message}`;
+      } catch {
+        if (errBody) errMsg += `: ${errBody.slice(0, 100)}`;
       }
-    } catch {
-      // Fallback below
+      throw new Error(errMsg);
     }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (content) {
+      return stripMarkdownFences(content);
+    }
+    throw new Error("No diagram content returned by AI provider");
   }
 
   // Fallback: smart keyword-based generation

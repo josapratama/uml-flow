@@ -8,6 +8,14 @@ export class ActivityDiagramParser extends BaseDiagramParser {
   private swimlanes: string[] = [];
   /** Current active swimlane */
   private currentSwimlane: string | null = null;
+  /** Active decision node for branching */
+  private currentDecision: ActivityNode | null = null;
+
+  private hasExplicitRelations(): boolean {
+    return this.tokens.some(
+      (t) => t.type === "symbol" && ["-->", "->", "..>"].includes(t.value),
+    );
+  }
 
   parseElement(): void {
     const token = this.currentToken();
@@ -26,26 +34,138 @@ export class ActivityDiagramParser extends BaseDiagramParser {
       return;
     }
 
+    // PlantUML-style swimlane: |Swimlane Name|
+    if (token.type === "operator" && token.value === "|") {
+      this.advance();
+      let laneName = "";
+      while (
+        this.pos < this.tokens.length &&
+        this.currentToken()?.value !== "|" &&
+        this.currentToken()?.type !== "newline"
+      ) {
+        laneName += (laneName ? " " : "") + this.currentToken()!.value;
+        this.advance();
+      }
+      if (this.currentToken()?.value === "|") this.advance();
+      laneName = laneName.trim().replace(/^["']|["']$/g, "");
+      if (laneName) {
+        if (!this.swimlanes.includes(laneName)) this.swimlanes.push(laneName);
+        this.currentSwimlane = laneName;
+        (this.diagram as any).swimlanes = this.swimlanes;
+      }
+      return;
+    }
+
+    // PlantUML-style action: :Action text;
+    if (token.type === "punctuation" && token.value === ":") {
+      this.advance();
+      let actionText = "";
+      while (
+        this.pos < this.tokens.length &&
+        this.currentToken()?.value !== ";" &&
+        this.currentToken()?.type !== "newline"
+      ) {
+        actionText += (actionText ? " " : "") + this.currentToken()!.value;
+        this.advance();
+      }
+      if (this.currentToken()?.value === ";") this.advance();
+      actionText = actionText.trim().replace(/^["']|["']$/g, "");
+      if (actionText) {
+        this.createNode(
+          "action",
+          actionText,
+          Math.max(120, actionText.length * 8 + 30),
+          40,
+        );
+      }
+      return;
+    }
+
+    // PlantUML-style if / else / endif
+    if (token.type === "identifier" || token.type === "keyword") {
+      if (token.value === "if") {
+        this.advance();
+        this.skipNewlines();
+        let condText = "";
+        if (this.currentToken()?.value === "(") {
+          this.advance();
+          while (
+            this.pos < this.tokens.length &&
+            this.currentToken()?.value !== ")" &&
+            this.currentToken()?.type !== "newline"
+          ) {
+            condText += (condText ? " " : "") + this.currentToken()!.value;
+            this.advance();
+          }
+          if (this.currentToken()?.value === ")") this.advance();
+        }
+        this.skipToNewline();
+        this.createNode("decision", condText || "Decision?", 80, 80);
+        return;
+      }
+      if (token.value === "else") {
+        this.skipToNewline();
+        return;
+      }
+      if (token.value === "endif") {
+        this.skipToNewline();
+        this.createNode("merge", "◇", 40, 40);
+        this.currentDecision = null;
+        return;
+      }
+      if (token.value === "stop") {
+        this.advance();
+        this.createNode("end", "end", 30, 30);
+        return;
+      }
+    }
+
     if (token.type === "bracket") {
+      const nextToken = this.peekNextNonNewline();
+      if (
+        nextToken &&
+        nextToken.type === "symbol" &&
+        ["-->", "->", "..>"].includes(nextToken.value)
+      ) {
+        this.parseRelation();
+        return;
+      }
+
       const val = token.value.toLowerCase();
       if (val === "start") {
         this.advance();
-        this.createNode("start", "●", 30, 30);
+        this.createNode("start", "start", 30, 30);
         return;
       }
       if (val === "end") {
         this.advance();
-        this.createNode("end", "◉", 30, 30);
+        this.createNode("end", "end", 30, 30);
         return;
       }
-      if (["yes", "no", "true", "false"].includes(val)) {
+      if (["yes", "no", "true", "false", "ya", "tidak"].includes(val)) {
         const condition = token.value;
         this.advance();
         this.skipNewlines();
-        if (this.currentToken()?.type === "keyword") {
+        if (
+          this.currentToken()?.type === "keyword" ||
+          this.currentToken()?.type === "identifier"
+        ) {
+          const prevCount = this.diagram.nodes.length;
           this.parseElement();
-          const lastEdge = this.diagram.edges[this.diagram.edges.length - 1];
-          if (lastEdge) lastEdge.condition = condition;
+          const newNode = this.diagram.nodes[this.diagram.nodes.length - 1];
+          if (this.currentDecision && newNode && this.diagram.nodes.length > prevCount) {
+            this.diagram.edges = this.diagram.edges.filter(
+              (e) => e.target !== newNode.id,
+            );
+            this.diagram.edges.push({
+              id: `edge_${this.currentDecision.id}_${newNode.id}`,
+              source: this.currentDecision.id,
+              target: newNode.id,
+              type: "flow",
+              condition,
+              label: { text: condition },
+            });
+          }
         }
         return;
       }
@@ -55,6 +175,16 @@ export class ActivityDiagramParser extends BaseDiagramParser {
 
     if (token.type === "keyword") {
       switch (token.value) {
+        case "start": {
+          this.advance();
+          this.createNode("start", "start", 30, 30);
+          return;
+        }
+        case "end": {
+          this.advance();
+          this.createNode("end", "end", 30, 30);
+          return;
+        }
         case "action":
         case "process": {
           this.advance();
@@ -86,6 +216,7 @@ export class ActivityDiagramParser extends BaseDiagramParser {
         case "merge": {
           this.advance();
           this.createNode("merge", "◇", 40, 40);
+          this.currentDecision = null;
           return;
         }
         case "fork": {
@@ -107,10 +238,6 @@ export class ActivityDiagramParser extends BaseDiagramParser {
       const lastEdge = this.diagram.edges[this.diagram.edges.length - 1];
       if (lastEdge) {
         this.explicitEdges.add(`${lastEdge.source}-->${lastEdge.target}`);
-        // Remove conflicting auto-edges originating from the same source
-        this.diagram.edges = this.diagram.edges.filter(
-          (e) => !e.id.startsWith("edge_auto_") || e.source !== lastEdge.source,
-        );
       }
       return;
     }
@@ -123,7 +250,6 @@ export class ActivityDiagramParser extends BaseDiagramParser {
     w: number,
     h: number,
   ): void {
-    // Use name-based ID to avoid collisions, with type prefix for terminal nodes
     const id = `node_${type}_${name.replace(/[^a-zA-Z0-9]/g, "_")}_${this.diagram.nodes.length}`;
     const node: ActivityNode = {
       id,
@@ -138,8 +264,8 @@ export class ActivityDiagramParser extends BaseDiagramParser {
       (node as any).swimlane = this.currentSwimlane;
     }
 
-    // Auto-connect to previous node ONLY if there's no explicit edge covering this pair
-    if (this.diagram.nodes.length > 0) {
+    // Auto-connect to previous node ONLY if there are no explicit edges in the diagram
+    if (!this.hasExplicitRelations() && this.diagram.nodes.length > 0) {
       const prev = this.diagram.nodes[this.diagram.nodes.length - 1];
       const edgeKey = `${prev.id}-->${id}`;
       if (!this.explicitEdges.has(edgeKey)) {
@@ -152,5 +278,9 @@ export class ActivityDiagramParser extends BaseDiagramParser {
       }
     }
     this.diagram.nodes.push(node);
+
+    if (type === "decision") {
+      this.currentDecision = node;
+    }
   }
 }

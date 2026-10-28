@@ -51,6 +51,7 @@ export class Lexer {
         continue;
       }
       if (this.tryRelation()) continue;
+      if (this.tryStereotype()) continue;
       if (this.tryVisibility(ch)) continue;
       if (this.tryERDPrimaryKey(ch)) continue;
       if (PUNCTUATION.has(ch)) {
@@ -141,13 +142,19 @@ export class Lexer {
       if (this.input[this.pos] === "\\") {
         this.pos++;
         this.column++;
+        if (this.pos >= this.input.length) break;
+      }
+      if (this.input[this.pos] === "\n") {
+        break;
       }
       value += this.input[this.pos];
       this.pos++;
       this.column++;
     }
-    this.pos++;
-    this.column++; // closing quote
+    if (this.pos < this.input.length && this.input[this.pos] === quote) {
+      this.pos++;
+      this.column++; // closing quote
+    }
     this.emit("string", value, startCol);
   }
 
@@ -156,14 +163,33 @@ export class Lexer {
     this.pos++;
     this.column++; // skip [
     let value = "";
-    while (this.pos < this.input.length && this.input[this.pos] !== "]") {
+    while (this.pos < this.input.length && this.input[this.pos] !== "]" && this.input[this.pos] !== "\n") {
       value += this.input[this.pos];
       this.pos++;
       this.column++;
     }
-    this.pos++;
-    this.column++; // skip ]
+    if (this.pos < this.input.length && this.input[this.pos] === "]") {
+      this.pos++;
+      this.column++; // skip ]
+    }
     this.emit("bracket", value.trim(), startCol);
+  }
+
+  private tryStereotype(): boolean {
+    if (this.input.startsWith("<<", this.pos)) {
+      const closeIdx = this.input.indexOf(">>", this.pos + 2);
+      const nextNl = this.input.indexOf("\n", this.pos);
+      if (closeIdx !== -1 && (nextNl === -1 || closeIdx < nextNl)) {
+        const full = this.input.substring(this.pos, closeIdx + 2);
+        if (full === "<<include>>" || full === "<<extend>>") return false;
+        const startCol = this.column;
+        this.emit("symbol", full, startCol);
+        this.pos += full.length;
+        this.column += full.length;
+        return true;
+      }
+    }
+    return false;
   }
 
   private readDirective(): void {

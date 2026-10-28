@@ -47,7 +47,11 @@ export class ClassDiagramParser extends BaseDiagramParser {
     this.advance();
     this.skipNewlines();
 
-    const node: ClassNode = {
+    const existingNode = this.diagram.nodes.find(
+      (n) => n.name === name && n.type === classType,
+    ) as ClassNode | undefined;
+
+    const node: ClassNode = existingNode || {
       id: `node_${name}_${this.diagram.nodes.length}`,
       type: classType,
       name,
@@ -82,7 +86,9 @@ export class ClassDiagramParser extends BaseDiagramParser {
     }
 
     this.calculateSize(node);
-    this.diagram.nodes.push(node);
+    if (!existingNode) {
+      this.diagram.nodes.push(node);
+    }
   }
 
   private parseMember(node: ClassNode): void {
@@ -94,7 +100,10 @@ export class ClassDiagramParser extends BaseDiagramParser {
       this.advance();
     }
     const nameToken = this.currentToken();
-    if (!nameToken || nameToken.type !== "identifier") {
+    if (
+      !nameToken ||
+      (nameToken.type !== "identifier" && nameToken.type !== "keyword")
+    ) {
       this.skipToNewline();
       return;
     }
@@ -117,7 +126,15 @@ export class ClassDiagramParser extends BaseDiagramParser {
     node: ClassNode,
     defaultVis: "+" | "-" | "#" | "~",
   ): void {
-    const name = this.currentToken()!.value;
+    const nameToken = this.currentToken();
+    if (
+      !nameToken ||
+      (nameToken.type !== "identifier" && nameToken.type !== "keyword")
+    ) {
+      this.skipToNewline();
+      return;
+    }
+    const name = nameToken.value;
     this.advance();
     if (this.currentToken()?.value === "(") {
       node.methods.push(this.parseMethodSig(defaultVis, name, false));

@@ -17,10 +17,18 @@ export class SequenceDiagramParser extends BaseDiagramParser {
       this.parseFragment();
       return;
     }
-    if (token.type === "identifier") {
+
+    // Message check: participant name (identifier, keyword, or string) followed by arrow
+    const nextToken = this.peekNextNonNewline();
+    if (
+      nextToken &&
+      nextToken.type === "symbol" &&
+      ["->", "-->", "-->>", "..>"].includes(nextToken.value)
+    ) {
       this.parseMessage();
       return;
     }
+
     this.advance();
   }
 
@@ -49,12 +57,14 @@ export class SequenceDiagramParser extends BaseDiagramParser {
     }
 
     if (!this.diagram.participants) this.diagram.participants = [];
-    this.diagram.participants.push({
-      id: `participant_${name}`,
-      name,
-      type: pType,
-      position: { x: this.diagram.participants.length * 180 + 80, y: 60 },
-    });
+    if (!this.diagram.participants.some((p) => p.name === name || p.id === `participant_${name}`)) {
+      this.diagram.participants.push({
+        id: `participant_${name}`,
+        name,
+        type: pType,
+        position: { x: this.diagram.participants.length * 180 + 80, y: 60 },
+      });
+    }
   }
 
   private parseMessage(): void {
@@ -83,6 +93,18 @@ export class SequenceDiagramParser extends BaseDiagramParser {
     if (this.currentToken()?.value === ":") {
       this.advance();
       label = this.readToEndOfLine();
+    }
+
+    if (!this.diagram.participants) this.diagram.participants = [];
+    for (const name of [fromName, toName]) {
+      if (!this.diagram.participants.some((p) => p.name === name || p.id === `participant_${name}`)) {
+        this.diagram.participants.push({
+          id: `participant_${name}`,
+          name,
+          type: "object",
+          position: { x: this.diagram.participants.length * 180 + 80, y: 60 },
+        });
+      }
     }
 
     if (!this.diagram.messages) this.diagram.messages = [];

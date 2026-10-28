@@ -48,6 +48,9 @@ export function AIAssistant({ isOpen, onClose, onGenerate }: Props) {
       localStorage.getItem("ai-endpoint") ||
       "https://api.openai.com/v1/chat/completions",
   );
+  const [model, setModel] = useState(
+    () => localStorage.getItem("ai-model") || "gpt-4o-mini",
+  );
   const [showSettings, setShowSettings] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -67,6 +70,7 @@ export function AIAssistant({ isOpen, onClose, onGenerate }: Props) {
         diagramType || undefined,
         apiKey || undefined,
         apiKey && endpoint ? endpoint : undefined,
+        model || undefined,
       );
       setPreview(dsl);
     } catch (e) {
@@ -85,6 +89,7 @@ export function AIAssistant({ isOpen, onClose, onGenerate }: Props) {
   const saveSettings = () => {
     localStorage.setItem("ai-api-key", apiKey);
     localStorage.setItem("ai-endpoint", endpoint);
+    localStorage.setItem("ai-model", model);
     setShowSettings(false);
   };
 
@@ -150,6 +155,18 @@ export function AIAssistant({ isOpen, onClose, onGenerate }: Props) {
                 type="text"
                 value={endpoint}
                 onChange={(e) => setEndpoint(e.target.value)}
+                className="w-full px-3 py-1.5 text-xs bg-surface border border-border rounded text-text outline-none focus:border-accent font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">
+                {isId ? "Model LLM (mis. gpt-4o-mini, gpt-4o, claude-3-5-sonnet, gemini-1.5-flash)" : "LLM Model (e.g. gpt-4o-mini, gpt-4o, gemini-1.5-flash)"}
+              </label>
+              <input
+                type="text"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="gpt-4o-mini"
                 className="w-full px-3 py-1.5 text-xs bg-surface border border-border rounded text-text outline-none focus:border-accent font-mono"
               />
             </div>

@@ -15,6 +15,7 @@ export abstract class BaseDiagramParser {
   protected pos: number = 0;
   protected errors: ParseError[] = [];
   protected diagram: Diagram;
+  protected aliasMap: Map<string, string> = new Map();
 
   constructor(diagram: Diagram, tokens: DSLToken[], startPos: number) {
     this.diagram = diagram;
@@ -77,15 +78,25 @@ export abstract class BaseDiagramParser {
 
   protected readType(): string {
     let type = "";
-    while (
-      this.pos < this.tokens.length &&
-      this.currentToken()?.type !== "newline" &&
-      this.currentToken()?.value !== "," &&
-      this.currentToken()?.value !== ")" &&
-      this.currentToken()?.value !== "{" &&
-      this.currentToken()?.type !== "bracket"
-    ) {
-      type += this.currentToken()!.value;
+    let angleDepth = 0;
+    while (this.pos < this.tokens.length) {
+      const tok = this.currentToken();
+      if (!tok || tok.type === "newline") break;
+      if (tok.value === "<") {
+        angleDepth++;
+      } else if (tok.value === ">") {
+        angleDepth = Math.max(0, angleDepth - 1);
+      } else if (angleDepth === 0) {
+        if (
+          tok.value === "," ||
+          tok.value === ")" ||
+          tok.value === "{" ||
+          tok.type === "bracket"
+        ) {
+          break;
+        }
+      }
+      type += tok.value;
       this.advance();
     }
     return type.trim() || "any";
@@ -104,11 +115,83 @@ export abstract class BaseDiagramParser {
   }
 
   protected findNodeId(name: string): string {
-    // Try exact name match first (handles all parsers)
-    const node = this.diagram.nodes.find((n) => n.name === name);
+    const cleanName = name.replace(/^\[|\]$/g, "").trim();
+    if (this.aliasMap.has(name)) return this.aliasMap.get(name)!;
+    if (this.aliasMap.has(cleanName)) return this.aliasMap.get(cleanName)!;
+
+    // 1. Exact name or ID match
+    const node = this.diagram.nodes.find(
+      (n) =>
+        n.name === name ||
+        n.id === name ||
+        n.name === cleanName ||
+        n.id === `node_${name}` ||
+        n.id === `node_${cleanName}` ||
+        (n as any).alias === name ||
+        (n as any).alias === cleanName
+    );
     if (node) return node.id;
-    // Fallback: construct legacy-style id (for compatibility)
+
+    // 2. Match terminal nodes by type
+    const lower = cleanName.toLowerCase();
+    if (["start", "end", "initial", "final"].includes(lower)) {
+      const terminal = this.diagram.nodes.find(
+        (n) => n.type === lower || n.name === "●" || n.name === "◉"
+      );
+      if (terminal) return terminal.id;
+    }
+
     return `node_${name}`;
+  }
+
+  protected resolveOrCreateNode(name: string): string {
+    const existing = this.findNodeId(name);
+    if (this.diagram.nodes.some((n) => n.id === existing)) {
+      return existing;
+    }
+
+    // Auto-create missing node based on diagram type
+    const cleanName = name.replace(/^["']|["']$/g, "").trim();
+    const nodeId = `node_${cleanName.replace(/\s+/g, "_")}_${this.diagram.nodes.length}`;
+    const defaultType = this.getDefaultNodeType();
+    const newNode: any = {
+      id: nodeId,
+      name: cleanName,
+      type: defaultType,
+      position: { x: 0, y: 0 },
+      size: { width: 140, height: 60 },
+    };
+    if (this.diagram.type === "class") {
+      newNode.attributes = [];
+      newNode.methods = [];
+    } else if (this.diagram.type === "erd") {
+      newNode.attributes = [];
+    }
+    this.diagram.nodes.push(newNode);
+    return nodeId;
+  }
+
+  protected getDefaultNodeType(): string {
+    switch (this.diagram.type) {
+      case "class":
+        return "class";
+      case "erd":
+        return "entity";
+      case "usecase":
+        return "usecase";
+      case "component":
+        return "component";
+      case "deployment":
+        return "node";
+      case "activity":
+        return "action";
+      case "flowchart":
+        return "process";
+      case "state":
+        return "state";
+      default:
+        return "class";
+    }
   }
 
   protected parseRelation(): void {
@@ -135,10 +218,13 @@ export abstract class BaseDiagramParser {
       label = this.readToEndOfLine();
     }
 
+    const sourceId = this.resolveOrCreateNode(sourceName);
+    const targetId = this.resolveOrCreateNode(targetName);
+
     const edge: Edge = {
       id: `edge_${sourceName}_${targetName}_${this.diagram.edges.length}`,
-      source: this.findNodeId(sourceName),
-      target: this.findNodeId(targetName),
+      source: sourceId,
+      target: targetId,
       type: relType,
     };
     if (label) edge.label = { text: label };

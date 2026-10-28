@@ -325,7 +325,12 @@ function renderNode(node: any): string {
       svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${size.height}" fill="#E8F4FD" stroke="#333" stroke-width="1.5" rx="3"/>`;
       svg += `<rect x="${position.x + size.width - 20}" y="${position.y + 8}" width="14" height="10" fill="white" stroke="#333" stroke-width="1"/>`;
       svg += `<rect x="${position.x + size.width - 18}" y="${position.y + 11}" width="4" height="4" fill="white" stroke="#333" stroke-width="1"/>`;
-      svg += `<text x="${position.x + (size.width - 10) / 2}" y="${position.y + size.height / 2 + 4}" text-anchor="middle" font-size="12" fill="#333">${escapeXml(name)}</text>`;
+      if ((node as any).stereotype) {
+        svg += `<text x="${position.x + (size.width - 10) / 2}" y="${position.y + 20}" text-anchor="middle" font-size="10" fill="#666" font-style="italic">&lt;&lt;${escapeXml((node as any).stereotype)}&gt;&gt;</text>`;
+        svg += `<text x="${position.x + (size.width - 10) / 2}" y="${position.y + size.height / 2 + 10}" text-anchor="middle" font-size="12" fill="#333">${escapeXml(name)}</text>`;
+      } else {
+        svg += `<text x="${position.x + (size.width - 10) / 2}" y="${position.y + size.height / 2 + 4}" text-anchor="middle" font-size="12" fill="#333">${escapeXml(name)}</text>`;
+      }
     } else {
       svg += `<circle cx="${position.x + size.width / 2}" cy="${position.y + size.height / 2}" r="${Math.min(size.width, size.height) / 2}" fill="none" stroke="#333" stroke-width="1.5"/>`;
       svg += `<text x="${position.x + size.width / 2}" y="${position.y + size.height + 14}" text-anchor="middle" font-size="11" fill="#333">${escapeXml(name)}</text>`;
@@ -412,10 +417,12 @@ function renderEdge(edge: any): string {
 
   let svg = `<path d="${d}" fill="none" stroke="#666" stroke-width="1.5"${dash} marker-end="${markerEnd}"${markerStart ? ` marker-start="${markerStart}"` : ""}/>`;
 
-  if (edge.label) {
+  const labelText =
+    typeof edge.label === "string"
+      ? edge.label
+      : edge.label?.text || edge.condition || "";
+  if (labelText) {
     const mid = getPathMidpoint(points);
-    const labelText =
-      typeof edge.label === "string" ? edge.label : edge.label.text || "";
     svg += `<text x="${mid.x}" y="${mid.y - 8}" font-size="11" font-family="sans-serif" fill="#444" text-anchor="middle">${escapeXml(labelText)}</text>`;
   }
   return svg;
