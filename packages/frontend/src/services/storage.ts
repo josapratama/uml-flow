@@ -4,6 +4,7 @@ import { api } from "./api";
 const STORAGE_KEY = "uml-editor-diagrams";
 const CURRENT_KEY = "uml-editor-current";
 const CODE_KEY = "uml-editor-code";
+const OPEN_TABS_KEY = "uml-editor-open-tabs";
 
 export interface SavedDiagram {
   id: string;
@@ -47,7 +48,7 @@ export const storage = {
     }
   },
 
-  /** List all saved diagrams */
+  /** List all saved diagrams in Library */
   list(): SavedDiagram[] {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
@@ -55,6 +56,62 @@ export const storage = {
     } catch {
       return [];
     }
+  },
+
+  /** Get IDs of currently open tabs */
+  getOpenTabIds(): string[] {
+    try {
+      const data = localStorage.getItem(OPEN_TABS_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  /** Save IDs of currently open tabs */
+  setOpenTabIds(ids: string[]): void {
+    try {
+      localStorage.setItem(OPEN_TABS_KEY, JSON.stringify(ids));
+    } catch {
+      /* quota exceeded */
+    }
+  },
+
+  /** Get only diagrams that are currently open as tabs */
+  getOpenTabs(): SavedDiagram[] {
+    const all = this.list();
+    if (all.length === 0) return [];
+
+    const openIds = this.getOpenTabIds();
+    if (openIds.length === 0) {
+      // Default: first diagram only
+      const initial = [all[0]];
+      this.setOpenTabIds([all[0].id]);
+      return initial;
+    }
+
+    const map = new Map(all.map((d) => [d.id, d]));
+    const result: SavedDiagram[] = [];
+    const validIds: string[] = [];
+
+    for (const id of openIds) {
+      const item = map.get(id);
+      if (item) {
+        result.push(item);
+        validIds.push(id);
+      }
+    }
+
+    if (result.length === 0) {
+      result.push(all[0]);
+      validIds.push(all[0].id);
+    }
+
+    if (validIds.length !== openIds.length) {
+      this.setOpenTabIds(validIds);
+    }
+
+    return result;
   },
 
   /** Save diagram to library (localStorage + server sync) */
@@ -95,6 +152,9 @@ export const storage = {
     } catch {
       /* */
     }
+    const openIds = this.getOpenTabIds().filter((tid) => tid !== id);
+    this.setOpenTabIds(openIds);
+
     api.deleteServerDiagram(id).catch(() => {});
   },
 
@@ -105,10 +165,12 @@ export const storage = {
       if (!serverDiagrams || serverDiagrams.length === 0) return this.list();
 
       const localList = this.list();
-      const localMap = new Map(localList.map((d) => [d.id, d]));
+      const localIdMap = new Map(localList.map((d) => [d.id, d]));
+      const localNameSet = new Set(localList.map((d) => d.name));
 
+      let hasChanges = false;
       for (const sd of serverDiagrams) {
-        if (!localMap.has(sd.id)) {
+        if (!localIdMap.has(sd.id) && !localNameSet.has(sd.name)) {
           localList.push({
             id: sd.id,
             name: sd.name,
@@ -116,15 +178,19 @@ export const storage = {
             diagram: sd,
             updatedAt: sd.metadata?.updatedAt || new Date().toISOString(),
           });
+          localNameSet.add(sd.name);
+          hasChanges = true;
         }
       }
 
-      try {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(localList.slice(0, 50)),
-        );
-      } catch {}
+      if (hasChanges) {
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(localList.slice(0, 50)),
+          );
+        } catch {}
+      }
 
       return localList;
     } catch {

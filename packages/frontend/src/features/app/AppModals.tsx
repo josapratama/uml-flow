@@ -21,7 +21,7 @@ interface AppModalsProps {
   onCloseContextMenu: () => void;
   showLibrary: boolean;
   onCloseLibrary: () => void;
-  tabs: SavedDiagram[];
+  libraryDiagrams: SavedDiagram[];
   activeTabId: string | null;
   onOpenTab: (d: SavedDiagram) => void;
   onDeleteSavedDiagram: (id: string) => void;
@@ -60,7 +60,7 @@ export function AppModals({
   onCloseContextMenu,
   showLibrary,
   onCloseLibrary,
-  tabs,
+  libraryDiagrams,
   activeTabId,
   onOpenTab,
   onDeleteSavedDiagram,
@@ -107,7 +107,7 @@ export function AppModals({
       <DiagramLibrary
         isOpen={showLibrary}
         onClose={onCloseLibrary}
-        diagrams={tabs}
+        diagrams={libraryDiagrams}
         activeId={activeTabId}
         onOpen={onOpenTab}
         onDelete={onDeleteSavedDiagram}

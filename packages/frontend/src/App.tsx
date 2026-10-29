@@ -95,8 +95,8 @@ export default function App(props: AppProps = {}) {
 
   // --- Multi-diagram tabs ---
   const [tabs, setTabs] = useState<SavedDiagram[]>(() => {
-    const list = storage.list();
-    if (list.length > 0) return list;
+    const openTabs = storage.getOpenTabs();
+    if (openTabs.length > 0) return openTabs;
     const initialCode = storage.loadCode() || SAMPLES.class;
     const initialDiagram = storage.loadCurrent();
     const entry: SavedDiagram = {
@@ -107,11 +107,12 @@ export default function App(props: AppProps = {}) {
       updatedAt: new Date().toISOString(),
     };
     storage.save(entry);
+    storage.setOpenTabIds([entry.id]);
     return [entry];
   });
   const [activeTabId, setActiveTabId] = useState<string | null>(() => {
-    const list = storage.list();
-    return list.length > 0 ? list[0].id : "diagram_main";
+    const openTabs = storage.getOpenTabs();
+    return openTabs.length > 0 ? openTabs[0].id : "diagram_main";
   });
 
   // --- UI panels ---
@@ -174,6 +175,27 @@ export default function App(props: AppProps = {}) {
           }
           diagramHistory.set(newDiagram);
           setErrors([]);
+
+          // Automatically sync active tab name from parsed diagram name
+          const currentCode = dslCode ?? code;
+          if (newDiagram.name && newDiagram.name !== "Untitled" && activeTabId) {
+            setTabs((prev) =>
+              prev.map((t) =>
+                t.id === activeTabId && t.name !== newDiagram.name
+                  ? { ...t, name: newDiagram.name }
+                  : t
+              )
+            );
+            const currentEntry = storage.list().find((d) => d.id === activeTabId);
+            if (currentEntry && currentEntry.name !== newDiagram.name) {
+              storage.save({
+                ...currentEntry,
+                name: newDiagram.name,
+                code: currentCode,
+                diagram: newDiagram,
+              });
+            }
+          }
         } else {
           setErrors(result.errors || []);
         }
@@ -190,11 +212,11 @@ export default function App(props: AppProps = {}) {
         setIsCompiling(false);
       }
     },
-    [code, diagramHistory, isId]
+    [code, diagramHistory, isId, activeTabId]
   );
 
   // --- Tab helpers ---
-  const refreshTabs = useCallback(() => setTabs(storage.list()), []);
+  const refreshTabs = useCallback(() => setTabs(storage.getOpenTabs()), []);
 
   const handleOpenTab = useCallback(
     async (entry: SavedDiagram) => {
@@ -209,6 +231,12 @@ export default function App(props: AppProps = {}) {
             updatedAt: new Date().toISOString(),
           });
         }
+      }
+
+      // Ensure opened tab is registered in open tabs list
+      const currentOpenIds = storage.getOpenTabIds();
+      if (!currentOpenIds.includes(entry.id)) {
+        storage.setOpenTabIds([...currentOpenIds, entry.id]);
       }
 
       let currentCode = entry.code;
@@ -265,6 +293,8 @@ export default function App(props: AppProps = {}) {
       updatedAt: new Date().toISOString(),
     };
     storage.save(newEntry);
+    const currentOpenIds = storage.getOpenTabIds();
+    storage.setOpenTabIds([...currentOpenIds, newId]);
     refreshTabs();
     setActiveTabId(newId);
     setCode(newCode);
@@ -289,18 +319,21 @@ export default function App(props: AppProps = {}) {
           });
         }
       }
-      const remaining = tabs.filter((t) => t.id !== id);
+      const currentOpen = storage.getOpenTabs();
+      const remaining = currentOpen.filter((t) => t.id !== id);
       if (remaining.length === 0) {
+        storage.setOpenTabIds([]);
         handleNewTab();
         return;
       }
+      storage.setOpenTabIds(remaining.map((t) => t.id));
       setTabs(remaining);
       if (activeTabId === id) {
         handleOpenTab(remaining[0]);
       }
       showToast(isId ? "Tab ditutup (tersimpan di Library)" : "Tab closed (saved in Library)", "info");
     },
-    [tabs, activeTabId, diagram, code, isId, handleOpenTab, handleNewTab]
+    [activeTabId, diagram, code, isId, handleOpenTab, handleNewTab]
   );
 
   const handleRenameTab = useCallback(
@@ -381,8 +414,8 @@ export default function App(props: AppProps = {}) {
     if (startupHandled.current) return;
     startupHandled.current = true;
 
-    storage.syncFromServer().then((list) => {
-      setTabs(list);
+    storage.syncFromServer().then(() => {
+      refreshTabs();
     });
 
     if (props.initialCode) {
@@ -405,7 +438,9 @@ export default function App(props: AppProps = {}) {
             updatedAt: new Date().toISOString(),
           };
           storage.save(sharedEntry);
-          setTabs((prev) => [...prev, sharedEntry]);
+          const currentOpenIds = storage.getOpenTabIds();
+          storage.setOpenTabIds([...currentOpenIds, newId]);
+          refreshTabs();
           setActiveTabId(newId);
           setCode(sharedCode);
           lastCompiledCode.current = sharedCode;
@@ -1100,7 +1135,7 @@ export default function App(props: AppProps = {}) {
         onCloseContextMenu={() => setContextMenu(null)}
         showLibrary={showLibrary}
         onCloseLibrary={() => setShowLibrary(false)}
-        tabs={tabs}
+        libraryDiagrams={storage.list()}
         activeTabId={activeTabId}
         onOpenTab={handleOpenTab}
         onDeleteSavedDiagram={(id) => {
