@@ -1135,6 +1135,7 @@ export default function App(props: AppProps = {}) {
         onCloseContextMenu={() => setContextMenu(null)}
         showLibrary={showLibrary}
         onCloseLibrary={() => setShowLibrary(false)}
+        tabs={tabs}
         libraryDiagrams={storage.list()}
         activeTabId={activeTabId}
         onOpenTab={handleOpenTab}
