@@ -77,17 +77,35 @@ export const storage = {
     }
   },
 
+  /** Register an ID as open tab */
+  openTab(id: string): void {
+    const ids = this.getOpenTabIds();
+    if (!ids.includes(id)) {
+      this.setOpenTabIds([...ids, id]);
+    }
+  },
+
+  /** Remove an ID from open tabs */
+  closeTab(id: string): void {
+    const ids = this.getOpenTabIds().filter((tid) => tid !== id);
+    this.setOpenTabIds(ids);
+  },
+
   /** Get only diagrams that are currently open as tabs */
   getOpenTabs(): SavedDiagram[] {
     const all = this.list();
     if (all.length === 0) return [];
 
-    const openIds = this.getOpenTabIds();
-    if (openIds.length === 0) {
-      // Default: first diagram only
+    const rawOpen = localStorage.getItem(OPEN_TABS_KEY);
+    if (rawOpen === null) {
       const initial = [all[0]];
       this.setOpenTabIds([all[0].id]);
       return initial;
+    }
+
+    const openIds = this.getOpenTabIds();
+    if (openIds.length === 0) {
+      return [];
     }
 
     const map = new Map(all.map((d) => [d.id, d]));
@@ -100,11 +118,6 @@ export const storage = {
         result.push(item);
         validIds.push(id);
       }
-    }
-
-    if (result.length === 0) {
-      result.push(all[0]);
-      validIds.push(all[0].id);
     }
 
     if (validIds.length !== openIds.length) {
