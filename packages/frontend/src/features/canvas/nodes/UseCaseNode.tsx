@@ -7,15 +7,17 @@ interface Props {
   node: UseCaseNode;
   isSelected: boolean;
   onDragStart: (e: React.MouseEvent) => void;
+  hideText?: boolean;
 }
 
-export function UseCaseNodeRenderer({ node, isSelected, onDragStart }: Props) {
+export function UseCaseNodeRenderer({ node, isSelected, onDragStart, hideText }: Props) {
   const { position, size, name, type } = node;
   const s = resolveStyle((node as any).style);
   const stroke = getStroke(s, isSelected);
   const sw = getStrokeWidth(s, isSelected);
   const cx = size.width / 2,
     cy = size.height / 2;
+  const textToRender = hideText ? "" : name;
 
   const renderShape = () => {
     switch (type) {
@@ -63,7 +65,7 @@ export function UseCaseNodeRenderer({ node, isSelected, onDragStart }: Props) {
               strokeWidth={sw}
             />
             <SvgMultilineText
-              text={name}
+              text={textToRender}
               cx={cx}
               cy={Math.max(93, (86 + size.height) / 2)}
               fontSize={s.fontSize}
@@ -88,7 +90,7 @@ export function UseCaseNodeRenderer({ node, isSelected, onDragStart }: Props) {
               strokeWidth={sw}
             />
             <SvgMultilineText
-              text={name}
+              text={textToRender}
               cx={cx}
               cy={cy}
               fontSize={s.fontSize}
@@ -120,17 +122,19 @@ export function UseCaseNodeRenderer({ node, isSelected, onDragStart }: Props) {
                     : "6,3"
               }
             />
-            <text
-              x={cx}
-              y="18"
-              textAnchor="middle"
-              fontSize={s.fontSize}
-              fontFamily={s.fontFamily}
-              fontWeight="bold"
-              fill={s.fontColor}
-            >
-              {name}
-            </text>
+            {textToRender && (
+              <text
+                x={cx}
+                y="18"
+                textAnchor="middle"
+                fontSize={s.fontSize}
+                fontFamily={s.fontFamily}
+                fontWeight="bold"
+                fill={s.fontColor}
+              >
+                {textToRender}
+              </text>
+            )}
           </g>
         );
       default:

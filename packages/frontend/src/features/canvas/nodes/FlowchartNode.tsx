@@ -17,6 +17,7 @@ interface Props {
   isSelected: boolean;
   onDragStart: (e: React.MouseEvent) => void;
   canvasTheme?: string;
+  hideText?: boolean;
 }
 
 export function FlowchartNodeRenderer({
@@ -24,8 +25,10 @@ export function FlowchartNodeRenderer({
   isSelected,
   onDragStart,
   canvasTheme,
+  hideText,
 }: Props) {
-  const { position, name, type } = node;
+  const { position, name: rawName, type } = node;
+  const name = hideText ? "" : rawName;
   const size = getVisualSize(node);
   const isDark = isDarkCanvas(canvasTheme);
   const colors = getFlowchartColors(type, isDark, (node as any).style);

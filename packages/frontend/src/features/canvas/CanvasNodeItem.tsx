@@ -4,6 +4,7 @@ import { NodeRenderer } from "./nodes/NodeRenderer";
 import { NodeAnchors } from "./nodes/NodeAnchors";
 import { ResizeHandles, type ResizeHandle } from "./nodes/ResizeHandles";
 import { getVisualSize } from "./nodes/getVisualSize";
+import { resolveStyle } from "./nodes/useNodeStyle";
 import { InlineEditor } from "./InlineEditor";
 
 interface CanvasNodeItemProps {
@@ -157,33 +158,42 @@ export function CanvasNodeItem({
 
       {/* Inline editor for node rename */}
       {isEditing && (
-        <InlineEditor
-          x={
-            node.type === "actor"
-              ? node.position.x +
-                visualSize.width / 2 -
-                Math.max(visualSize.width, 120) / 2
-              : node.position.x +
-                visualSize.width / 2 -
-                Math.max(visualSize.width, 140) / 2
-          }
-          y={
-            node.type === "actor"
-              ? Math.max(node.position.y + 93, node.position.y + (86 + visualSize.height) / 2)
-              : "attributes" in node
-                ? node.position.y + ((node as any).type !== "class" ? 28 : 14)
-                : node.position.y + visualSize.height / 2
-          }
-          width={
-            node.type === "actor"
-              ? Math.max(visualSize.width, 120)
-              : Math.max(visualSize.width, 140)
-          }
-          initialValue={node.name}
-          onSubmit={onRenameSubmit}
-          onChange={onRenameChange}
-          onCancel={onRenameCancel}
-        />
+        (() => {
+          const s = resolveStyle((node as any).style, canvasTheme);
+          return (
+            <InlineEditor
+              x={
+                node.type === "actor"
+                  ? node.position.x +
+                    visualSize.width / 2 -
+                    Math.max(visualSize.width, 120) / 2
+                  : node.position.x +
+                    visualSize.width / 2 -
+                    Math.max(visualSize.width, 140) / 2
+              }
+              y={
+                node.type === "actor"
+                  ? Math.max(node.position.y + 93, node.position.y + (86 + visualSize.height) / 2)
+                  : "attributes" in node
+                    ? node.position.y + ((node as any).type !== "class" ? 28 : 14)
+                    : node.position.y + visualSize.height / 2
+              }
+              width={
+                node.type === "actor"
+                  ? Math.max(visualSize.width, 120)
+                  : Math.max(visualSize.width, 140)
+              }
+              initialValue={node.name}
+              onSubmit={onRenameSubmit}
+              onChange={onRenameChange}
+              onCancel={onRenameCancel}
+              fontColor={s.fontColor}
+              fontSize={s.fontSize}
+              fontFamily={s.fontFamily}
+              fontWeight={s.fontWeight}
+            />
+          );
+        })()
       )}
     </React.Fragment>
   );

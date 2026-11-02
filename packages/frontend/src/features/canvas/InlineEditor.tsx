@@ -9,12 +9,16 @@ interface Props {
   onChange?: (value: string) => void;
   onCancel: () => void;
   scale?: number;
+  fontColor?: string;
+  fontSize?: number;
+  fontFamily?: string;
+  fontWeight?: string | number;
 }
 
 /**
  * Inline text editor that blends seamlessly with the node.
- * No visible border/box — just a text cursor appearing in place.
- * Looks like editing text directly on the canvas.
+ * No visible border/box — transparent background with a crisp blinking caret.
+ * Looks and feels like editing text directly on the canvas.
  */
 export function InlineEditor({
   x,
@@ -24,14 +28,22 @@ export function InlineEditor({
   onSubmit,
   onChange,
   onCancel,
+  fontColor,
+  fontSize,
+  fontFamily,
+  fontWeight,
 }: Props) {
   const [value, setValue] = useState(initialValue);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTimeout(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
+      if (inputRef.current) {
+        inputRef.current.focus();
+        // Place caret at the end of the text without solid selection block
+        const len = inputRef.current.value.length;
+        inputRef.current.setSelectionRange(len, len);
+      }
     }, 10);
   }, []);
 
@@ -68,19 +80,20 @@ export function InlineEditor({
         style={{
           width: "100%",
           height: "100%",
-          padding: "0 4px",
-          fontSize: "13px",
-          fontWeight: 600,
-          fontFamily: "Inter, system-ui, sans-serif",
+          padding: "0 2px",
+          fontSize: `${fontSize || 13}px`,
+          fontWeight: fontWeight || 600,
+          fontFamily: fontFamily || "Inter, system-ui, sans-serif",
           textAlign: "center",
-          color: "#1e293b",
-          backgroundColor: "rgba(255,255,255,0.95)",
+          color: fontColor || "#f1f5f9",
+          backgroundColor: "transparent",
+          background: "transparent",
           border: "none",
           borderBottom: "none",
           borderRadius: 0,
           outline: "none",
-          caretColor: "#6366f1",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+          caretColor: "#38bdf8",
+          boxShadow: "none",
         }}
       />
     </foreignObject>

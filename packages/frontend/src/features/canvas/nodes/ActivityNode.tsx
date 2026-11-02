@@ -9,10 +9,12 @@ interface Props {
   isSelected: boolean;
   onDragStart: (e: React.MouseEvent) => void;
   canvasTheme?: string;
+  hideText?: boolean;
 }
 
-export function ActivityNodeRenderer({ node, isSelected, onDragStart, canvasTheme }: Props) {
-  const { position, name, type } = node;
+export function ActivityNodeRenderer({ node, isSelected, onDragStart, canvasTheme, hideText }: Props) {
+  const { position, name: rawName, type } = node;
+  const name = hideText ? "" : rawName;
   const size = getVisualSize(node);
   const isDark = isDarkCanvas(canvasTheme);
   const s = resolveStyle((node as any).style, canvasTheme);
