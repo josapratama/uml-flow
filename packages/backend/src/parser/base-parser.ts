@@ -197,9 +197,13 @@ export abstract class BaseDiagramParser {
   protected parseRelation(): void {
     const sourceName = this.currentToken()!.value;
     this.advance();
+    // The relation symbol may sit on a following line, but if it does not,
+    // we must NOT consume that following line (it belongs to another statement).
+    const afterSource = this.pos;
     this.skipNewlines();
     const relToken = this.currentToken();
     if (!relToken || relToken.type !== "symbol") {
+      this.pos = afterSource;
       this.skipToNewline();
       return;
     }

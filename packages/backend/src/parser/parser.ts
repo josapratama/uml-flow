@@ -23,7 +23,46 @@ import {
  * Tokenizes input, detects diagram type, delegates to specific parser.
  */
 export class Parser {
-  parse(input: string): ParseResult {
+  private static FLOW_TYPES =
+    "start|end|process|decision|io|document|database|subroutine|connector|preparation";
+
+  /**
+   * Normalizes the shorthand `[process] Some text (id)` into the canonical
+   * `process "Some text" as id`. Line count is preserved so error positions stay valid.
+   * Literal "\n" sequences inside the text are flattened to " - ".
+   */
+  private normalizeShorthand(input: string): string {
+    const re = new RegExp(
+      `^(\\s*)\\[(${Parser.FLOW_TYPES})\\]\\s*(.*?)\\s*(?:\\(([\\p{L}\\p{N}_-]+)\\))?\\s*$`,
+      "u",
+    );
+    return input
+      .split("\n")
+      .map((line) => {
+        const m = line.replace(/\r$/, "").match(re);
+        if (!m) return line;
+        const [, indent, type, rawText, alias] = m;
+        const text = rawText
+          .replace(/\\n/g, " - ")
+          .replace(/\\/g, "\\\\")
+          .replace(/"/g, '\\"')
+          .trim();
+        return `${indent}${type} "${text || type}"${alias ? ` as ${alias}` : ""}`;
+      })
+      .join("\n");
+  }
+
+  /** Guess the diagram type when no @diagram declaration exists. */
+  private detectType(input: string): DiagramType | null {
+    if (/^\s*(process|io|subroutine|preparation|connector)\s+["'\w]/im.test(input))
+      return "flowchart";
+    if (/^\s*participant\s+/im.test(input)) return "sequence";
+    if (/^\s*entity\s+/im.test(input)) return "erd";
+    return null;
+  }
+
+  parse(rawInput: string): ParseResult {
+    const input = this.normalizeShorthand(rawInput);
     const lexer = new Lexer(input);
     const tokens = lexer.tokenize().filter((t) => t.type !== "comment");
     const diagram = this.createEmptyDiagram();
@@ -33,6 +72,26 @@ export class Parser {
 
     // First pass: find @diagram declaration
     pos = this.parseDiagramDeclaration(tokens, pos, diagram, errors);
+
+    // Auto-detect type when not declared explicitly
+    const hasDeclaration = tokens.some(
+      (t) => t.type === "keyword" && t.value === "@diagram",
+    );
+    if (!hasDeclaration) {
+      const detected = this.detectType(input);
+      if (detected) {
+        diagram.type = detected;
+        errors.push({
+          line: 1,
+          column: 1,
+          message: `Tipe diagram terdeteksi otomatis sebagai "${detected}". Tambahkan "@diagram ${detected}" di baris pertama agar eksplisit.`,
+          severity: "warning",
+        });
+      }
+    }
+
+    const warnIgnored = diagram.type === "class" || diagram.type === "flowchart";
+    const warnedLines = new Set<number>();
 
     // Second pass: parse elements using diagram-specific parser
     while (pos < tokens.length) {
@@ -46,6 +105,8 @@ export class Parser {
         continue;
       }
 
+      const startTok = tokens[pos];
+      const before = diagram.nodes.length + diagram.edges.length;
       const parser = this.createDiagramParser(diagram, tokens, pos);
       try {
         parser.parseElement();
@@ -61,6 +122,27 @@ export class Parser {
       }
       const newPos = parser.getPos();
       errors.push(...parser.getErrors());
+
+      // Warn about statements that produced nothing (silently dropped input)
+      const contentTypes = ["identifier", "string", "keyword", "bracket"];
+      const declaresBlock =
+        startTok.type === "keyword" &&
+        ["class", "interface", "abstract", "enum"].includes(startTok.value);
+      if (
+        warnIgnored &&
+        contentTypes.includes(startTok.type) &&
+        !declaresBlock &&
+        diagram.nodes.length + diagram.edges.length === before &&
+        !warnedLines.has(startTok.line)
+      ) {
+        warnedLines.add(startTok.line);
+        errors.push({
+          line: startTok.line,
+          column: startTok.column,
+          message: `Baris ${startTok.line} tidak dikenali untuk diagram "${diagram.type}" dan diabaikan.`,
+          severity: "warning",
+        });
+      }
 
       // Prevent infinite loop
       if (newPos <= pos) pos++;

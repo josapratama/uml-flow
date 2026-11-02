@@ -47,6 +47,11 @@ export class FlowchartParser extends BaseDiagramParser {
       token.type === "keyword" &&
       FlowchartParser.VALID_TYPES.includes(token.value)
     ) {
+      // `start --> A` / `end` used as an edge endpoint, not a node declaration
+      if (this.tokens[this.pos + 1]?.type === "symbol") {
+        this.parseRelation();
+        return;
+      }
       this.parseFlowNode(token.value as FlowchartNode["type"]);
       return;
     }
@@ -96,15 +101,30 @@ export class FlowchartParser extends BaseDiagramParser {
         : this.currentToken()?.value || type;
     this.advance();
 
+    // Optional alias: process "Text" as tahap1  (usable in explicit edges)
+    let alias: string | undefined;
+    if (
+      this.currentToken()?.type === "keyword" &&
+      this.currentToken()?.value === "as"
+    ) {
+      this.advance();
+      const aliasToken = this.currentToken();
+      if (aliasToken && aliasToken.type !== "newline") {
+        alias = aliasToken.value;
+        this.advance();
+      }
+    }
+
     const size = this.getSize(type, name);
     const id = `node_${type}_${this.diagram.nodes.length}`;
-    const node: FlowchartNode = {
+    const node: FlowchartNode & { alias?: string } = {
       id,
       type,
       name,
       position: { x: 0, y: 0 },
       size,
     };
+    if (alias) node.alias = alias;
 
     // Auto-connect to previous node ONLY if there are no explicit edges defined in diagram
     if (!this.hasExplicitRelations() && this.diagram.nodes.length > 0) {
