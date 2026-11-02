@@ -4,6 +4,7 @@ import { FONT_OPTIONS, DEFAULT_NODE_STYLE } from "@uml-editor/shared";
 import { PALETTE_PRESETS } from "../../../config/palettePresets";
 import { Section, ColorPicker, ToggleBtn } from "./StyleFieldComponents";
 import { useI18n } from "../../../i18n";
+import { showConfirmModal } from "../../ui/AppDialog";
 
 interface NodeStyleControlsProps {
   style: NodeStyle;
@@ -240,8 +241,19 @@ export function NodeStyleControls({ style, onChange, defaults }: NodeStyleContro
         </div>
         <button
           className="w-full py-1.5 text-xs text-text-muted border border-border rounded hover:bg-surface-3 transition-colors"
-          onClick={() => {
-            if (Object.keys(style).length === 0 || window.confirm(t("style.resetToDefault") + "?")) onChange({});
+          onClick={async () => {
+            if (Object.keys(style).length === 0) {
+              onChange({});
+              return;
+            }
+            const confirmed = await showConfirmModal({
+              title: t("style.resetToDefault"),
+              message: `${t("style.resetToDefault")}?`,
+              confirmText: t("style.resetToDefault"),
+              danger: true,
+              icon: "↺",
+            });
+            if (confirmed) onChange({});
           }}
         >
           {t("style.resetToDefault")}

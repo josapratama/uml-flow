@@ -2,6 +2,7 @@ import type { Diagram, DiagramNode } from "@uml-editor/shared";
 import type { ContextMenuItem } from "../../canvas/ContextMenu";
 import type { CanvasTheme } from "../../../hooks/useTheme";
 import type { Locale } from "../../../i18n";
+import { showPromptModal } from "../../ui/AppDialog";
 
 interface NodeContextMenuParams {
   diagram: Diagram;
@@ -131,9 +132,16 @@ export function buildNodeContextMenuItems({
       label: isId ? "Ubah Nama" : "Rename",
       icon: "✏️",
       shortcut: "F2",
-      action: () => {
-        const promptText = isId ? "Ubah nama entitas/node:" : "Rename entity/node:";
-        const newName = window.prompt(promptText, node.name);
+      action: async () => {
+        const newName = await showPromptModal({
+          title: isId ? "Ubah Nama Node" : "Rename Node",
+          message: isId ? "Masukkan nama baru untuk node ini:" : "Enter new name for this node:",
+          defaultValue: node.name,
+          placeholder: isId ? "Nama node..." : "Node name...",
+          icon: "✏️",
+          confirmText: isId ? "Simpan" : "Save",
+          cancelText: isId ? "Batal" : "Cancel",
+        });
         if (newName && newName.trim()) {
           actions.nodeRename(node.id, newName.trim());
         }
@@ -148,9 +156,16 @@ export function buildNodeContextMenuItems({
       items.push({
         label: isId ? "Tambah Kolom" : "Add Column",
         icon: "➕",
-        action: () => {
-          const promptText = isId ? "Nama Kolom Baru:" : "New Column Name:";
-          const colName = window.prompt(promptText, "new_column");
+        action: async () => {
+          const colName = await showPromptModal({
+            title: isId ? "Tambah Kolom Tabel" : "Add Table Column",
+            message: isId ? "Masukkan nama kolom baru:" : "Enter new column name:",
+            defaultValue: "new_column",
+            placeholder: isId ? "contoh: user_id, email, status..." : "e.g. user_id, email, status...",
+            icon: "➕",
+            confirmText: isId ? "Tambah" : "Add",
+            cancelText: isId ? "Batal" : "Cancel",
+          });
           if (colName && colName.trim()) {
             actions.addERDColumn(
               node.id,
@@ -167,11 +182,18 @@ export function buildNodeContextMenuItems({
       items.push({
         label: isId ? "Tambah Properti" : "Add Property",
         icon: "➕",
-        action: () => {
-          const promptText = isId
-            ? "Properti Baru (nama: tipe):"
-            : "New Property (name: type):";
-          const prop = window.prompt(promptText, "property: string");
+        action: async () => {
+          const prop = await showPromptModal({
+            title: isId ? "Tambah Properti" : "Add Property",
+            message: isId
+              ? "Format: nama: tipe (contoh: name: string)"
+              : "Format: name: type (e.g. name: string)",
+            defaultValue: "property: string",
+            placeholder: "name: string",
+            icon: "➕",
+            confirmText: isId ? "Tambah" : "Add",
+            cancelText: isId ? "Batal" : "Cancel",
+          });
           if (prop && prop.trim()) {
             const parts = prop.trim().split(":");
             const name = parts[0]?.trim().replace(/^[+\-#~]/, "") || "property";
@@ -183,11 +205,18 @@ export function buildNodeContextMenuItems({
       items.push({
         label: isId ? "Tambah Method" : "Add Method",
         icon: "ƒ",
-        action: () => {
-          const promptText = isId
-            ? "Method Baru (nama(): tipeReturn):"
-            : "New Method (name(): returnType):";
-          const method = window.prompt(promptText, "execute(): void");
+        action: async () => {
+          const method = await showPromptModal({
+            title: isId ? "Tambah Method" : "Add Method",
+            message: isId
+              ? "Format: nama(): tipeReturn (contoh: execute(): void)"
+              : "Format: name(): returnType (e.g. execute(): void)",
+            defaultValue: "execute(): void",
+            placeholder: "execute(): void",
+            icon: "ƒ",
+            confirmText: isId ? "Tambah" : "Add",
+            cancelText: isId ? "Batal" : "Cancel",
+          });
           if (method && method.trim()) {
             const parts = method.trim().split(":");
             const name =

@@ -3,6 +3,7 @@ import type { Diagram, DiagramType } from "@uml-editor/shared";
 import { Toolbar } from "./features/toolbar/Toolbar";
 import { useHistory } from "./hooks/useHistory";
 import { ToastContainer, showToast } from "./features/ui/Toast";
+import { AppDialogContainer } from "./features/ui/AppDialog";
 import { StatusBar } from "./features/ui/StatusBar";
 import { useDebounce } from "./hooks/useDebounce";
 import { useFileImport } from "./hooks/useFileImport";
@@ -1215,6 +1216,7 @@ export default function App(props: AppProps = {}) {
       />
 
       <ToastContainer />
+      <AppDialogContainer />
     </div>
   );
 }

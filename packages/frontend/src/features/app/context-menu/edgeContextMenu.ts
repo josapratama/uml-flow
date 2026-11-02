@@ -1,6 +1,7 @@
 import type { Diagram, Position } from "@uml-editor/shared";
 import type { ContextMenuItem } from "../../canvas/ContextMenu";
 import type { Locale } from "../../../i18n";
+import { showPromptModal } from "../../ui/AppDialog";
 
 interface EdgeContextMenuParams {
   diagram: Diagram;
@@ -29,9 +30,18 @@ export function buildEdgeContextMenuItems({
   items.push({
     label: isId ? "Ubah Label Relasi" : "Edit Label",
     icon: "🏷️",
-    action: () => {
-      const promptText = isId ? "Teks label relasi:" : "Relationship label:";
-      const newLabel = window.prompt(promptText, currentEdge.label?.text || "");
+    action: async () => {
+      const newLabel = await showPromptModal({
+        title: isId ? "Ubah Label Relasi" : "Edit Relationship Label",
+        message: isId
+          ? "Masukkan teks label untuk garis relasi ini (kosongkan jika tidak ada label):"
+          : "Enter text label for this relationship (leave empty to remove):",
+        defaultValue: currentEdge.label?.text || "",
+        placeholder: isId ? "contoh: include, extends, depends on..." : "e.g. include, extends, depends on...",
+        icon: "🏷️",
+        confirmText: isId ? "Simpan" : "Save",
+        cancelText: isId ? "Batal" : "Cancel",
+      });
       if (newLabel !== null) {
         actions.edgeLabelEdit(currentEdge.id, newLabel.trim());
       }
