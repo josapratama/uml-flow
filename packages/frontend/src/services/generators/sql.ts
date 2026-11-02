@@ -91,7 +91,7 @@ export function generateSQL(
   }
 
   const entities = (diagram.nodes || []).filter(
-    (n): n is ERDEntity => n.type === "erd-entity" || (n as any).type === "entity",
+    (n): n is ERDEntity => (n as any).type === "erd-entity" || n.type === "entity",
   );
 
   if (entities.length === 0) {

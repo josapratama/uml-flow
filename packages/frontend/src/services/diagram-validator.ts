@@ -12,7 +12,7 @@ export interface NodeWarning {
  */
 export function validateDiagramNodes(
   diagram: Diagram,
-  locale: "id" | "en" = "id"
+  locale: string = "id"
 ): NodeWarning[] {
   const warnings: NodeWarning[] = [];
   const isId = locale === "id";

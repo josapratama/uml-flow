@@ -108,8 +108,8 @@ export class LayoutEngine {
         if (this.hasBranching(diagram)) {
           return layoutLayered(diagram, {
             ...this.options,
-            rankSpacing: 64,
-            nodeSpacing: 60,
+            rankSpacing: 96,
+            nodeSpacing: 80,
           });
         }
         return layoutLinear(diagram, this.options);
@@ -144,7 +144,7 @@ export class LayoutEngine {
         return layoutLayered(
           diagram,
           isFlow
-            ? { ...this.options, rankSpacing: 64, nodeSpacing: 60 }
+            ? { ...this.options, rankSpacing: 96, nodeSpacing: 80 }
             : this.options,
         );
       case "linear":

@@ -186,7 +186,7 @@ function generateActivityDSL(diagram: Diagram): string {
     } else if (node.type === "end") {
       dsl += `[end]\n`;
     } else if (node.type === "decision") {
-      dsl += `decision "${node.name}"\n`;
+      dsl += `decision "${escapeDslString(node.name)}"\n`;
     } else if (node.type === "fork") {
       dsl += `fork\n`;
     } else if (node.type === "join") {
@@ -195,7 +195,7 @@ function generateActivityDSL(diagram: Diagram): string {
       dsl += `merge\n`;
     } else {
       const swimlane = node.swimlane ? ` [${node.swimlane}]` : "";
-      dsl += `action "${node.name}"${swimlane}\n`;
+      dsl += `action "${escapeDslString(node.name)}"${swimlane}\n`;
     }
   }
 
@@ -240,7 +240,20 @@ function escapeDslString(str: string): string {
     .replace(/\r?\n/g, "\\n");
 }
 
-function generateFlowchartDSL(diagram: Diagram): string {
+function generateFlowchartDSL(rawDiagram: Diagram): string {
+  // Give every node whose name is not unique (or empty) a stable alias so that
+  // edges can reference exactly the right node after a round-trip.
+  const nameCount = new Map<string, number>();
+  for (const n of rawDiagram.nodes as any[])
+    nameCount.set(n.name, (nameCount.get(n.name) || 0) + 1);
+  const diagram: Diagram = {
+    ...rawDiagram,
+    nodes: (rawDiagram.nodes as any[]).map((n, i) =>
+      n.alias || (nameCount.get(n.name) || 0) <= 1
+        ? n
+        : { ...n, alias: `n${i + 1}` },
+    ),
+  };
   let dsl = "";
   for (const node of diagram.nodes as any[]) {
     const keyword =

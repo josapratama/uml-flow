@@ -191,7 +191,12 @@ export function generateSVG(diagram: Diagram, options: ExportOptions): string {
   return svg;
 }
 
+import { FLOW_NODE_TYPES, renderFlowNode } from "./flow-shapes";
+
 function renderNode(node: any): string {
+  if (FLOW_NODE_TYPES.has(node.type) && !("attributes" in node) && !("methods" in node)) {
+    return renderFlowNode(node);
+  }
   const { position, size, name } = node;
   let svg = "";
 

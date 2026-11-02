@@ -75,6 +75,7 @@ async function syncTranslations() {
 }
 
 syncTranslations().catch((err) => {
-  console.error("Sync failed:", err);
-  process.exit(1);
+  console.warn("⚠️ Polyglot sync warning (offline fallback active):", err.message || err);
+  // Do not abort build if network/polyglot-hub is unreachable; existing local locale files will be used.
+  process.exit(0);
 });
