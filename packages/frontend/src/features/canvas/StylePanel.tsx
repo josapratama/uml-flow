@@ -10,6 +10,7 @@ interface NodeStylePanelProps {
   onChange: (style: NodeStyle) => void;
   onClose: () => void;
   title?: string;
+  defaults?: Partial<NodeStyle>;
 }
 
 interface EdgeStylePanelProps {
@@ -34,7 +35,7 @@ export function StylePanel(props: Props) {
     (props as any).title || (type === "node" ? t("style.nodeStyle") : t("style.edgeStyle"));
 
   return (
-    <div className="absolute left-0 top-0 bottom-0 w-64 bg-surface-2 border-r border-border overflow-y-auto z-20 shadow-xl">
+    <div className="absolute z-30 bg-surface-2 overflow-y-auto shadow-xl left-0 right-0 bottom-0 max-h-[60vh] border-t border-border rounded-t-xl md:right-auto md:top-0 md:max-h-none md:w-64 md:rounded-none md:border-t-0 md:border-r">
       <div className="flex justify-between items-center px-4 py-3 border-b border-border">
         <h3 className="text-xs font-semibold text-text">{title}</h3>
         <button
@@ -49,6 +50,7 @@ export function StylePanel(props: Props) {
           <NodeStyleControls
             style={(props as NodeStylePanelProps).style}
             onChange={(props as NodeStylePanelProps).onChange}
+            defaults={(props as NodeStylePanelProps).defaults}
           />
         ) : (
           <EdgeStyleControls

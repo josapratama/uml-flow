@@ -31,7 +31,8 @@ export function FlowchartNodeRenderer({
   const colors = getFlowchartColors(type, isDark, (node as any).style);
   const s = resolveStyle((node as any).style, canvasTheme);
   const stroke = isSelected ? "#818cf8" : colors.border;
-  const sw = getStrokeWidth(s, isSelected);
+  const sw = s.borderStyle === "none" && !isSelected ? 0 : getStrokeWidth(s, isSelected);
+  const dash = s.borderStyle === "dashed" ? "6 4" : s.borderStyle === "dotted" ? "2 3" : undefined;
   const fill = colors.bg;
   const fontFill = colors.font;
   const cx = size.width / 2,
@@ -42,7 +43,7 @@ export function FlowchartNodeRenderer({
     switch (type) {
       case "start":
       case "end": {
-        const pillRx = Math.min((size.width - 4) / 2, (size.height - 4) / 2, 28);
+        const pillRx = Math.min((size.width - 4) / 2, (size.height - 4) / 2, (node as any).style?.borderRadius !== undefined ? (node as any).style.borderRadius : 28);
         return (
           <g>
             <rect
@@ -55,6 +56,7 @@ export function FlowchartNodeRenderer({
               fill={fill}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <SvgMultilineText
               text={name}
@@ -82,6 +84,7 @@ export function FlowchartNodeRenderer({
               fill={fill}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <SvgMultilineText
               text={name}
@@ -104,6 +107,7 @@ export function FlowchartNodeRenderer({
               fill={fill}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <SvgMultilineText
               text={name}
@@ -126,6 +130,7 @@ export function FlowchartNodeRenderer({
               fill={fill}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <SvgMultilineText
               text={name}
@@ -149,6 +154,7 @@ export function FlowchartNodeRenderer({
               fill={fill}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <SvgMultilineText
               text={name}
@@ -174,6 +180,7 @@ export function FlowchartNodeRenderer({
               fill={fill}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <rect
               x="2"
@@ -183,6 +190,7 @@ export function FlowchartNodeRenderer({
               fill={fill}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <ellipse
               cx={cx}
@@ -192,6 +200,7 @@ export function FlowchartNodeRenderer({
               fill={fill}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <SvgMultilineText
               text={name}
@@ -218,6 +227,7 @@ export function FlowchartNodeRenderer({
               fill={fill}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <line
               x1="10"
@@ -258,6 +268,7 @@ export function FlowchartNodeRenderer({
               fill={fill}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <SvgMultilineText
               text={name}
@@ -283,6 +294,7 @@ export function FlowchartNodeRenderer({
               fill={fill}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <SvgMultilineText
               text={name}

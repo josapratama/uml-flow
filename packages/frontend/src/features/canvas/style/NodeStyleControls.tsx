@@ -8,11 +8,24 @@ import { useI18n } from "../../../i18n";
 interface NodeStyleControlsProps {
   style: NodeStyle;
   onChange: (s: NodeStyle) => void;
+  /** Effective (rendered) defaults so the panel shows what the node really looks like. */
+  defaults?: Partial<NodeStyle>;
 }
 
-export function NodeStyleControls({ style, onChange }: NodeStyleControlsProps) {
+const RESET_GROUPS: { label: string; keys: (keyof NodeStyle)[] }[] = [
+  { label: "Font", keys: ["fontFamily", "fontSize", "fontColor", "fontWeight", "fontStyle"] },
+  { label: "Warna", keys: ["backgroundColor", "borderColor"] },
+  { label: "Border", keys: ["borderWidth", "borderStyle", "borderRadius", "opacity"] },
+];
+
+export function NodeStyleControls({ style, onChange, defaults }: NodeStyleControlsProps) {
   const { t } = useI18n();
-  const s = { ...DEFAULT_NODE_STYLE, ...style };
+  const s = { ...DEFAULT_NODE_STYLE, ...(defaults || {}), ...style };
+  const resetKeys = (keys: (keyof NodeStyle)[]) => {
+    const next: any = { ...style };
+    for (const k of keys) delete next[k];
+    onChange(next);
+  };
 
   return (
     <>
@@ -211,12 +224,29 @@ export function NodeStyleControls({ style, onChange }: NodeStyleControlsProps) {
       </Section>
 
       {/* Reset */}
-      <button
-        className="w-full py-1.5 text-xs text-text-muted border border-border rounded hover:bg-surface-3 transition-colors"
-        onClick={() => onChange({})}
-      >
-        {t("style.resetToDefault")}
-      </button>
+      <Section label={t("style.resetToDefault")}>
+        <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+          {RESET_GROUPS.map((g) => (
+            <button
+              key={g.label}
+              type="button"
+              className="py-1.5 text-[10px] text-text-muted border border-border rounded hover:bg-surface-3 hover:text-text transition-colors"
+              onClick={() => resetKeys(g.keys)}
+              title={`Reset ${g.label}`}
+            >
+              ↺ {g.label}
+            </button>
+          ))}
+        </div>
+        <button
+          className="w-full py-1.5 text-xs text-text-muted border border-border rounded hover:bg-surface-3 transition-colors"
+          onClick={() => {
+            if (Object.keys(style).length === 0 || window.confirm(t("style.resetToDefault") + "?")) onChange({});
+          }}
+        >
+          {t("style.resetToDefault")}
+        </button>
+      </Section>
     </>
   );
 }

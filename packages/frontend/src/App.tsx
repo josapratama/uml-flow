@@ -163,12 +163,21 @@ export default function App(props: AppProps = {}) {
           const newDiagram = result.diagram;
           const old = diagramHistory.state;
           if (old) {
+            // Carry styles over by alias → unique name (paired in order) → id.
+            // Each old node is used at most once so duplicate names never share a style.
+            const used = new Set<string>();
             for (const node of newDiagram.nodes) {
-              const oldNode = old.nodes.find(
-                (n) => n.name === node.name || n.id === node.id
-              );
-              if (oldNode && (oldNode as any).style)
-                (node as any).style = (oldNode as any).style;
+              const free = old.nodes.filter((n) => !used.has(n.id));
+              const alias = (node as any).alias;
+              const oldNode =
+                (alias && free.find((n) => (n as any).alias === alias)) ||
+                free.find((n) => n.name === node.name && n.type === node.type) ||
+                free.find((n) => n.name === node.name) ||
+                free.find((n) => n.id === node.id && n.type === node.type);
+              if (oldNode) {
+                used.add(oldNode.id);
+                if ((oldNode as any).style) (node as any).style = (oldNode as any).style;
+              }
             }
             for (const edge of newDiagram.edges) {
               const oldEdge = old.edges.find(

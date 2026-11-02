@@ -1,4 +1,5 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
+import { computeFlowNodeSize } from "@uml-editor/shared";
 import { snapToGrid } from "../useSnapToGrid";
 import { getVisualSize } from "../../features/canvas/nodes/getVisualSize";
 import type { ActionDeps } from "./types";
@@ -84,24 +85,93 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
     [diagram, history],
   );
 
+  /** Recompute a node's size from its text/style. Flow-like diagrams use smart wrapping. */
+  const fitSize = (node: any, fontSize: number, style?: any) => {
+    const diagType = diagram?.type;
+    if ("attributes" in node) {
+      return getVisualSize({ ...node, style: { ...(style ?? node.style), fontSize } });
+    }
+    if (diagType === "flowchart" || diagType === "activity" || diagType === "state") {
+      if (node.type !== "composite") {
+        return computeFlowNodeSize(node.type, node.name || "", fontSize, diagType);
+      }
+    }
+    // Other diagrams: keep width, grow height only if wrapped text needs it
+    return getVisualSize({ ...node, style: { ...(style ?? node.style), fontSize } });
+  };
+
+  /** Rapid successive edits (sliders, color drags) collapse into a single undo step. */
+  const lastEditRef = useRef<{ key: string; t: number }>({ key: "", t: 0 });
+  const commitCoalesced = (next: any, key: string) => {
+    const now = Date.now();
+    const same = lastEditRef.current.key === key && now - lastEditRef.current.t < 700;
+    lastEditRef.current = { key, t: now };
+    if (same) history.replace(next);
+    else history.set(next);
+  };
+
   const nodeRename = useCallback(
     (nodeId: string, newName: string) => {
-      if (!diagram || !newName.trim()) return;
+      const cleaned = newName.replace(/\r/g, "").trim();
+      if (!diagram || !cleaned) return;
       const targetNode = diagram.nodes.find((n) => n.id === nodeId);
-      if (!targetNode || targetNode.name === newName.trim()) return;
+      if (!targetNode || targetNode.name === cleaned) return;
       history.set({
         ...diagram,
         nodes: diagram.nodes.map((n) => {
           if (n.id !== nodeId) return n;
-          const minWidth = Math.max(
-            n.size.width,
-            newName.trim().length * 9 + 40,
-          );
-          return {
-            ...n,
-            name: newName.trim(),
-            size: { ...n.size, width: minWidth },
-          };
+          const renamed: any = { ...n, name: cleaned };
+          const fs = (n as any).style?.fontSize || 13;
+          const flowLike =
+            diagram.type === "flowchart" ||
+            diagram.type === "activity" ||
+            diagram.type === "state";
+          if (flowLike || "attributes" in n) {
+            renamed.size = fitSize(renamed, fs);
+          } else {
+            const w = Math.min(360, Math.max(n.size.width, cleaned.length * 9 + 40));
+            renamed.size = { ...n.size, width: w };
+            renamed.size = getVisualSize(renamed);
+          }
+          return renamed;
+        }),
+      });
+    },
+    [diagram, history],
+  );
+
+  /** Edit name and/or size from the properties panel. */
+  const nodeUpdate = useCallback(
+    (nodeId: string, patch: { name?: string; width?: number; height?: number }) => {
+      if (!diagram) return;
+      const node = diagram.nodes.find((n) => n.id === nodeId);
+      if (!node) return;
+      if (patch.name !== undefined && patch.name.trim() !== node.name) {
+        nodeRename(nodeId, patch.name);
+        return;
+      }
+      if (patch.width === undefined && patch.height === undefined) return;
+      const width = Math.max(20, Math.round(patch.width ?? node.size.width));
+      const height = Math.max(20, Math.round(patch.height ?? node.size.height));
+      history.set({
+        ...diagram,
+        nodes: diagram.nodes.map((n) =>
+          n.id === nodeId ? { ...n, size: { width, height } } : n,
+        ),
+      });
+    },
+    [diagram, history, nodeRename],
+  );
+
+  const nodeAutoFit = useCallback(
+    (nodeId: string) => {
+      if (!diagram) return;
+      history.set({
+        ...diagram,
+        nodes: diagram.nodes.map((n) => {
+          if (n.id !== nodeId) return n;
+          const fs = (n as any).style?.fontSize || 13;
+          return { ...n, size: fitSize(n, fs) };
         }),
       });
     },
@@ -111,47 +181,20 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
   const nodeStyleChange = useCallback(
     (nodeId: string, style: any) => {
       if (!diagram) return;
-      history.set({
-        ...diagram,
-        nodes: diagram.nodes.map((n) => {
-          if (n.id !== nodeId) return n;
-          const fontSize = style.fontSize || 13;
-          const charW = fontSize * 0.6;
-          let maxTextLen = n.name.length;
-          if ("attributes" in n) {
-            for (const a of (n as any).attributes || [])
-              maxTextLen = Math.max(
-                maxTextLen,
-                `${a.visibility}${a.name}: ${a.type}`.length,
-              );
-            for (const m of (n as any).methods || []) {
-              const p =
-                m.params?.map((x: any) => `${x.name}: ${x.type}`).join(", ") ||
-                "";
-              maxTextLen = Math.max(
-                maxTextLen,
-                `${m.visibility}${m.name}(${p}): ${m.returnType}`.length,
-              );
-            }
-          }
-          const newWidth = Math.max(n.size.width, maxTextLen * charW + 30);
-          const lineH = fontSize + 8;
-          const attrCount = (n as any).attributes?.length || 0;
-          const methodCount = (n as any).methods?.length || 0;
-          const newHeight = Math.max(
-            n.size.height,
-            44 + attrCount * lineH + methodCount * lineH + 16,
-          );
-          return {
-            ...n,
-            style,
-            size: {
-              width: Math.round(newWidth),
-              height: Math.round(newHeight),
-            },
-          };
-        }),
-      });
+      commitCoalesced(
+        {
+          ...diagram,
+          nodes: diagram.nodes.map((n) => {
+            if (n.id !== nodeId) return n;
+            const prevFs = (n as any).style?.fontSize || 13;
+            const fs = style.fontSize || 13;
+            const updated: any = { ...n, style: Object.keys(style).length ? style : undefined };
+            if (fs !== prevFs) updated.size = fitSize(updated, fs, style);
+            return updated;
+          }),
+        },
+        `style:${nodeId}`,
+      );
     },
     [diagram, history],
   );
@@ -161,48 +204,38 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
       setGlobalStyle(style);
       if (!diagram) return;
       const isReset = Object.keys(style).length === 0;
-      const fontSize = style.fontSize || 13;
-      const charW = fontSize * 0.6;
+      commitCoalesced(
+        {
+          ...diagram,
+          nodes: diagram.nodes.map((n) => {
+            const prevStyle = (n as any).style || {};
+            const newStyle = isReset ? undefined : { ...prevStyle, ...style };
+            const prevFs = prevStyle.fontSize || 13;
+            const fs = newStyle?.fontSize || 13;
+            const updated: any = { ...n, style: newStyle };
+            if (fs !== prevFs) updated.size = fitSize(updated, fs, newStyle);
+            return updated;
+          }),
+        },
+        "style:global",
+      );
+    },
+    [diagram, history],
+  );
+
+  /** Copy this node's style to every node of the same type. */
+  const applyStyleToSameType = useCallback(
+    (nodeId: string) => {
+      if (!diagram) return;
+      const src: any = diagram.nodes.find((n) => n.id === nodeId);
+      if (!src) return;
       history.set({
         ...diagram,
-        nodes: diagram.nodes.map((n) => {
-          const newStyle = isReset
-            ? undefined
-            : { ...((n as any).style || {}), ...style };
-          let maxTextLen = n.name.length;
-          if ("attributes" in n) {
-            for (const a of (n as any).attributes || [])
-              maxTextLen = Math.max(
-                maxTextLen,
-                `${a.visibility}${a.name}: ${a.type}`.length,
-              );
-            for (const m of (n as any).methods || []) {
-              const p =
-                m.params?.map((x: any) => `${x.name}: ${x.type}`).join(", ") ||
-                "";
-              maxTextLen = Math.max(
-                maxTextLen,
-                `${m.visibility}${m.name}(${p}): ${m.returnType}`.length,
-              );
-            }
-          }
-          const newWidth = Math.max(n.size.width, maxTextLen * charW + 30);
-          const lineH = fontSize + 8;
-          const attrCount = (n as any).attributes?.length || 0;
-          const methodCount = (n as any).methods?.length || 0;
-          const newHeight = Math.max(
-            n.size.height,
-            44 + attrCount * lineH + methodCount * lineH + 16,
-          );
-          return {
-            ...n,
-            style: newStyle,
-            size: {
-              width: Math.round(newWidth),
-              height: Math.round(newHeight),
-            },
-          };
-        }),
+        nodes: diagram.nodes.map((n: any) =>
+          n.type === src.type && n.id !== nodeId
+            ? { ...n, style: src.style ? { ...src.style } : undefined }
+            : n,
+        ),
       });
     },
     [diagram, history],
@@ -386,6 +419,9 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
     nodeRename,
     nodeStyleChange,
     globalStyleChange,
+    nodeUpdate,
+    nodeAutoFit,
+    applyStyleToSameType,
     addNode,
     deleteNode,
     duplicateNode,

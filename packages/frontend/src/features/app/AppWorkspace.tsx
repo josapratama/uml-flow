@@ -5,6 +5,9 @@ import { DSLEditor } from "../editor/DSLEditor";
 import { Canvas } from "../canvas/Canvas";
 import { PropertyPanel } from "../canvas/PropertyPanel";
 import { StylePanel } from "../canvas/StylePanel";
+import { EdgePropertyPanel } from "../canvas/EdgePropertyPanel";
+import { NodeStyleControls } from "../canvas/style/NodeStyleControls";
+import { getFlowchartColors, resolveStyle, isDarkCanvas } from "../canvas/nodes/useNodeStyle";
 import { NodePalette } from "../palette/NodePalette";
 import { UndoHistoryPanel } from "../ui/UndoHistoryPanel";
 import { useI18n } from "../../i18n";
@@ -102,6 +105,17 @@ export function AppWorkspace(props: AppWorkspaceProps) {
     onCreateNewDiagram,
   } = props;
 
+  /** What the node actually looks like without custom style, so the panel shows real values. */
+  const getEffectiveDefaults = (node: DiagramNode) => {
+    const dark = isDarkCanvas(canvasTheme);
+    const base = resolveStyle(undefined, canvasTheme);
+    if (diagram?.type === "flowchart") {
+      const c = getFlowchartColors(node.type, dark);
+      return { ...base, backgroundColor: c.bg, borderColor: c.border, fontColor: c.font };
+    }
+    return base;
+  };
+
   return (
     <>
       <div className="flex flex-1 overflow-hidden relative">
@@ -189,8 +203,20 @@ export function AppWorkspace(props: AppWorkspaceProps) {
           <PropertyPanel
             node={selectedNode}
             onClose={() => onNodeSelect(null)}
+            tab={showStylePanel === "node" ? "style" : "props"}
+            onTabChange={(tab) => onOpenStylePanel(tab === "style" ? "node" : null)}
             onOpenStyle={() => onOpenStylePanel("node")}
             onOpenGlobalStyle={() => onOpenStylePanel("global")}
+            onUpdateNode={actions.nodeUpdate}
+            onAutoFit={actions.nodeAutoFit}
+            onApplyStyleToType={actions.applyStyleToSameType}
+            styleSlot={
+              <NodeStyleControls
+                style={(selectedNode as any).style || {}}
+                defaults={getEffectiveDefaults(selectedNode) as any}
+                onChange={(s) => actions.nodeStyleChange(selectedNode.id, s)}
+              />
+            }
             onAddAttribute={actions.addAttribute}
             onAddMethod={actions.addMethod}
             onDeleteAttribute={actions.deleteAttribute}
@@ -200,12 +226,15 @@ export function AppWorkspace(props: AppWorkspaceProps) {
           />
         )}
 
-        {showStylePanel === "node" && selectedNode && (
-          <StylePanel
-            type="node"
-            style={(selectedNode as any).style || {}}
-            onChange={(s) => actions.nodeStyleChange(selectedNode.id, s)}
-            onClose={() => onOpenStylePanel(null)}
+        {!selectedNode && selectedEdgeId && diagram && (
+          <EdgePropertyPanel
+            diagram={diagram}
+            edgeId={selectedEdgeId}
+            onClose={() => onEdgeSelect(null)}
+            onLabelEdit={actions.edgeLabelEdit}
+            onTypeChange={actions.edgeTypeChange}
+            onReverse={actions.edgeReverse}
+            onOpenStyle={() => onOpenStylePanel("edge")}
           />
         )}
 

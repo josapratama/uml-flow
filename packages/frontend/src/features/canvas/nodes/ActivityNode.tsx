@@ -17,7 +17,8 @@ export function ActivityNodeRenderer({ node, isSelected, onDragStart, canvasThem
   const isDark = isDarkCanvas(canvasTheme);
   const s = resolveStyle((node as any).style, canvasTheme);
   const stroke = getStroke(s, isSelected);
-  const sw = getStrokeWidth(s, isSelected);
+  const sw = s.borderStyle === "none" && !isSelected ? 0 : getStrokeWidth(s, isSelected);
+  const dash = s.borderStyle === "dashed" ? "6 4" : s.borderStyle === "dotted" ? "2 3" : undefined;
 
   const renderShape = () => {
     switch (type) {
@@ -30,6 +31,7 @@ export function ActivityNodeRenderer({ node, isSelected, onDragStart, canvasThem
             fill={isDark ? "#22c55e" : s.borderColor}
             stroke={stroke}
             strokeWidth={sw}
+              strokeDasharray={dash}
           />
         );
       case "end":
@@ -63,6 +65,7 @@ export function ActivityNodeRenderer({ node, isSelected, onDragStart, canvasThem
               fill={s.backgroundColor}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <SvgMultilineText
               text={name}
@@ -90,6 +93,7 @@ export function ActivityNodeRenderer({ node, isSelected, onDragStart, canvasThem
               fill={decBg}
               stroke={decBorder}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <SvgMultilineText
               text={name}
@@ -125,6 +129,7 @@ export function ActivityNodeRenderer({ node, isSelected, onDragStart, canvasThem
             fill={(node as any).style ? s.backgroundColor : "#E8F5E9"}
             stroke={stroke}
             strokeWidth={sw}
+              strokeDasharray={dash}
           />
         );
       }
@@ -140,6 +145,7 @@ export function ActivityNodeRenderer({ node, isSelected, onDragStart, canvasThem
               fill={s.backgroundColor}
               stroke={stroke}
               strokeWidth={sw}
+              strokeDasharray={dash}
             />
             <text
               x={size.width / 2}
