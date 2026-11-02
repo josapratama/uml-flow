@@ -175,6 +175,10 @@ export function Canvas({
     setEditingNodeId,
     editingEdgeId,
     setEditingEdgeId,
+    editingEdgePos,
+    setEditingEdgePos,
+    alignmentGuides,
+    setAlignmentGuides,
     connecting,
     setConnecting,
     reconnecting,
@@ -209,6 +213,7 @@ export function Canvas({
       setView,
       drag: _drag,
       setDrag,
+      setAlignmentGuides,
       pan,
       setPan,
       connecting,
@@ -644,6 +649,8 @@ export function Canvas({
             setEditingNodeId={setEditingNodeId}
             editingEdgeId={editingEdgeId}
             setEditingEdgeId={setEditingEdgeId}
+            editingEdgePos={editingEdgePos}
+            setEditingEdgePos={setEditingEdgePos}
             edgeRouting={edgeRouting}
             edgeLayout={edgeLayout}
             startNodeDrag={startNodeDrag}
@@ -671,6 +678,25 @@ export function Canvas({
             onDragEnd={onDragEnd}
             setMultiSelected={setMultiSelected}
           />
+
+          {/* Smart Alignment Guides (Snap lines during drag) */}
+          {alignmentGuides && alignmentGuides.length > 0 && (
+            <g className="pointer-events-none select-none">
+              {alignmentGuides.map((g, i) => (
+                <line
+                  key={i}
+                  x1={g.type === "x" ? g.pos : g.start}
+                  y1={g.type === "x" ? g.start : g.pos}
+                  x2={g.type === "x" ? g.pos : g.end}
+                  y2={g.type === "x" ? g.end : g.pos}
+                  stroke="#38bdf8"
+                  strokeWidth={1.5 / view.scale}
+                  strokeDasharray={`${4 / view.scale} ${3 / view.scale}`}
+                  opacity="0.9"
+                />
+              ))}
+            </g>
+          )}
         </g>
       </svg>
     </div>

@@ -17,6 +17,13 @@ export interface DragState {
   py: number;
 }
 
+export interface AlignmentGuide {
+  type: "x" | "y";
+  pos: number;
+  start: number;
+  end: number;
+}
+
 export interface ConnectingState {
   sourceId: string;
   sourceAnchorSide: string;
@@ -58,6 +65,8 @@ export function useCanvasState() {
   } | null>(null);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [editingEdgeId, setEditingEdgeId] = useState<string | null>(null);
+  const [editingEdgePos, setEditingEdgePos] = useState<Position | null>(null);
+  const [alignmentGuides, setAlignmentGuides] = useState<AlignmentGuide[]>([]);
   const [connecting, setConnecting] = useState<ConnectingState | null>(null);
   const [reconnecting, setReconnecting] = useState<ReconnectingState | null>(
     null,
@@ -80,6 +89,10 @@ export function useCanvasState() {
     setEditingNodeId,
     editingEdgeId,
     setEditingEdgeId,
+    editingEdgePos,
+    setEditingEdgePos,
+    alignmentGuides,
+    setAlignmentGuides,
     connecting,
     setConnecting,
     reconnecting,

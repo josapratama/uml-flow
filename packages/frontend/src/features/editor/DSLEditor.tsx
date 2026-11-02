@@ -13,6 +13,7 @@ interface DSLEditorProps {
   onCompile: (code: string) => void;
   errors: any[];
   onSyncToCode?: () => void;
+  selectedNodeName?: string;
 }
 
 import { useI18n } from "../../i18n";
@@ -23,6 +24,7 @@ export function DSLEditor({
   onCompile,
   errors,
   onSyncToCode,
+  selectedNodeName,
 }: DSLEditorProps) {
   const { t } = useI18n();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -59,6 +61,39 @@ export function DSLEditor({
     onChange(code.replace(new RegExp(escaped, "gi"), replaceWith));
     setShowSearch(false);
   }, [code, searchTerm, replaceWith, onChange]);
+
+  // Bidirectional focus: scroll to node definition in DSL code when node is selected
+  useEffect(() => {
+    if (!selectedNodeName || !textareaRef.current) return;
+    const lines = code.split("\n");
+    const clean = selectedNodeName.trim();
+    if (!clean) return;
+
+    let targetLineIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i];
+      if (
+        l.includes(`"${clean}"`) ||
+        new RegExp(`\\b${clean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(l)
+      ) {
+        targetLineIdx = i;
+        break;
+      }
+    }
+
+    if (targetLineIdx !== -1) {
+      let charPos = 0;
+      for (let i = 0; i < targetLineIdx; i++) {
+        charPos += lines[i].length + 1;
+      }
+      const lineLen = lines[targetLineIdx].length;
+
+      textareaRef.current.setSelectionRange(charPos, charPos + lineLen);
+      const lineHeight = 21;
+      const targetScroll = Math.max(0, targetLineIdx * lineHeight - 120);
+      textareaRef.current.scrollTo({ top: targetScroll, behavior: "smooth" });
+    }
+  }, [selectedNodeName, code]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

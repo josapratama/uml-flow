@@ -54,6 +54,18 @@ export function useAppExport({
             showToast(isId ? "DSL berhasil diekspor" : "DSL exported", "success");
             break;
           }
+          case "mermaid": {
+            const { exportToMermaid } = await import("../../services/mermaid-exporter");
+            const mmd = exportToMermaid(diagram);
+            downloadFile(mmd, `${diagram.name}.mmd`, "text/plain");
+            try {
+              await navigator.clipboard.writeText(mmd);
+              showToast(isId ? "Kode Mermaid diunduh & disalin ke clipboard" : "Mermaid code downloaded & copied to clipboard", "success");
+            } catch {
+              showToast(isId ? "File Mermaid (.mmd) berhasil diekspor" : "Mermaid (.mmd) exported", "success");
+            }
+            break;
+          }
           case "png": {
             const el = document.querySelector(
               ".canvas-svg-element"

@@ -100,6 +100,13 @@ function getExportOptions(locale: Locale): ExportOption[] {
       category: "code",
     },
     {
+      id: "mermaid",
+      label: "Mermaid.js (.mmd)",
+      icon: "🧜‍♀️",
+      description: isId ? "Kode markdown diagram GitHub / Notion" : "GitHub / Notion markdown diagram code",
+      category: "code",
+    },
+    {
       id: "json",
       label: "JSON Model",
       icon: "📋",

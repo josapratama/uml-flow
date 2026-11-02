@@ -15,6 +15,7 @@ interface UseAppKeyboardShortcutsProps {
   onDeleteEdge: (id: string) => void;
   onDeleteMultiEdges: (ids: Set<string>) => void;
   onDuplicateNode: (id: string) => string | null | undefined;
+  onNudgeNode?: (id: string, dx: number, dy: number) => void;
   onCopy: (nodes: any[], edges: any[]) => void;
   onPaste: () => { nodes: any[]; edges: any[] } | null;
   onNewTab: () => void;
@@ -38,6 +39,7 @@ export function useAppKeyboardShortcuts({
   onDeleteEdge,
   onDeleteMultiEdges,
   onDuplicateNode,
+  onNudgeNode,
   onCopy,
   onPaste,
   onNewTab,
@@ -84,7 +86,8 @@ export function useAppKeyboardShortcuts({
       if (e.key === "?" && !e.ctrlKey) {
         onToggleShortcuts();
       }
-      if (e.key === "Delete") {
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
         if (selectedNodeId) {
           onDeleteNode(selectedNodeId);
           setSelectedNodeId(null);
@@ -96,6 +99,26 @@ export function useAppKeyboardShortcuts({
           onDeleteEdge(selectedEdgeId);
           setSelectedEdgeId(null);
         }
+      }
+
+      // Arrow keys: Nudge selected node position (1px default, 10px with Shift)
+      if (
+        (e.key === "ArrowUp" ||
+          e.key === "ArrowDown" ||
+          e.key === "ArrowLeft" ||
+          e.key === "ArrowRight") &&
+        selectedNodeId &&
+        diagram
+      ) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        let dx = 0;
+        let dy = 0;
+        if (e.key === "ArrowUp") dy = -step;
+        if (e.key === "ArrowDown") dy = step;
+        if (e.key === "ArrowLeft") dx = -step;
+        if (e.key === "ArrowRight") dx = step;
+        onNudgeNode?.(selectedNodeId, dx, dy);
       }
       if (e.ctrlKey && e.key === "c" && diagram && selectedNodeId) {
         onCopy(

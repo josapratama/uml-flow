@@ -991,6 +991,7 @@ export default function App(props: AppProps = {}) {
       }
     },
     onDuplicateNode: actions.duplicateNode,
+    onNudgeNode: (nodeId, dx, dy) => actions.multiNodeMove([nodeId], dx, dy),
     onCopy: copy,
     onPaste: () => {
       const pasted = paste();

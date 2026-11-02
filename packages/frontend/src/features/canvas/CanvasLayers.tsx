@@ -40,6 +40,8 @@ interface CanvasLayersProps {
   setEditingNodeId: (id: string | null) => void;
   editingEdgeId: string | null;
   setEditingEdgeId: (id: string | null) => void;
+  editingEdgePos?: Position | null;
+  setEditingEdgePos?: (pos: Position | null) => void;
   edgeRouting?: "straight" | "orthogonal";
   edgeLayout: ComputedEdgeLayout;
   startNodeDrag: (nodeId: string, e: React.MouseEvent) => void;
@@ -117,6 +119,8 @@ export function CanvasLayers(props: CanvasLayersProps) {
     setEditingNodeId,
     editingEdgeId,
     setEditingEdgeId,
+    editingEdgePos,
+    setEditingEdgePos,
     edgeRouting,
     edgeLayout,
     startNodeDrag,
@@ -334,7 +338,9 @@ export function CanvasLayers(props: CanvasLayersProps) {
             }}
             onDoubleClick={(e) => {
               e.stopPropagation();
+              const pt = screenToWorld(e.clientX, e.clientY);
               setEditingEdgeId(edge.id);
+              setEditingEdgePos?.(pt);
             }}
           />
         );
@@ -348,31 +354,32 @@ export function CanvasLayers(props: CanvasLayersProps) {
           const sn = diagram.nodes.find((n) => n.id === edge.source);
           const tn = diagram.nodes.find((n) => n.id === edge.target);
           if (!sn || !tn) return null;
-          const midX =
-            (sn.position.x +
-              sn.size.width / 2 +
-              tn.position.x +
-              tn.size.width / 2) /
-            2;
-          const midY =
-            (sn.position.y +
-              sn.size.height / 2 +
-              tn.position.y +
-              tn.size.height / 2) /
-            2;
+
+          const edX = editingEdgePos
+            ? editingEdgePos.x
+            : (sn.position.x + sn.size.width / 2 + tn.position.x + tn.size.width / 2) / 2;
+          const edY = editingEdgePos
+            ? editingEdgePos.y
+            : (sn.position.y + sn.size.height / 2 + tn.position.y + tn.size.height / 2) / 2;
+
           return (
             <InlineEditor
-              x={midX - 60}
-              y={midY - 10}
+              x={edX - 60}
+              y={edY}
               width={120}
               initialValue={edge.label?.text || ""}
               scale={view.scale}
+              fontColor={canvasTheme === "dark" ? "#f1f5f9" : "#1e293b"}
               onChange={() => {}}
               onSubmit={(val) => {
                 onEdgeLabelEdit?.(editingEdgeId, val);
                 setEditingEdgeId(null);
+                setEditingEdgePos?.(null);
               }}
-              onCancel={() => setEditingEdgeId(null)}
+              onCancel={() => {
+                setEditingEdgeId(null);
+                setEditingEdgePos?.(null);
+              }}
             />
           );
         })()}

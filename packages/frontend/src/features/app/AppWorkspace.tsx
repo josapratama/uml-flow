@@ -141,6 +141,7 @@ export function AppWorkspace(props: AppWorkspaceProps) {
               onCompile={onCompile}
               errors={errors}
               onSyncToCode={onSyncToCode}
+              selectedNodeName={selectedNode?.name}
             />
           </div>
         )}

@@ -13,6 +13,7 @@ import type {
   ConnectingState,
   ReconnectingState,
   MarqueeState,
+  AlignmentGuide,
 } from "./useCanvasState";
 
 interface HandlerDeps {
@@ -21,6 +22,8 @@ interface HandlerDeps {
   setView: React.Dispatch<React.SetStateAction<ViewState>>;
   drag: DragState | null;
   setDrag: React.Dispatch<React.SetStateAction<DragState | null>>;
+  alignmentGuides?: AlignmentGuide[];
+  setAlignmentGuides?: React.Dispatch<React.SetStateAction<AlignmentGuide[]>>;
   pan: { sx: number; sy: number; vx: number; vy: number } | null;
   setPan: React.Dispatch<
     React.SetStateAction<{
@@ -80,6 +83,7 @@ export function useCanvasHandlers(deps: HandlerDeps) {
     setView,
     drag,
     setDrag,
+    setAlignmentGuides,
     pan,
     setPan,
     connecting,
@@ -184,9 +188,87 @@ export function useCanvasHandlers(deps: HandlerDeps) {
               onMultiNodeMove([...multiSelected], incDx, incDy);
             }
           } else {
-            const targetX = snapEnabled ? snapToGrid(drag.px + dx) : drag.px + dx;
-            const targetY = snapEnabled ? snapToGrid(drag.py + dy) : drag.py + dy;
-            onNodeMove(drag.id, targetX, targetY);
+            let targetX = snapEnabled ? snapToGrid(drag.px + dx) : drag.px + dx;
+            let targetY = snapEnabled ? snapToGrid(drag.py + dy) : drag.py + dy;
+
+            // Smart Alignment Snap & Visual Guides
+            const guides: AlignmentGuide[] = [];
+            const draggedNode = diagram?.nodes.find((n) => n.id === drag.id);
+            if (draggedNode && diagram) {
+              const dSize = getVisualSize(draggedNode);
+              const snapDist = 6;
+              const dCenterX = targetX + dSize.width / 2;
+              const dCenterY = targetY + dSize.height / 2;
+              const dRight = targetX + dSize.width;
+              const dBottom = targetY + dSize.height;
+
+              for (const other of diagram.nodes) {
+                if (other.id === drag.id) continue;
+                const oSize = getVisualSize(other);
+                const oLeft = other.position.x;
+                const oCenterX = other.position.x + oSize.width / 2;
+                const oRight = other.position.x + oSize.width;
+                const oTop = other.position.y;
+                const oCenterY = other.position.y + oSize.height / 2;
+                const oBottom = other.position.y + oSize.height;
+
+                // Center-X alignment (vertical guide line)
+                if (Math.abs(dCenterX - oCenterX) <= snapDist) {
+                  targetX = oCenterX - dSize.width / 2;
+                  guides.push({
+                    type: "x",
+                    pos: oCenterX,
+                    start: Math.min(targetY, oTop) - 24,
+                    end: Math.max(dBottom, oBottom) + 24,
+                  });
+                } else if (Math.abs(targetX - oLeft) <= snapDist) {
+                  targetX = oLeft;
+                  guides.push({
+                    type: "x",
+                    pos: oLeft,
+                    start: Math.min(targetY, oTop) - 24,
+                    end: Math.max(dBottom, oBottom) + 24,
+                  });
+                } else if (Math.abs(dRight - oRight) <= snapDist) {
+                  targetX = oRight - dSize.width;
+                  guides.push({
+                    type: "x",
+                    pos: oRight,
+                    start: Math.min(targetY, oTop) - 24,
+                    end: Math.max(dBottom, oBottom) + 24,
+                  });
+                }
+
+                // Center-Y alignment (horizontal guide line)
+                if (Math.abs(dCenterY - oCenterY) <= snapDist) {
+                  targetY = oCenterY - dSize.height / 2;
+                  guides.push({
+                    type: "y",
+                    pos: oCenterY,
+                    start: Math.min(targetX, oLeft) - 24,
+                    end: Math.max(dRight, oRight) + 24,
+                  });
+                } else if (Math.abs(targetY - oTop) <= snapDist) {
+                  targetY = oTop;
+                  guides.push({
+                    type: "y",
+                    pos: oTop,
+                    start: Math.min(targetX, oLeft) - 24,
+                    end: Math.max(dRight, oRight) + 24,
+                  });
+                } else if (Math.abs(dBottom - oBottom) <= snapDist) {
+                  targetY = oBottom - dSize.height;
+                  guides.push({
+                    type: "y",
+                    pos: oBottom,
+                    start: Math.min(targetX, oLeft) - 24,
+                    end: Math.max(dRight, oRight) + 24,
+                  });
+                }
+              }
+            }
+            setAlignmentGuides?.(guides);
+            onNodeMove(drag.id, Math.round(targetX), Math.round(targetY));
           }
         } else if (drag.wpIdx !== undefined) {
           const targetX = snapEnabled ? snapToGrid(drag.px + dx) : drag.px + dx;
@@ -357,6 +439,7 @@ export function useCanvasHandlers(deps: HandlerDeps) {
         }
       }
 
+      setAlignmentGuides?.([]);
       setMarquee(null);
       setPan(null);
       if (drag) onDragEnd?.();
