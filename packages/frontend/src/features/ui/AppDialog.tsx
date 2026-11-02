@@ -35,22 +35,23 @@ type DialogState =
 
 let dialogListener: ((state: DialogState) => void) | null = null;
 
+let pendingQueue: DialogState[] = [];
+
 /**
  * Open a sleek prompt modal and returns a Promise with the user's input, or null if cancelled.
  */
 export function showPromptModal(options: PromptModalOptions): Promise<string | null> {
   return new Promise((resolve) => {
-    if (!dialogListener) {
-      // Fallback if dialog container is not mounted yet
-      const res = window.prompt(options.message || options.title, options.defaultValue || "");
-      resolve(res);
-      return;
-    }
-    dialogListener({
+    const dialog: DialogState = {
       type: "prompt",
       options,
       resolve,
-    });
+    };
+    if (!dialogListener) {
+      pendingQueue.push(dialog);
+      return;
+    }
+    dialogListener(dialog);
   });
 }
 
@@ -59,17 +60,16 @@ export function showPromptModal(options: PromptModalOptions): Promise<string | n
  */
 export function showConfirmModal(options: ConfirmModalOptions): Promise<boolean> {
   return new Promise((resolve) => {
-    if (!dialogListener) {
-      // Fallback if dialog container is not mounted yet
-      const res = window.confirm(options.message || options.title);
-      resolve(res);
-      return;
-    }
-    dialogListener({
+    const dialog: DialogState = {
       type: "confirm",
       options,
       resolve,
-    });
+    };
+    if (!dialogListener) {
+      pendingQueue.push(dialog);
+      return;
+    }
+    dialogListener(dialog);
   });
 }
 
@@ -88,6 +88,12 @@ export function AppDialogContainer() {
         setInputValue(dialog.options.defaultValue ?? "");
       }
     };
+
+    if (pendingQueue.length > 0) {
+      const next = pendingQueue.shift();
+      if (next) dialogListener(next);
+    }
+
     return () => {
       dialogListener = null;
     };
@@ -248,3 +254,4 @@ export function AppDialogContainer() {
     </div>
   );
 }
+
