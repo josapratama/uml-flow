@@ -2,6 +2,7 @@ import React from "react";
 import type { ActivityNode } from "@uml-editor/shared";
 import { resolveStyle, getStroke, getStrokeWidth, isDarkCanvas, getContrastTextColor } from "./useNodeStyle";
 import { SvgMultilineText } from "./SvgMultilineText";
+import { getVisualSize } from "./getVisualSize";
 
 interface Props {
   node: ActivityNode;
@@ -11,7 +12,8 @@ interface Props {
 }
 
 export function ActivityNodeRenderer({ node, isSelected, onDragStart, canvasTheme }: Props) {
-  const { position, size, name, type } = node;
+  const { position, name, type } = node;
+  const size = getVisualSize(node);
   const isDark = isDarkCanvas(canvasTheme);
   const s = resolveStyle((node as any).style, canvasTheme);
   const stroke = getStroke(s, isSelected);

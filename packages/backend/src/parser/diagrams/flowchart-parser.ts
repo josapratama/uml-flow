@@ -1,4 +1,4 @@
-import type { FlowchartNode } from "@uml-editor/shared";
+import { computeFlowNodeSize, type FlowchartNode } from "@uml-editor/shared";
 import { BaseDiagramParser } from "../base-parser";
 
 /**
@@ -154,18 +154,6 @@ export class FlowchartParser extends BaseDiagramParser {
     type: string,
     name: string,
   ): { width: number; height: number } {
-    const w = Math.max(120, name.length * 8 + 40);
-    switch (type) {
-      case "start":
-      case "end":
-      case "connector":
-        return { width: 80, height: 40 };
-      case "decision":
-        return { width: 100, height: 80 };
-      case "database":
-        return { width: w, height: 60 };
-      default:
-        return { width: w, height: 45 };
-    }
+    return computeFlowNodeSize(type, name, 13, "flowchart");
   }
 }

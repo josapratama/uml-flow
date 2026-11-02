@@ -165,14 +165,16 @@ export function useLayoutActions({ diagram, history }: ActionDeps) {
       try {
         const result = await api.layout(subDiagram, undefined, preset);
         if (result.diagram) {
-          const posMap = new Map(
-            result.diagram.nodes.map((n) => [n.id, n.position]),
+          const updatedMap = new Map(
+            result.diagram.nodes.map((n) => [n.id, n]),
           );
           history.set({
             ...diagram,
             nodes: diagram.nodes.map((n) => {
-              const newPos = posMap.get(n.id);
-              return newPos ? { ...n, position: newPos } : n;
+              const updated = updatedMap.get(n.id);
+              return updated
+                ? { ...n, position: updated.position, size: updated.size }
+                : n;
             }),
           });
         }

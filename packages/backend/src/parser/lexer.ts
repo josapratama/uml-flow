@@ -143,6 +143,13 @@ export class Lexer {
         this.pos++;
         this.column++;
         if (this.pos >= this.input.length) break;
+        const esc = this.input[this.pos];
+        if (esc === "n") value += "\n";
+        else if (esc === "t") value += "\t";
+        else if (esc !== "r") value += esc;
+        this.pos++;
+        this.column++;
+        continue;
       }
       if (this.input[this.pos] === "\n") {
         break;

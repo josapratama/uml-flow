@@ -1,4 +1,4 @@
-import type { ActivityNode } from "@uml-editor/shared";
+import { computeFlowNodeSize, type ActivityNode } from "@uml-editor/shared";
 import { BaseDiagramParser } from "../base-parser";
 
 export class ActivityDiagramParser extends BaseDiagramParser {
@@ -71,12 +71,8 @@ export class ActivityDiagramParser extends BaseDiagramParser {
       if (this.currentToken()?.value === ";") this.advance();
       actionText = actionText.trim().replace(/^["']|["']$/g, "");
       if (actionText) {
-        this.createNode(
-          "action",
-          actionText,
-          Math.max(120, actionText.length * 8 + 30),
-          40,
-        );
+        const sz = computeFlowNodeSize("action", actionText, 13, "activity");
+        this.createNode("action", actionText, sz.width, sz.height);
       }
       return;
     }
@@ -194,12 +190,8 @@ export class ActivityDiagramParser extends BaseDiagramParser {
               ? this.currentToken()!.value
               : this.currentToken()?.value || "Action";
           this.advance();
-          this.createNode(
-            "action",
-            name,
-            Math.max(120, name.length * 8 + 30),
-            40,
-          );
+          const sz = computeFlowNodeSize("action", name, 13, "activity");
+          this.createNode("action", name, sz.width, sz.height);
           return;
         }
         case "decision": {
@@ -210,7 +202,8 @@ export class ActivityDiagramParser extends BaseDiagramParser {
               ? this.currentToken()!.value
               : this.currentToken()?.value || "?";
           this.advance();
-          this.createNode("decision", name, 80, 80);
+          const sz = computeFlowNodeSize("decision", name, 13, "activity");
+          this.createNode("decision", name, sz.width, sz.height);
           return;
         }
         case "merge": {

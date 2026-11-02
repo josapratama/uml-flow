@@ -2,7 +2,7 @@ import type { Diagram, LayoutOptions } from "@uml-editor/shared";
 
 /**
  * Radial layout — root nodes at center, children in concentric rings.
- * Supports all diagram types. Finds roots via incoming edge analysis.
+ * Supports all diagram types. Adapts ring radius to node sizes so nodes do not overlap.
  */
 export function layoutRadial(
   diagram: Diagram,
@@ -11,8 +11,13 @@ export function layoutRadial(
   if (diagram.nodes.length === 0) return diagram;
 
   const result = { ...diagram, nodes: [...diagram.nodes] };
-  const cx = 400,
-    cy = 350;
+
+  let maxW = 140,
+    maxH = 60;
+  for (const node of result.nodes) {
+    maxW = Math.max(maxW, node.size.width);
+    maxH = Math.max(maxH, node.size.height);
+  }
 
   // Find root nodes (no incoming edges)
   const incoming = new Set<string>();
@@ -59,34 +64,68 @@ export function layoutRadial(
     levelGroups.set(level, group);
   }
 
-  // Position in rings
-  const ringSpacing = 150;
+  const ringSpacing = Math.max(180, Math.max(maxW, maxH) * 0.75 + 70);
+  const cx = Math.max(450, maxLevel * ringSpacing + maxW / 2 + 60);
+  const cy = Math.max(400, maxLevel * ringSpacing + maxH / 2 + 60);
+
   for (const [level, ids] of levelGroups) {
     if (level === 0 && ids.length === 1) {
-      // Single root at center
       const idx = result.nodes.findIndex((n) => n.id === ids[0]);
-      if (idx >= 0)
+      if (idx >= 0) {
+        const nd = result.nodes[idx];
         result.nodes[idx] = {
-          ...result.nodes[idx],
-          position: { x: cx, y: cy },
+          ...nd,
+          position: {
+            x: Math.round(cx - nd.size.width / 2),
+            y: Math.round(cy - nd.size.height / 2),
+          },
         };
+      }
     } else {
-      const radius = level === 0 ? 60 : level * ringSpacing;
+      const minCircumference = ids.length * (Math.max(maxW, maxH) + 50);
+      const radius = Math.max(
+        level === 0 ? 120 : level * ringSpacing,
+        minCircumference / (2 * Math.PI),
+      );
       const angleStep = (2 * Math.PI) / ids.length;
-      const startAngle = -Math.PI / 2; // Start from top
+      const startAngle = -Math.PI / 2;
       ids.forEach((id, i) => {
         const idx = result.nodes.findIndex((n) => n.id === id);
         if (idx >= 0) {
+          const nd = result.nodes[idx];
           result.nodes[idx] = {
-            ...result.nodes[idx],
+            ...nd,
             position: {
-              x: Math.round(cx + radius * Math.cos(startAngle + angleStep * i)),
-              y: Math.round(cy + radius * Math.sin(startAngle + angleStep * i)),
+              x: Math.round(
+                cx + radius * Math.cos(startAngle + angleStep * i) - nd.size.width / 2,
+              ),
+              y: Math.round(
+                cy + radius * Math.sin(startAngle + angleStep * i) - nd.size.height / 2,
+              ),
             },
           };
         }
       });
     }
+  }
+
+  // Normalize so minX/minY >= 60
+  let minX = Infinity,
+    minY = Infinity;
+  for (const nd of result.nodes) {
+    minX = Math.min(minX, nd.position.x);
+    minY = Math.min(minY, nd.position.y);
+  }
+  const offsetX = minX < 60 ? 60 - minX : 0;
+  const offsetY = minY < 60 ? 60 - minY : 0;
+  if (offsetX !== 0 || offsetY !== 0) {
+    result.nodes = result.nodes.map((nd) => ({
+      ...nd,
+      position: {
+        x: Math.round(nd.position.x + offsetX),
+        y: Math.round(nd.position.y + offsetY),
+      },
+    }));
   }
 
   result.edges = diagram.edges.map((e) => ({ ...e }));

@@ -1,9 +1,10 @@
-import type {
-  DSLToken,
-  Diagram,
-  Edge,
-  RelationType,
-  ParseError,
+import {
+  computeFlowNodeSize,
+  type DSLToken,
+  type Diagram,
+  type Edge,
+  type RelationType,
+  type ParseError,
 } from "@uml-editor/shared";
 
 /**
@@ -154,12 +155,18 @@ export abstract class BaseDiagramParser {
     const cleanName = name.replace(/^["']|["']$/g, "").trim();
     const nodeId = `node_${cleanName.replace(/\s+/g, "_")}_${this.diagram.nodes.length}`;
     const defaultType = this.getDefaultNodeType();
+    const defaultSize =
+      this.diagram.type === "flowchart" ||
+      this.diagram.type === "activity" ||
+      this.diagram.type === "state"
+        ? computeFlowNodeSize(defaultType, cleanName, 13, this.diagram.type)
+        : { width: 140, height: 60 };
     const newNode: any = {
       id: nodeId,
       name: cleanName,
       type: defaultType,
       position: { x: 0, y: 0 },
-      size: { width: 140, height: 60 },
+      size: defaultSize,
     };
     if (this.diagram.type === "class") {
       newNode.attributes = [];

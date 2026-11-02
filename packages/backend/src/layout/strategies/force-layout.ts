@@ -1,7 +1,7 @@
 import type { Diagram, LayoutOptions } from "@uml-editor/shared";
 
 /**
- * Force-directed layout (spring-based).
+ * Force-directed layout (spring-based) with bounding-box overlap resolution.
  * Supports all diagram types.
  * Special handling: actors biased to left for use case diagrams.
  */
@@ -13,17 +13,21 @@ export function layoutForce(
 
   const result = { ...diagram, nodes: [...diagram.nodes] };
   const n = result.nodes.length;
-  const cx = 400,
-    cy = 300;
+  const cx = 450,
+    cy = 350;
 
-  // Initialize positions
+  let maxDim = 140;
+  for (const node of result.nodes) {
+    maxDim = Math.max(maxDim, node.size.width, node.size.height);
+  }
+
+  // Initialize positions (using center coordinates)
   const positions = result.nodes.map((node, i) => {
-    // Use case: actors on left
     if (node.type === "actor") {
-      return { x: 80, y: 80 + i * 130, vx: 0, vy: 0 };
+      return { x: 100, y: 100 + i * 140, vx: 0, vy: 0 };
     }
-    const angle = (2 * Math.PI * i) / n;
-    const r = Math.max(150, n * 25);
+    const angle = (2 * Math.PI * i) / n - Math.PI / 2;
+    const r = Math.max(180, (n * (maxDim + 40)) / (2 * Math.PI));
     return {
       x: cx + r * Math.cos(angle),
       y: cy + r * Math.sin(angle),
@@ -32,23 +36,11 @@ export function layoutForce(
     };
   });
 
-  // Build adjacency
-  const adj = new Map<number, number[]>();
-  for (let i = 0; i < n; i++) adj.set(i, []);
-  for (const edge of diagram.edges) {
-    const si = result.nodes.findIndex((nd) => nd.id === edge.source);
-    const ti = result.nodes.findIndex((nd) => nd.id === edge.target);
-    if (si >= 0 && ti >= 0) {
-      adj.get(si)!.push(ti);
-      adj.get(ti)!.push(si);
-    }
-  }
-
   // Simulation
-  const repulsion = 8000;
-  const attraction = 0.005;
-  const damping = 0.85;
-  const iterations = 80;
+  const repulsion = Math.max(18000, maxDim * maxDim * 0.8);
+  const attraction = 0.008;
+  const damping = 0.82;
+  const iterations = 90;
 
   for (let iter = 0; iter < iterations; iter++) {
     // Repulsion
@@ -74,37 +66,70 @@ export function layoutForce(
       const dx = positions[ti].x - positions[si].x;
       const dy = positions[ti].y - positions[si].y;
       const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-      const force = dist * attraction;
+      const idealDist =
+        (result.nodes[si].size.height + result.nodes[ti].size.height) / 2 + 80;
+      const force = (dist - idealDist) * attraction;
       positions[si].vx += (dx / dist) * force;
       positions[si].vy += (dy / dist) * force;
       positions[ti].vx -= (dx / dist) * force;
       positions[ti].vy -= (dy / dist) * force;
     }
-    // Apply
+    // Apply velocity
     for (let i = 0; i < n; i++) {
       positions[i].x += positions[i].vx;
       positions[i].y += positions[i].vy;
       positions[i].vx *= damping;
       positions[i].vy *= damping;
     }
+
+    // Bounding-box collision resolution so nodes never overlap
+    const pad = 36;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const minDX =
+          (result.nodes[i].size.width + result.nodes[j].size.width) / 2 + pad;
+        const minDY =
+          (result.nodes[i].size.height + result.nodes[j].size.height) / 2 + pad;
+        const dx = positions[i].x - positions[j].x;
+        const dy = positions[i].y - positions[j].y;
+        const overlapX = minDX - Math.abs(dx);
+        const overlapY = minDY - Math.abs(dy);
+        if (overlapX > 0 && overlapY > 0) {
+          if (overlapX < overlapY) {
+            const sign = dx >= 0 ? 1 : -1;
+            positions[i].x += (sign * overlapX) / 2;
+            positions[j].x -= (sign * overlapX) / 2;
+          } else {
+            const sign = dy >= 0 ? 1 : -1;
+            positions[i].y += (sign * overlapY) / 2;
+            positions[j].y -= (sign * overlapY) / 2;
+          }
+        }
+      }
+    }
   }
 
-  // Normalize: ensure no negative positions
+  // Convert center positions to top-left and normalize so minX/minY >= 60
+  const topLefts = positions.map((p, i) => ({
+    x: p.x - result.nodes[i].size.width / 2,
+    y: p.y - result.nodes[i].size.height / 2,
+  }));
+
   let minX = Infinity,
     minY = Infinity;
-  for (const p of positions) {
+  for (const p of topLefts) {
     minX = Math.min(minX, p.x);
     minY = Math.min(minY, p.y);
   }
-  const offsetX = minX < 40 ? 40 - minX : 0;
-  const offsetY = minY < 40 ? 40 - minY : 0;
+  const offsetX = minX < 60 ? 60 - minX : 0;
+  const offsetY = minY < 60 ? 60 - minY : 0;
 
   for (let i = 0; i < n; i++) {
     result.nodes[i] = {
       ...result.nodes[i],
       position: {
-        x: Math.round(positions[i].x + offsetX),
-        y: Math.round(positions[i].y + offsetY),
+        x: Math.round(topLefts[i].x + offsetX),
+        y: Math.round(topLefts[i].y + offsetY),
       },
     };
   }

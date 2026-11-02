@@ -1,4 +1,9 @@
-import type { DiagramNode, Size } from "@uml-editor/shared";
+import {
+  getInnerTextMaxWidth,
+  wrapMultilineText,
+  type DiagramNode,
+  type Size,
+} from "@uml-editor/shared";
 import { resolveStyle } from "./useNodeStyle";
 
 /**
@@ -42,7 +47,9 @@ export function getVisualSize(node: DiagramNode): Size {
       const p = Array.isArray(m.params)
         ? m.params
             .map((pp: any) =>
-              typeof pp === "string" ? pp : `${pp?.name || ""}${pp?.type ? ": " + pp.type : ""}`,
+              typeof pp === "string"
+                ? pp
+                : `${pp?.name || ""}${pp?.type ? ": " + pp.type : ""}`,
             )
             .filter(Boolean)
             .join(", ")
@@ -78,7 +85,6 @@ export function getVisualSize(node: DiagramNode): Size {
       const attrNameW = (a.name || "").length * 7.5;
       const typeStr = `${a.type || ""}${a.isNullable ? " ?" : ""}${a.isUnique ? " UQ" : ""}`;
       const typeW = typeStr.length * 7.0;
-      // icon + name + comfortable column gap (28px) + type + right margin (12px)
       const rowW = iconW + attrNameW + 28 + typeW + 12;
       maxAttrW = Math.max(maxAttrW, rowW);
     }
@@ -86,26 +92,49 @@ export function getVisualSize(node: DiagramNode): Size {
     return { width: totalW, height: totalH };
   }
 
-  // For all other node types, adapt size to multiline text if needed
+  // For flowchart, activity, and general text-based nodes:
+  // Respect node.size.width as the wrapping container, and ensure height fits all wrapped lines
   if (node.name && node.size) {
-    const lines = node.name.split("\n");
-    if (lines.length > 1) {
-      const s = resolveStyle((node as any).style);
-      const fs = s.fontSize || 12;
-      const charW = fs * 0.58;
-      let maxLineLen = 0;
-      for (const line of lines) {
-        maxLineLen = Math.max(maxLineLen, line.length);
-      }
-      const neededW = Math.max(
-        node.size.width,
-        Math.round(maxLineLen * charW + 28),
-      );
-      const neededH = Math.max(
-        node.size.height,
-        Math.round(lines.length * (fs + 6) + 20),
-      );
-      return { width: neededW, height: neededH };
+    // Skip tiny circle symbols (Activity start/end/initial/final/merge/fork/join)
+    if (
+      (node.type === "start" || node.type === "end") &&
+      node.size.width <= 36 &&
+      node.size.height <= 36
+    ) {
+      return node.size;
+    }
+    if (
+      node.type === "initial" ||
+      node.type === "final" ||
+      node.type === "fork" ||
+      node.type === "join" ||
+      node.type === "merge"
+    ) {
+      return node.size;
+    }
+
+    const s = resolveStyle((node as any).style);
+    const fs = s.fontSize || 13;
+    const charW = fs * 0.58;
+    const lineHeight = fs + 4;
+
+    const innerW = getInnerTextMaxWidth(node.type, node.size.width);
+    const maxChars = Math.max(12, Math.floor((innerW - 16) / charW));
+    const { lines } = wrapMultilineText(node.name, maxChars);
+
+    if (lines.length > 0) {
+      const vPad =
+        node.type === "decision"
+          ? 36
+          : node.type === "database" || node.type === "document"
+            ? 32
+            : 24;
+      const rawNeededH =
+        node.type === "decision"
+          ? Math.ceil((lines.length * lineHeight + vPad) / 0.68)
+          : lines.length * lineHeight + vPad;
+      const neededH = Math.max(node.size.height, Math.round(rawNeededH));
+      return { width: node.size.width, height: neededH };
     }
   }
 

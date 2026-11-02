@@ -1,5 +1,8 @@
 import React from "react";
-import type { FlowchartNode } from "@uml-editor/shared";
+import {
+  getInnerTextMaxWidth,
+  type FlowchartNode,
+} from "@uml-editor/shared";
 import {
   resolveStyle,
   getStrokeWidth,
@@ -7,6 +10,7 @@ import {
   getFlowchartColors,
 } from "./useNodeStyle";
 import { SvgMultilineText } from "./SvgMultilineText";
+import { getVisualSize } from "./getVisualSize";
 
 interface Props {
   node: FlowchartNode;
@@ -21,7 +25,8 @@ export function FlowchartNodeRenderer({
   onDragStart,
   canvasTheme,
 }: Props) {
-  const { position, size, name, type } = node;
+  const { position, name, type } = node;
+  const size = getVisualSize(node);
   const isDark = isDarkCanvas(canvasTheme);
   const colors = getFlowchartColors(type, isDark, (node as any).style);
   const s = resolveStyle((node as any).style, canvasTheme);
@@ -31,18 +36,22 @@ export function FlowchartNodeRenderer({
   const fontFill = colors.font;
   const cx = size.width / 2,
     cy = size.height / 2;
+  const textMaxW = getInnerTextMaxWidth(type, size.width);
 
   const renderShape = () => {
     switch (type) {
       case "start":
-      case "end":
+      case "end": {
+        const pillRx = Math.min((size.width - 4) / 2, (size.height - 4) / 2, 28);
         return (
           <g>
-            <ellipse
-              cx={cx}
-              cy={cy}
-              rx={cx - 2}
-              ry={cy - 2}
+            <rect
+              x="2"
+              y="2"
+              width={size.width - 4}
+              height={size.height - 4}
+              rx={pillRx}
+              ry={pillRx}
               fill={fill}
               stroke={stroke}
               strokeWidth={sw}
@@ -54,12 +63,13 @@ export function FlowchartNodeRenderer({
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={fontFill}
-              fontWeight={s.fontWeight}
+              fontWeight={s.fontWeight === "normal" ? 600 : s.fontWeight}
               fontStyle={s.fontStyle}
-              maxWidth={size.width - 8}
+              maxWidth={textMaxW}
             />
           </g>
         );
+      }
       case "process":
         return (
           <g>
@@ -82,7 +92,7 @@ export function FlowchartNodeRenderer({
               fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-              maxWidth={size.width - 16}
+              maxWidth={textMaxW}
             />
           </g>
         );
@@ -103,7 +113,7 @@ export function FlowchartNodeRenderer({
               fontFamily={s.fontFamily}
               fill={fontFill}
               fontWeight={s.fontWeight}
-              maxWidth={size.width * 0.72}
+              maxWidth={textMaxW}
             />
           </g>
         );
@@ -126,7 +136,7 @@ export function FlowchartNodeRenderer({
               fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-              maxWidth={size.width - 32}
+              maxWidth={textMaxW}
             />
           </g>
         );
@@ -149,7 +159,7 @@ export function FlowchartNodeRenderer({
               fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-              maxWidth={size.width - 16}
+              maxWidth={textMaxW}
             />
           </g>
         );
@@ -192,7 +202,7 @@ export function FlowchartNodeRenderer({
               fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-              maxWidth={size.width - 16}
+              maxWidth={textMaxW}
             />
           </g>
         );
@@ -234,7 +244,7 @@ export function FlowchartNodeRenderer({
               fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-              maxWidth={size.width - 28}
+              maxWidth={textMaxW}
             />
           </g>
         );
@@ -257,7 +267,7 @@ export function FlowchartNodeRenderer({
               fontFamily={s.fontFamily}
               fill={fontFill}
               fontWeight={s.fontWeight}
-              maxWidth={size.width - 4}
+              maxWidth={textMaxW}
             />
           </g>
         );
@@ -283,7 +293,7 @@ export function FlowchartNodeRenderer({
               fill={fontFill}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-              maxWidth={size.width - 16}
+              maxWidth={textMaxW}
             />
           </g>
         );

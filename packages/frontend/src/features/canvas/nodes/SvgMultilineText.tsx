@@ -1,4 +1,5 @@
 import React from "react";
+import { wrapMultilineText } from "@uml-editor/shared";
 
 interface Props {
   text: string;
@@ -27,38 +28,15 @@ export function SvgMultilineText({
 }: Props) {
   if (!text) return null;
 
-  // Split by explicit newline
-  const rawLines = text.split("\n");
-  const lines: string[] = [];
-
-  // Wrap lines if maxWidth is specified and text exceeds available width
   const approxCharWidth = fontSize * 0.58;
   const maxChars = maxWidth
-    ? Math.max(12, Math.floor((maxWidth - 20) / approxCharWidth))
+    ? Math.max(12, Math.floor((maxWidth - 16) / approxCharWidth))
     : 999;
 
-  for (const rawLine of rawLines) {
-    if (rawLine.length <= maxChars) {
-      lines.push(rawLine);
-    } else {
-      const words = rawLine.split(" ");
-      let currentLine = "";
-      for (const word of words) {
-        if (!currentLine) {
-          currentLine = word;
-        } else if ((currentLine + " " + word).length <= maxChars) {
-          currentLine += " " + word;
-        } else {
-          lines.push(currentLine);
-          currentLine = word;
-        }
-      }
-      if (currentLine) lines.push(currentLine);
-    }
-  }
+  const { lines, isHeaderLine } = wrapMultilineText(text, maxChars);
+  if (lines.length === 0) return null;
 
   const totalHeight = lines.length * lineHeight;
-  // Calculate startY so the multiline block is vertically centered around cy
   const startY = cy - totalHeight / 2 + lineHeight * 0.72;
 
   return (
@@ -73,7 +51,16 @@ export function SvgMultilineText({
       fontStyle={fontStyle}
     >
       {lines.map((line, i) => (
-        <tspan key={i} x={cx} dy={i === 0 ? 0 : lineHeight}>
+        <tspan
+          key={i}
+          x={cx}
+          dy={i === 0 ? 0 : lineHeight}
+          fontWeight={
+            isHeaderLine[i] && (!fontWeight || fontWeight === "normal")
+              ? 600
+              : undefined
+          }
+        >
           {line}
         </tspan>
       ))}

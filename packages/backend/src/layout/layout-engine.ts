@@ -1,4 +1,8 @@
-import type { Diagram, LayoutOptions } from "@uml-editor/shared";
+import {
+  computeFlowNodeSize,
+  type Diagram,
+  type LayoutOptions,
+} from "@uml-editor/shared";
 import {
   layoutLayered,
   layoutLinear,
@@ -48,17 +52,66 @@ export class LayoutEngine {
       return this.layoutSequenceDiagram(diagram);
     }
 
+    // Normalize node sizes for flow/activity/state diagrams before computing positions
+    const normalized = this.normalizeNodeSizes(diagram);
+
     // For all other diagrams, apply the selected preset
     if (this.preset === "auto") {
-      return this.autoLayout(diagram);
+      return this.autoLayout(normalized);
     }
-    return this.applyPreset(diagram, this.preset);
+    return this.applyPreset(normalized, this.preset);
+  }
+
+  private normalizeNodeSizes(diagram: Diagram): Diagram {
+    if (
+      diagram.type !== "flowchart" &&
+      diagram.type !== "activity" &&
+      diagram.type !== "state"
+    ) {
+      return diagram;
+    }
+
+    const nodes = diagram.nodes.map((node) => {
+      if (
+        "attributes" in node ||
+        "methods" in node ||
+        node.type === "composite"
+      ) {
+        return node;
+      }
+      const fontSize = (node as any).style?.fontSize || 13;
+      const optimalSize = computeFlowNodeSize(
+        node.type,
+        node.name || "",
+        fontSize,
+        diagram.type,
+      );
+      return { ...node, size: optimalSize };
+    });
+
+    return { ...diagram, nodes };
+  }
+
+  private hasBranching(diagram: Diagram): boolean {
+    const outCounts = new Map<string, number>();
+    for (const edge of diagram.edges) {
+      outCounts.set(edge.source, (outCounts.get(edge.source) || 0) + 1);
+      if ((outCounts.get(edge.source) || 0) > 1) return true;
+    }
+    return false;
   }
 
   private autoLayout(diagram: Diagram): Diagram {
     switch (diagram.type) {
       case "activity":
       case "flowchart":
+        if (this.hasBranching(diagram)) {
+          return layoutLayered(diagram, {
+            ...this.options,
+            rankSpacing: 64,
+            nodeSpacing: 60,
+          });
+        }
         return layoutLinear(diagram, this.options);
       case "usecase":
         return layoutLayered(diagram, {
@@ -84,9 +137,16 @@ export class LayoutEngine {
   }
 
   private applyPreset(diagram: Diagram, preset: LayoutPreset): Diagram {
+    const isFlow =
+      diagram.type === "flowchart" || diagram.type === "activity";
     switch (preset) {
       case "layered":
-        return layoutLayered(diagram, this.options);
+        return layoutLayered(
+          diagram,
+          isFlow
+            ? { ...this.options, rankSpacing: 64, nodeSpacing: 60 }
+            : this.options,
+        );
       case "linear":
         return layoutLinear(diagram, this.options);
       case "force":

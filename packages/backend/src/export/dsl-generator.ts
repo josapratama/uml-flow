@@ -233,6 +233,13 @@ function generateActivityDSL(diagram: Diagram): string {
 
 // ── Flowchart ──────────────────────────────────────────────────────────────
 
+function escapeDslString(str: string): string {
+  return (str || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\r?\n/g, "\\n");
+}
+
 function generateFlowchartDSL(diagram: Diagram): string {
   let dsl = "";
   for (const node of diagram.nodes as any[]) {
@@ -251,8 +258,13 @@ function generateFlowchartDSL(diagram: Diagram): string {
                   ? "database"
                   : node.type === "subroutine"
                     ? "subroutine"
-                    : "process";
-    dsl += `${keyword} "${node.name}"\n`;
+                    : node.type === "connector"
+                      ? "connector"
+                      : node.type === "preparation"
+                        ? "preparation"
+                        : "process";
+    const aliasStr = node.alias ? ` as ${node.alias}` : "";
+    dsl += `${keyword} "${escapeDslString(node.name)}"${aliasStr}\n`;
   }
   dsl += "\n";
   dsl += generateEdgesDSL(diagram);
@@ -486,7 +498,7 @@ function formatName(name: string): string {
   if (!name) return '""';
   if (name.startsWith("[") && name.endsWith("]")) return name;
   if (name.includes(" ") || /[^a-zA-Z0-9_]/.test(name)) {
-    return `"${name}"`;
+    return `"${escapeDslString(name)}"`;
   }
   return name;
 }
@@ -495,11 +507,13 @@ function generateEdgesDSL(diagram: Diagram): string {
   let dsl = "";
   const nodeMap = new Map(diagram.nodes.map((n) => [n.id, n]));
   for (const edge of diagram.edges) {
-    const source = nodeMap.get(edge.source);
-    const target = nodeMap.get(edge.target);
+    const source = nodeMap.get(edge.source) as any;
+    const target = nodeMap.get(edge.target) as any;
     if (source && target) {
       const symbol = getRelationSymbol(edge.type);
-      dsl += `${formatName(source.name)} ${symbol} ${formatName(target.name)}`;
+      const srcRef = source.alias || formatName(source.name);
+      const tgtRef = target.alias || formatName(target.name);
+      dsl += `${srcRef} ${symbol} ${tgtRef}`;
       if (edge.label) dsl += ` : ${edge.label.text}`;
       dsl += "\n";
     }

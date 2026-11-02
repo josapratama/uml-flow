@@ -1,4 +1,9 @@
-import type { Diagram, ExportOptions } from "@uml-editor/shared";
+import {
+  getInnerTextMaxWidth,
+  wrapMultilineText,
+  type Diagram,
+  type ExportOptions,
+} from "@uml-editor/shared";
 
 /**
  * Computes the bounding box of a diagram and returns padded width/height.
@@ -356,36 +361,42 @@ function renderNode(node: any): string {
     }
   } else {
     // Generic / activity / flowchart nodes
-    const fillColor =
-      node.type === "decision"
-        ? "#FFF9C4"
-        : node.type === "start"
-          ? "#333"
-          : node.type === "end"
-            ? "white"
-            : node.type === "action"
-              ? "white"
-              : "#fff";
-    if (node.type === "start") {
+    const isCircleTerminal =
+      (node.type === "start" || node.type === "end") &&
+      size.width <= 36 &&
+      size.height <= 36;
+    if (isCircleTerminal && node.type === "start") {
       svg += `<circle cx="${position.x + size.width / 2}" cy="${position.y + size.height / 2}" r="12" fill="#333"/>`;
-    } else if (node.type === "end") {
+    } else if (isCircleTerminal && node.type === "end") {
       const cx = position.x + size.width / 2,
         cy = position.y + size.height / 2;
       svg += `<circle cx="${cx}" cy="${cy}" r="14" fill="none" stroke="#333" stroke-width="2"/>`;
       svg += `<circle cx="${cx}" cy="${cy}" r="9" fill="#333"/>`;
-    } else if (node.type === "decision") {
-      const cx = position.x + size.width / 2,
-        cy = position.y + size.height / 2;
-      svg += `<polygon points="${cx},${position.y} ${position.x + size.width},${cy} ${cx},${position.y + size.height} ${position.x},${cy}" fill="${fillColor}" stroke="#333" stroke-width="1.5"/>`;
-      svg += `<text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="11" fill="#333">${escapeXml(name)}</text>`;
     } else if (node.type === "fork" || node.type === "join") {
       svg += `<rect x="${position.x}" y="${position.y + size.height / 2 - 3}" width="${size.width}" height="6" rx="3" fill="#333"/>`;
-    } else if (node.type === "action") {
-      svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${size.height}" rx="10" fill="white" stroke="#333" stroke-width="1.5"/>`;
-      svg += `<text x="${position.x + size.width / 2}" y="${position.y + size.height / 2 + 4}" text-anchor="middle" font-size="12" fill="#333">${escapeXml(name)}</text>`;
     } else {
-      svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${size.height}" fill="${fillColor}" stroke="#333" stroke-width="1.5" rx="3"/>`;
-      svg += `<text x="${position.x + size.width / 2}" y="${position.y + size.height / 2 + 5}" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">${escapeXml(name)}</text>`;
+      const cx = position.x + size.width / 2;
+      const cy = position.y + size.height / 2;
+      const fillColor =
+        node.type === "decision"
+          ? "#FFF9C4"
+          : node.type === "start"
+            ? "#C8E6C9"
+            : node.type === "end"
+              ? "#FFCDD2"
+              : node.type === "process"
+                ? "#E3F2FD"
+                : "#ffffff";
+      if (node.type === "decision") {
+        svg += `<polygon points="${cx},${position.y} ${position.x + size.width},${cy} ${cx},${position.y + size.height} ${position.x},${cy}" fill="${fillColor}" stroke="#333" stroke-width="1.5"/>`;
+      } else if (node.type === "start" || node.type === "end") {
+        const pillRx = Math.min(size.width / 2, size.height / 2, 28);
+        svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${size.height}" rx="${pillRx}" fill="${fillColor}" stroke="#333" stroke-width="1.5"/>`;
+      } else {
+        const rx = node.type === "action" ? 10 : 6;
+        svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${size.height}" rx="${rx}" fill="${fillColor}" stroke="#333" stroke-width="1.5"/>`;
+      }
+      svg += renderWrappedSvgText(name, cx, cy, node.type, size.width);
     }
   }
 
@@ -457,6 +468,37 @@ function getPathMidpoint(points: Array<{ x: number; y: number }>): { x: number; 
     }
   }
   return bestMidpoint;
+}
+
+function renderWrappedSvgText(
+  text: string,
+  cx: number,
+  cy: number,
+  nodeType: string,
+  boxWidth: number,
+): string {
+  if (!text) return "";
+  const fontSize = 13;
+  const lineHeight = 17;
+  const approxCharWidth = fontSize * 0.58;
+  const innerW = getInnerTextMaxWidth(nodeType, boxWidth);
+  const maxChars = Math.max(12, Math.floor((innerW - 16) / approxCharWidth));
+  const { lines, isHeaderLine } = wrapMultilineText(text, maxChars);
+  if (lines.length === 0) return "";
+
+  const totalHeight = lines.length * lineHeight;
+  const startY = cy - totalHeight / 2 + lineHeight * 0.72;
+  const baseWeight =
+    nodeType === "start" || nodeType === "end" ? ' font-weight="600"' : "";
+
+  let out = `<text x="${cx}" y="${startY.toFixed(1)}" text-anchor="middle" font-size="${fontSize}" font-family="sans-serif" fill="#1e293b"${baseWeight}>`;
+  lines.forEach((line, i) => {
+    const dy = i === 0 ? 0 : lineHeight;
+    const fw = isHeaderLine[i] ? ' font-weight="600"' : "";
+    out += `<tspan x="${cx}" dy="${dy}"${fw}>${escapeXml(line)}</tspan>`;
+  });
+  out += `</text>`;
+  return out;
 }
 
 function escapeXml(str: string | undefined | null): string {

@@ -43,8 +43,8 @@ export class Parser {
         if (!m) return line;
         const [, indent, type, rawText, alias] = m;
         const text = rawText
-          .replace(/\\n/g, " - ")
           .replace(/\\/g, "\\\\")
+          .replace(/\\\\n/g, "\\n")
           .replace(/"/g, '\\"')
           .trim();
         return `${indent}${type} "${text || type}"${alias ? ` as ${alias}` : ""}`;
