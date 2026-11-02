@@ -1,4 +1,5 @@
 import {
+  computeFlowNodeSize,
   getInnerTextMaxWidth,
   wrapMultilineText,
   type DiagramNode,
@@ -95,6 +96,15 @@ export function getVisualSize(node: DiagramNode): Size {
   // For flowchart, activity, and general text-based nodes:
   // Respect node.size.width as the wrapping container, and ensure height fits all wrapped lines
   if (node.name && node.size) {
+    if (node.type === "actor") {
+      const s = resolveStyle((node as any).style);
+      return computeFlowNodeSize("actor", node.name, s.fontSize || 13, undefined, node.size);
+    }
+    if (node.type === "usecase") {
+      const s = resolveStyle((node as any).style);
+      return computeFlowNodeSize("usecase", node.name, s.fontSize || 13, undefined, node.size);
+    }
+
     // Skip tiny circle symbols (Activity start/end/initial/final/merge/fork/join)
     if (
       (node.type === "start" || node.type === "end") &&

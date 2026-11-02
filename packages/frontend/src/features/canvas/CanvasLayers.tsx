@@ -72,6 +72,7 @@ interface CanvasLayersProps {
   ) => void;
   onEdgeLabelEdit?: (edgeId: string, label: string) => void;
   onNodeRename: (nodeId: string, newName: string) => void;
+  onNodeLiveRename?: (nodeId: string, newName: string) => void;
   onParticipantMove?: (id: string, x: number) => void;
   onParticipantRename?: (id: string, name: string) => void;
   onMessageEdit?: (id: string, label: string) => void;
@@ -130,6 +131,7 @@ export function CanvasLayers(props: CanvasLayersProps) {
     onEdgeEndpointDrag,
     onEdgeLabelEdit,
     onNodeRename,
+    onNodeLiveRename,
     onParticipantMove,
     onParticipantRename,
     onMessageEdit,
@@ -192,6 +194,9 @@ export function CanvasLayers(props: CanvasLayersProps) {
       onRenameSubmit={(val) => {
         onNodeRename(node.id, val);
         setEditingNodeId(null);
+      }}
+      onRenameChange={(val) => {
+        onNodeLiveRename?.(node.id, val);
       }}
       onRenameCancel={() => setEditingNodeId(null)}
     />

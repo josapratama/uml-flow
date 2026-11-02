@@ -62,18 +62,17 @@ export function UseCaseNodeRenderer({ node, isSelected, onDragStart }: Props) {
               stroke={stroke}
               strokeWidth={sw}
             />
-            <text
-              x={cx}
-              y={size.height - 2}
-              textAnchor="middle"
+            <SvgMultilineText
+              text={name}
+              cx={cx}
+              cy={Math.max(93, (86 + size.height) / 2)}
               fontSize={s.fontSize}
               fontFamily={s.fontFamily}
               fill={s.fontColor}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-            >
-              {name}
-            </text>
+              maxWidth={Math.max(size.width, 140)}
+            />
           </g>
         );
       case "usecase":

@@ -59,6 +59,7 @@ interface CanvasProps {
   onDragStart?: () => void;
   onDragEnd?: () => void;
   onNodeRename: (nodeId: string, newName: string) => void;
+  onNodeLiveRename?: (nodeId: string, newName: string) => void;
   onParticipantMove?: (id: string, x: number) => void;
   onParticipantRename?: (id: string, name: string) => void;
   onMessageEdit?: (id: string, label: string) => void;
@@ -117,6 +118,7 @@ export function Canvas({
   onDragStart,
   onDragEnd,
   onNodeRename,
+  onNodeLiveRename,
   onParticipantMove,
   onParticipantRename,
   onMessageEdit,
@@ -656,6 +658,7 @@ export function Canvas({
             onEdgeEndpointDrag={onEdgeEndpointDrag}
             onEdgeLabelEdit={onEdgeLabelEdit}
             onNodeRename={onNodeRename}
+            onNodeLiveRename={onNodeLiveRename}
             onParticipantMove={onParticipantMove}
             onParticipantRename={onParticipantRename}
             onMessageEdit={onMessageEdit}

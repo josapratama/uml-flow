@@ -57,6 +57,10 @@ export function getInnerTextMaxWidth(type: string, boxWidth: number): number {
     case "start":
     case "end":
       return Math.max(40, boxWidth - 28);
+    case "usecase":
+      return Math.max(50, boxWidth - 28);
+    case "actor":
+      return Math.max(50, boxWidth - 10);
     case "decision":
       return Math.max(40, Math.floor(boxWidth * 0.72));
     case "io":
@@ -71,17 +75,57 @@ export function getInnerTextMaxWidth(type: string, boxWidth: number): number {
 }
 
 /**
- * Computes optimal wrapped width and height for flowchart, activity, state,
- * and general text-based nodes so long descriptions wrap cleanly into
- * well-proportioned cards instead of stretching horizontally.
+ * Computes optimal dynamic width and height for any diagram node
+ * (Flowchart, UseCase, Activity, State, Actor, etc.) so that text updates
+ * automatically expand or shrink the node in real-time.
  */
 export function computeFlowNodeSize(
   type: string,
   name: string,
   fontSize = 13,
   diagramType?: string,
+  currentSize?: Size,
 ): Size {
   const cleanName = (name || "").trim();
+
+  // UseCase Diagram nodes
+  if (type === "actor") {
+    const approxCharWidth = fontSize * 0.58;
+    const labelLines = cleanName.split("\n");
+    let maxLen = 0;
+    for (const l of labelLines) maxLen = Math.max(maxLen, l.trim().length);
+    const neededWidth = Math.max(60, Math.min(260, Math.round(maxLen * approxCharWidth + 24)));
+    const neededHeight = Math.max(100, Math.round(80 + Math.max(1, labelLines.length) * (fontSize + 5)));
+    return {
+      width: Math.ceil(neededWidth / 2) * 2,
+      height: Math.ceil(neededHeight / 2) * 2,
+    };
+  }
+
+  if (type === "usecase") {
+    const approxCharWidth = fontSize * 0.60;
+    const lineHeight = fontSize + 4;
+    // Auto-expand ellipse width and height proportionally
+    const minWidth = 130;
+    const maxWidth = 360;
+    // Estimate target width based on characters
+    const targetW = Math.min(maxWidth, Math.max(minWidth, Math.round(cleanName.length * 6.2 + 50)));
+    const maxChars = Math.max(12, Math.floor((targetW - 36) / approxCharWidth));
+    const wrap = wrapMultilineText(cleanName, maxChars);
+    const longestLine = Math.max(1, ...wrap.lines.map((l) => l.length));
+    const width = Math.min(maxWidth, Math.max(minWidth, Math.round(longestLine * approxCharWidth + 56)));
+    const height = Math.max(50, Math.round(Math.max(1, wrap.lines.length) * lineHeight + 32));
+    return {
+      width: Math.ceil(width / 2) * 2,
+      height: Math.ceil(height / 2) * 2,
+    };
+  }
+
+  if (type === "system" || type === "boundary") {
+    const w = currentSize?.width ? Math.max(currentSize.width, 240) : 320;
+    const h = currentSize?.height ? Math.max(currentSize.height, 160) : 260;
+    return { width: w, height: h };
+  }
 
   // Activity diagram special symbols
   if (diagramType === "activity") {
@@ -112,7 +156,7 @@ export function computeFlowNodeSize(
   // Target width bounds depending on shape
   let minWidth = 140;
   let maxWidth = 380;
-  let horizontalPad = 36; // boxWidth - innerusable
+  let horizontalPad = 36;
   let verticalPad = 24;
 
   if (type === "start" || type === "end") {

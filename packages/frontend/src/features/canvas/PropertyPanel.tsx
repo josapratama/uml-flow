@@ -18,6 +18,7 @@ interface Props {
     nodeId: string,
     patch: { name?: string; width?: number; height?: number },
   ) => void;
+  onLiveUpdate?: (nodeId: string, patch: { name?: string }) => void;
   onAutoFit?: (nodeId: string) => void;
   onApplyStyleToType?: (nodeId: string) => void;
   onAddAttribute?: (
@@ -91,6 +92,7 @@ export function PropertyPanel({
   onOpenStyle,
   onOpenGlobalStyle,
   onUpdateNode,
+  onLiveUpdate,
   onAutoFit,
   onApplyStyleToType,
   onAddAttribute,
@@ -189,11 +191,18 @@ export function PropertyPanel({
                 className={`${inputCls} resize-y min-h-[64px] leading-snug`}
                 rows={Math.min(8, Math.max(2, nameDraft.split("\n").length + 1))}
                 value={nameDraft}
-                onChange={(e) => setNameDraft(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setNameDraft(val);
+                  onLiveUpdate?.(node.id, { name: val });
+                }}
                 onBlur={commitName}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) (e.target as HTMLTextAreaElement).blur();
-                  if (e.key === "Escape") setNameDraft(node.name);
+                  if (e.key === "Escape") {
+                    setNameDraft(node.name);
+                    onLiveUpdate?.(node.id, { name: node.name });
+                  }
                 }}
                 placeholder={isId ? "Baris pertama = judul. Enter = baris baru" : "First line = title. Enter = new line"}
               />

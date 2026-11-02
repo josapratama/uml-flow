@@ -331,3 +331,4 @@ Jika Anda memiliki deskripsi langkah kerja yang panjang, gunakan urutan escape `
 - Baris pertama (`1. Analisis Kebutuhan (Requirement Analysis)`) akan otomatis dirender dengan **huruf tebal (*bold font-weight 600*)**.
 - Kalimat setelah `\n` akan otomatis dibungkus (*word-wrap*) secara proporsional sesuai lebar kartu.
 - Tinggi kartu otomatis bertambah vertikal sehingga tidak ada teks yang terpotong keluar dari kotak.
+

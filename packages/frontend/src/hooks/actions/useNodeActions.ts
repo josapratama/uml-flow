@@ -85,15 +85,22 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
     [diagram, history],
   );
 
-  /** Recompute a node's size from its text/style. Flow-like diagrams use smart wrapping. */
+  /** Recompute a node's size from its text/style. Flow-like and UseCase diagrams use smart wrapping and auto-expansion. */
   const fitSize = (node: any, fontSize: number, style?: any) => {
     const diagType = diagram?.type;
     if ("attributes" in node) {
       return getVisualSize({ ...node, style: { ...(style ?? node.style), fontSize } });
     }
-    if (diagType === "flowchart" || diagType === "activity" || diagType === "state") {
+    if (
+      diagType === "flowchart" ||
+      diagType === "activity" ||
+      diagType === "state" ||
+      diagType === "usecase" ||
+      node.type === "usecase" ||
+      node.type === "actor"
+    ) {
       if (node.type !== "composite") {
-        return computeFlowNodeSize(node.type, node.name || "", fontSize, diagType);
+        return computeFlowNodeSize(node.type, node.name || "", fontSize, diagType, node.size);
       }
     }
     // Other diagrams: keep width, grow height only if wrapped text needs it
@@ -110,6 +117,49 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
     else history.set(next);
   };
 
+  /** Real-time live renaming as user types (uses history.replace so canvas updates without spamming undo stack). */
+  const nodeLiveRename = useCallback(
+    (nodeId: string, newName: string) => {
+      if (!diagram) return;
+      const targetNode = diagram.nodes.find((n) => n.id === nodeId);
+      if (!targetNode || targetNode.name === newName) return;
+      history.replace({
+        ...diagram,
+        nodes: diagram.nodes.map((n) => {
+          if (n.id !== nodeId) return n;
+          const renamed: any = { ...n, name: newName };
+          const fs = (n as any).style?.fontSize || 13;
+          const flowLike =
+            diagram.type === "flowchart" ||
+            diagram.type === "activity" ||
+            diagram.type === "state" ||
+            diagram.type === "usecase" ||
+            n.type === "usecase" ||
+            n.type === "actor";
+
+          if (flowLike || "attributes" in n) {
+            renamed.size = fitSize(renamed, fs);
+          } else {
+            const w = Math.min(360, Math.max(n.size.width, newName.length * 9 + 40));
+            renamed.size = { ...n.size, width: w };
+            renamed.size = getVisualSize(renamed);
+          }
+
+          if (renamed.size && renamed.size.width !== n.size.width) {
+            const dx = (renamed.size.width - n.size.width) / 2;
+            renamed.position = {
+              ...n.position,
+              x: Math.round(n.position.x - dx),
+            };
+          }
+
+          return renamed;
+        }),
+      });
+    },
+    [diagram, history],
+  );
+
   const nodeRename = useCallback(
     (nodeId: string, newName: string) => {
       const cleaned = newName.replace(/\r/g, "").trim();
@@ -125,7 +175,10 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
           const flowLike =
             diagram.type === "flowchart" ||
             diagram.type === "activity" ||
-            diagram.type === "state";
+            diagram.type === "state" ||
+            diagram.type === "usecase" ||
+            n.type === "usecase" ||
+            n.type === "actor";
           if (flowLike || "attributes" in n) {
             renamed.size = fitSize(renamed, fs);
           } else {
@@ -133,6 +186,15 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
             renamed.size = { ...n.size, width: w };
             renamed.size = getVisualSize(renamed);
           }
+
+          if (renamed.size && renamed.size.width !== n.size.width) {
+            const dx = (renamed.size.width - n.size.width) / 2;
+            renamed.position = {
+              ...n.position,
+              x: Math.round(n.position.x - dx),
+            };
+          }
+
           return renamed;
         }),
       });
@@ -417,6 +479,7 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
     nodeResize,
     multiNodeMove,
     nodeRename,
+    nodeLiveRename,
     nodeStyleChange,
     globalStyleChange,
     nodeUpdate,

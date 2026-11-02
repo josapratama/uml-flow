@@ -171,6 +171,7 @@ export function AppWorkspace(props: AppWorkspaceProps) {
               onEdgeReconnect={actions.edgeReconnect}
               onMultiNodeMove={actions.multiNodeMove}
               onNodeRename={actions.nodeRename}
+              onNodeLiveRename={actions.nodeLiveRename}
               onParticipantMove={actions.participantMove}
               onParticipantRename={actions.participantRename}
               onMessageEdit={actions.messageEdit}
@@ -208,6 +209,11 @@ export function AppWorkspace(props: AppWorkspaceProps) {
             onOpenStyle={() => onOpenStylePanel("node")}
             onOpenGlobalStyle={() => onOpenStylePanel("global")}
             onUpdateNode={actions.nodeUpdate}
+            onLiveUpdate={(nodeId, patch) => {
+              if (patch.name !== undefined) {
+                actions.nodeLiveRename(nodeId, patch.name);
+              }
+            }}
             onAutoFit={actions.nodeAutoFit}
             onApplyStyleToType={actions.applyStyleToSameType}
             styleSlot={

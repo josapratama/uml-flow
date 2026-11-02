@@ -25,6 +25,7 @@ interface CanvasNodeItemProps {
   onResizeStart: (handle: ResizeHandle, e: React.MouseEvent) => void;
   onQuickAddNode?: (nodeId: string) => void;
   onRenameSubmit: (val: string) => void;
+  onRenameChange?: (val: string) => void;
   onRenameCancel: () => void;
   canvasTheme?: string;
 }
@@ -48,6 +49,7 @@ export function CanvasNodeItem({
   onResizeStart,
   onQuickAddNode,
   onRenameSubmit,
+  onRenameChange,
   onRenameCancel,
   canvasTheme,
 }: CanvasNodeItemProps) {
@@ -157,18 +159,29 @@ export function CanvasNodeItem({
       {isEditing && (
         <InlineEditor
           x={
-            node.position.x +
-            visualSize.width / 2 -
-            Math.max(visualSize.width, 140) / 2
+            node.type === "actor"
+              ? node.position.x +
+                visualSize.width / 2 -
+                Math.max(visualSize.width, 120) / 2
+              : node.position.x +
+                visualSize.width / 2 -
+                Math.max(visualSize.width, 140) / 2
           }
           y={
-            "attributes" in node
-              ? node.position.y + ((node as any).type !== "class" ? 28 : 14)
-              : node.position.y + visualSize.height / 2
+            node.type === "actor"
+              ? Math.max(node.position.y + 93, node.position.y + (86 + visualSize.height) / 2)
+              : "attributes" in node
+                ? node.position.y + ((node as any).type !== "class" ? 28 : 14)
+                : node.position.y + visualSize.height / 2
           }
-          width={Math.max(visualSize.width, 140)}
+          width={
+            node.type === "actor"
+              ? Math.max(visualSize.width, 120)
+              : Math.max(visualSize.width, 140)
+          }
           initialValue={node.name}
           onSubmit={onRenameSubmit}
+          onChange={onRenameChange}
           onCancel={onRenameCancel}
         />
       )}
