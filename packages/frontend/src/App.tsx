@@ -339,7 +339,13 @@ export default function App(props: AppProps = {}) {
       storage.closeTab(id);
       const remaining = storage.getOpenTabs();
       if (remaining.length === 0) {
-        handleNewTab();
+        setTabs([]);
+        switchActiveTab(null);
+        setCode("");
+        lastCompiledCode.current = "";
+        diagramHistory.reset(null);
+        setErrors([]);
+        showToast(isId ? "Tab ditutup (tersimpan di Library)" : "Tab closed (saved in Library)", "info");
         return;
       }
       setTabs(remaining);
@@ -348,7 +354,7 @@ export default function App(props: AppProps = {}) {
       }
       showToast(isId ? "Tab ditutup (tersimpan di Library)" : "Tab closed (saved in Library)", "info");
     },
-    [diagram, code, isId, handleOpenTab, handleNewTab]
+    [diagram, code, isId, handleOpenTab, switchActiveTab, diagramHistory]
   );
 
   const handleRenameTab = useCallback(
@@ -1074,19 +1080,17 @@ export default function App(props: AppProps = {}) {
       />
 
       {/* Diagram Tabs: Always visible so users can seamlessly switch & manage multiple diagrams */}
-      {tabs.length > 0 && (
-        <DiagramTabs
-          tabs={tabs}
-          activeId={activeTabId}
-          onSelect={(id) => {
-            const entry = storage.list().find((d) => d.id === id);
-            if (entry) handleOpenTab(entry);
-          }}
-          onNew={handleNewTab}
-          onClose={handleCloseTab}
-          onRename={handleRenameTab}
-        />
-      )}
+      <DiagramTabs
+        tabs={tabs}
+        activeId={activeTabId}
+        onSelect={(id) => {
+          const entry = storage.list().find((d) => d.id === id);
+          if (entry) handleOpenTab(entry);
+        }}
+        onNew={handleNewTab}
+        onClose={handleCloseTab}
+        onRename={handleRenameTab}
+      />
 
       <AppWorkspace
         mode={mode}

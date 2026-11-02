@@ -67,7 +67,7 @@ export function InlineEditor({
   const inputWidth = Math.max(width, 100);
 
   return (
-    <foreignObject x={x} y={y - 12} width={inputWidth} height={24}>
+    <foreignObject x={x} y={y - 12} width={inputWidth} height={24} style={{ overflow: "visible" }}>
       <input
         ref={inputRef}
         type="text"
@@ -79,7 +79,10 @@ export function InlineEditor({
         onMouseDown={(e) => e.stopPropagation()}
         style={{
           width: "100%",
-          height: "100%",
+          height: "24px",
+          lineHeight: "24px",
+          boxSizing: "border-box",
+          margin: 0,
           padding: "0 2px",
           fontSize: `${fontSize || 13}px`,
           fontWeight: fontWeight || 600,

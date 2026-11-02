@@ -31,6 +31,56 @@ interface CanvasNodeItemProps {
   canvasTheme?: string;
 }
 
+function getInlineEditorLayout(node: DiagramNode, visualSize: { width: number; height: number }) {
+  const typeStr = node.type as string;
+  const isActor = typeStr === "actor";
+  const isERD =
+    typeStr === "entity" ||
+    typeStr === "weak-entity" ||
+    ("attributes" in node && !("methods" in node));
+  const isClass =
+    ("attributes" in node && "methods" in node) ||
+    typeStr === "class" ||
+    typeStr === "interface" ||
+    typeStr === "abstract";
+  const isSystemOrBoundary =
+    typeStr === "system" || typeStr === "boundary";
+  const isComponentInterface =
+    typeStr === "interface" && !("methods" in node);
+
+  const inputWidth = isActor
+    ? Math.max(visualSize.width, 120)
+    : Math.max(visualSize.width, 100);
+
+  const x = Math.round(node.position.x + visualSize.width / 2 - inputWidth / 2);
+
+  let y: number;
+  if (isActor) {
+    y = Math.round(
+      node.position.y + Math.max(93, (86 + visualSize.height) / 2)
+    );
+  } else if (isERD) {
+    // ERD header is 32px high; title text SVG y=21 -> vertical center of title line is at 16px
+    y = Math.round(node.position.y + 16);
+  } else if (isClass) {
+    const hasStereo = Boolean(
+      (node as any).stereotype ||
+        typeStr === "interface" ||
+        typeStr === "abstract"
+    );
+    y = Math.round(node.position.y + (hasStereo ? 28 : 15));
+  } else if (isSystemOrBoundary) {
+    y = Math.round(node.position.y + 14);
+  } else if (isComponentInterface) {
+    y = Math.round(node.position.y + visualSize.height + 12);
+  } else {
+    // Flowchart, UseCase ellipse, Activity, State, etc. -> text is vertically centered
+    y = Math.round(node.position.y + visualSize.height / 2);
+  }
+
+  return { x, y, width: inputWidth };
+}
+
 export function CanvasNodeItem({
   node,
   diagramType,
@@ -160,29 +210,12 @@ export function CanvasNodeItem({
       {isEditing && (
         (() => {
           const s = resolveStyle((node as any).style, canvasTheme);
+          const layout = getInlineEditorLayout(node, visualSize);
           return (
             <InlineEditor
-              x={
-                node.type === "actor"
-                  ? node.position.x +
-                    visualSize.width / 2 -
-                    Math.max(visualSize.width, 120) / 2
-                  : node.position.x +
-                    visualSize.width / 2 -
-                    Math.max(visualSize.width, 140) / 2
-              }
-              y={
-                node.type === "actor"
-                  ? Math.max(node.position.y + 93, node.position.y + (86 + visualSize.height) / 2)
-                  : "attributes" in node
-                    ? node.position.y + ((node as any).type !== "class" ? 28 : 14)
-                    : node.position.y + visualSize.height / 2
-              }
-              width={
-                node.type === "actor"
-                  ? Math.max(visualSize.width, 120)
-                  : Math.max(visualSize.width, 140)
-              }
+              x={layout.x}
+              y={layout.y}
+              width={layout.width}
               initialValue={node.name}
               onSubmit={onRenameSubmit}
               onChange={onRenameChange}
