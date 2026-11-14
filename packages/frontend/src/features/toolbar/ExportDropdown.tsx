@@ -29,6 +29,13 @@ function getExportOptions(locale: Locale): ExportOption[] {
       description: isId ? "Salin narasi & caption Bab Skripsi" : "Copy thesis narrative & figure labels",
       category: "doc",
     },
+    {
+      id: "thesis-bundle",
+      label: isId ? "Paket Lampiran Skripsi (.md)" : "Thesis Appendix Bundle (.md)",
+      icon: "📦",
+      description: isId ? "Bundel naskah lengkap: narasi, metrik, SQL & model" : "Full appendix bundle with narrative, metrics & code",
+      category: "doc",
+    },
 
     // --- Gambar Visual ---
     {
@@ -130,6 +137,22 @@ function getExportOptions(locale: Locale): ExportOption[] {
       label: "Rust Structs & Enums",
       icon: "🦀",
       description: isId ? "Struct Rust dengan serde derive" : "Idiomatic Rust structs with serde",
+      category: "code",
+      requiredTypes: ["class", "erd"],
+    },
+    {
+      id: "openapi-yaml",
+      label: "OpenAPI 3.1 Spec (YAML)",
+      icon: "📜",
+      description: isId ? "Spesifikasi Swagger API RESTful (YAML)" : "OpenAPI 3.1 REST API specification (YAML)",
+      category: "code",
+      requiredTypes: ["class", "erd"],
+    },
+    {
+      id: "openapi-json",
+      label: "OpenAPI 3.1 Spec (JSON)",
+      icon: "📜",
+      description: isId ? "Spesifikasi Swagger API RESTful (JSON)" : "OpenAPI 3.1 REST API specification (JSON)",
       category: "code",
       requiredTypes: ["class", "erd"],
     },

@@ -5,10 +5,13 @@ import { generateCSharp } from "./csharp";
 import { generateGraphQL } from "./graphql";
 import { generateGolang } from "./golang";
 import { generateRust } from "./rust";
+import { generateOpenAPI } from "./openapi";
 import { calculateDiagramMetrics, exportMetricsMarkdown } from "../diagram-metrics";
 import { isTypeScriptCode, parseTypeScriptToDSL } from "../typescript-importer";
 import { initSimulation, stepSimulation } from "../flow-simulator";
 import { getAcademicMetadata, saveAcademicMetadata, formatAcademicWatermark } from "../academic-metadata";
+import { repairDiagram } from "../diagram-repair";
+import { generateThesisAppendixBundle } from "../thesis-bundle";
 
 const sampleClassDiagram: Diagram = {
   id: "diag-1",
@@ -351,5 +354,105 @@ describe("Sequence Diagram Simulation & Academic Metadata", () => {
     expect(watermark).toContain("Ahmad Dahlan");
     expect(watermark).toContain("2024001928");
     expect(watermark).toContain("Teknik Informatika");
+  });
+});
+
+describe("OpenAPI 3.1 & Swagger Generator", () => {
+  it("generates OpenAPI 3.1 YAML specification with schemas and CRUD routes", () => {
+    const yaml = generateOpenAPI(sampleClassDiagram, "yaml");
+    expect(yaml).toContain("openapi: 3.1.0");
+    expect(yaml).toContain("User:");
+    expect(yaml).toContain("type: object");
+    expect(yaml).toContain("email:");
+    expect(yaml).toContain("/api/v1/users:");
+    expect(yaml).toContain("listUsers");
+    expect(yaml).toContain("createUser");
+    expect(yaml).toContain("/api/v1/users/{id}:");
+  });
+
+  it("generates OpenAPI 3.1 JSON specification with valid JSON structure", () => {
+    const jsonStr = generateOpenAPI(sampleClassDiagram, "json");
+    const parsed = JSON.parse(jsonStr);
+    expect(parsed.openapi).toBe("3.1.0");
+    expect(parsed.info.title).toBe("UserAuth");
+    expect(parsed.components.schemas.User).toBeDefined();
+    expect(parsed.paths["/api/v1/users"]).toBeDefined();
+    expect(parsed.paths["/api/v1/users/{id}"]).toBeDefined();
+  });
+});
+
+describe("Diagram Health Doctor & Auto-Repair", () => {
+  it("automatically adds primary key to ERD entities missing PK and cleans broken edges", () => {
+    const brokenErd: Diagram = {
+      id: "erd-broken",
+      name: "Ecommerce",
+      type: "erd",
+      nodes: [
+        {
+          id: "t1",
+          name: "orders",
+          type: "entity",
+          position: { x: 0, y: 0 },
+          size: { width: 140, height: 80 },
+          attributes: [
+            { name: "total_amount", type: "float", isPrimaryKey: false, isForeignKey: false, isNullable: false, isUnique: false },
+          ],
+        } as any,
+      ],
+      edges: [
+        { id: "e_broken", source: "t1", target: "non_existent_node", type: "one-to-many" },
+      ],
+    };
+
+    const result = repairDiagram(brokenErd);
+    expect(result.hasChanges).toBe(true);
+    expect(result.fixLogs.length).toBeGreaterThan(0);
+    // Broken edge pruned
+    expect(result.repairedDiagram.edges.length).toBe(0);
+    // Primary key injected
+    const orderNode = result.repairedDiagram.nodes[0] as any;
+    expect(orderNode.attributes[0].name).toBe("id");
+    expect(orderNode.attributes[0].isPrimaryKey).toBe(true);
+  });
+
+  it("automatically creates End node and links dangling flowchart leaf processes", () => {
+    const danglingFlowchart: Diagram = {
+      id: "fc-dangling",
+      name: "OrderProcess",
+      type: "flowchart",
+      nodes: [
+        { id: "s1", name: "Mulai", type: "start", position: { x: 0, y: 0 }, size: { width: 80, height: 40 } },
+        { id: "p1", name: "Proses Pembayaran", type: "process", position: { x: 0, y: 100 }, size: { width: 120, height: 60 } },
+      ],
+      edges: [
+        { id: "e1", source: "s1", target: "p1", type: "flow" },
+      ],
+    };
+
+    const result = repairDiagram(danglingFlowchart);
+    expect(result.hasChanges).toBe(true);
+    // New End node created
+    const hasEnd = result.repairedDiagram.nodes.some(n => n.type === "end");
+    expect(hasEnd).toBe(true);
+    // Process p1 now connects to the end node
+    expect(result.repairedDiagram.edges.length).toBe(2);
+  });
+});
+
+describe("Thesis Appendix Bundle Packager", () => {
+  it("packages academic metadata, narrative, metrics, and models into thesis markdown", () => {
+    const bundle = generateThesisAppendixBundle(sampleClassDiagram, {
+      includeSql: true,
+      includeBackendCode: true,
+      backendLanguage: "rust",
+    });
+
+    expect(bundle).toContain("# LAMPIRAN DOKUMEN ARSITEKTUR & DESAIN SISTEM");
+    expect(bundle).toContain("Spesifikasi Diagram");
+    expect(bundle).toContain("Narasi & Penjelasan Komponen Alur");
+    expect(bundle).toContain("Analisis Kompleksitas & Audit Kualitas Perangkat Lunak");
+    expect(bundle).toContain("Cyclomatic Complexity");
+    expect(bundle).toContain("Implementasi Model Domain Backend (Rust & Serde)");
+    expect(bundle).toContain("pub struct User");
   });
 });

@@ -97,6 +97,7 @@ interface CanvasProps {
   ) => void;
   onCreateNewDiagram?: (type: DiagramType) => void;
   onCopyPNG?: () => void;
+  onAutoRepair?: () => void;
   onContextMenu?: (
     e: React.MouseEvent,
     target: {
@@ -146,6 +147,7 @@ export function Canvas({
   onQuickAddNode,
   onCreateNewDiagram,
   onCopyPNG,
+  onAutoRepair,
   onContextMenu,
 }: CanvasProps) {
   // --- Watermark State ---
@@ -512,6 +514,16 @@ export function Canvas({
           containerWidth={svgRef.current?.clientWidth || 800}
           containerHeight={svgRef.current?.clientHeight || 600}
           theme={canvasTheme}
+          onPanTo={(worldX, worldY) => {
+            const w = svgRef.current?.clientWidth || 800;
+            const h = svgRef.current?.clientHeight || 600;
+            setView((v) => ({
+              ...v,
+              offsetX: w / 2 - worldX * v.scale,
+              offsetY: h / 2 - worldY * v.scale,
+            }));
+          }}
+          onZoomToFit={zoomToFit}
         />
       )}
 
@@ -710,6 +722,7 @@ export function Canvas({
             onContextMenu={onContextMenu}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
+            onAutoRepair={onAutoRepair}
             setMultiSelected={setMultiSelected}
           />
 

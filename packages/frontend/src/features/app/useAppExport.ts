@@ -17,12 +17,14 @@ export function downloadFile(content: string, filename: string, mime: string) {
 interface UseAppExportOptions {
   diagram: Diagram | null;
   onOpenAcademicCaption: () => void;
+  onOpenThesisBundle?: () => void;
   onOpenSQLExport?: () => void;
 }
 
 export function useAppExport({
   diagram,
   onOpenAcademicCaption,
+  onOpenThesisBundle,
   onOpenSQLExport,
 }: UseAppExportOptions) {
   const { locale } = useI18n();
@@ -94,6 +96,12 @@ export function useAppExport({
           }
           case "academic-caption": {
             onOpenAcademicCaption();
+            break;
+          }
+          case "thesis-bundle": {
+            if (onOpenThesisBundle) {
+              onOpenThesisBundle();
+            }
             break;
           }
           case "clipboard-svg": {
@@ -308,6 +316,31 @@ export function useAppExport({
             downloadFile(code, `${diagram.name.toLowerCase()}_models.rs`, "text/plain");
             showToast(
               isId ? "Rust Structs & Enums berhasil diekspor" : "Rust Structs & Enums exported",
+              "success"
+            );
+            break;
+          }
+          case "openapi-yaml":
+          case "openapi-json": {
+            if (diagram.type !== "class" && diagram.type !== "erd") {
+              showToast(
+                isId
+                  ? "Ekspor OpenAPI hanya didukung untuk Diagram Class dan ERD"
+                  : "OpenAPI export only works for Class and ERD diagrams",
+                "error"
+              );
+              break;
+            }
+            const isJson = format === "openapi-json";
+            const { generateOpenAPI } = await import(
+              "../../services/code-generator"
+            );
+            const content = generateOpenAPI(diagram, isJson ? "json" : "yaml");
+            const ext = isJson ? "json" : "yaml";
+            const mime = isJson ? "application/json" : "text/yaml";
+            downloadFile(content, `${diagram.name.toLowerCase()}_openapi.${ext}`, mime);
+            showToast(
+              isId ? `OpenAPI 3.1 (${ext.toUpperCase()}) berhasil diekspor` : `OpenAPI 3.1 (${ext.toUpperCase()}) exported`,
               "success"
             );
             break;

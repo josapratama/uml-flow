@@ -57,6 +57,7 @@ interface ToolbarProps {
   onShowMetrics?: () => void;
   onOpenSimulator?: () => void;
   onOpenAcademicMetadata?: () => void;
+  onOpenThesisBundle?: () => void;
   onOpenCommandPalette?: () => void;
   onSaveCurrent?: () => void;
   onShareLink?: () => void;
@@ -110,6 +111,7 @@ export function Toolbar(props: ToolbarProps) {
     onShowMetrics,
     onOpenSimulator,
     onOpenAcademicMetadata,
+    onOpenThesisBundle,
     onOpenCommandPalette,
     onSaveCurrent,
     onShareLink,
@@ -167,6 +169,7 @@ export function Toolbar(props: ToolbarProps) {
           onShowDiff={onShowDiff}
           onShowMetrics={onShowMetrics}
           onOpenAcademicMetadata={onOpenAcademicMetadata}
+          onOpenThesisBundle={onOpenThesisBundle}
           onOpenCommandPalette={onOpenCommandPalette}
           onNewDiagram={onNewDiagram}
           hasDiagram={hasDiagram}

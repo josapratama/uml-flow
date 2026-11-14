@@ -14,5 +14,6 @@ export {
   generateGraphQL,
   generateGolang,
   generateRust,
+  generateOpenAPI,
   type PythonTarget,
 } from "./generators";

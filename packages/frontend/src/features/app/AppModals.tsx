@@ -17,6 +17,7 @@ import { DiagramMetricsModal } from "../ui/DiagramMetricsModal";
 import { CommandPaletteModal } from "../ui/CommandPaletteModal";
 import { FlowSimulatorModal } from "../ui/FlowSimulatorModal";
 import { AcademicMetadataModal } from "../ui/AcademicMetadataModal";
+import { ThesisBundleModal } from "../ui/ThesisBundleModal";
 
 interface AppModalsProps {
   showShortcuts: boolean;
@@ -65,6 +66,8 @@ interface AppModalsProps {
   onCloseSimulator?: () => void;
   showAcademicMetadata?: boolean;
   onCloseAcademicMetadata?: () => void;
+  showThesisBundle?: boolean;
+  onCloseThesisBundle?: () => void;
   showCommandPalette?: boolean;
   onCloseCommandPalette?: () => void;
   onSelectNode?: (nodeId: string) => void;
@@ -74,10 +77,12 @@ interface AppModalsProps {
   onOpenMetrics?: () => void;
   onOpenSimulator?: () => void;
   onOpenAcademicMetadata?: () => void;
+  onOpenThesisBundle?: () => void;
   onOpenAI?: () => void;
   onOpenTemplates?: () => void;
   onOpenLibrary?: () => void;
   onOpenAcademicCaption?: () => void;
+  onRepairDiagram?: () => void;
   onOpenDiff?: () => void;
   onOpenShortcuts?: () => void;
   onOpenImport?: () => void;
@@ -133,6 +138,8 @@ export function AppModals({
   onCloseSimulator,
   showAcademicMetadata = false,
   onCloseAcademicMetadata,
+  showThesisBundle = false,
+  onCloseThesisBundle,
   showCommandPalette = false,
   onCloseCommandPalette,
   onSelectNode = () => {},
@@ -142,10 +149,12 @@ export function AppModals({
   onOpenMetrics = () => {},
   onOpenSimulator = () => {},
   onOpenAcademicMetadata = () => {},
+  onOpenThesisBundle = () => {},
   onOpenAI = () => {},
   onOpenTemplates = () => {},
   onOpenLibrary = () => {},
   onOpenAcademicCaption = () => {},
+  onRepairDiagram = () => {},
   onOpenDiff = () => {},
   onOpenShortcuts = () => {},
   onOpenImport = () => {},
@@ -250,6 +259,12 @@ export function AppModals({
         onClose={onCloseAcademicMetadata || (() => {})}
       />
 
+      <ThesisBundleModal
+        isOpen={showThesisBundle}
+        onClose={onCloseThesisBundle || (() => {})}
+        diagram={diagram}
+      />
+
       <CommandPaletteModal
         isOpen={showCommandPalette}
         onClose={onCloseCommandPalette || (() => {})}
@@ -261,10 +276,12 @@ export function AppModals({
         onOpenMetrics={onOpenMetrics}
         onOpenSimulator={onOpenSimulator}
         onOpenAcademicMetadata={onOpenAcademicMetadata}
+        onOpenThesisBundle={onOpenThesisBundle}
         onOpenAI={onOpenAI}
         onOpenTemplates={onOpenTemplates}
         onOpenLibrary={onOpenLibrary}
         onOpenAcademicCaption={onOpenAcademicCaption}
+        onRepairDiagram={onRepairDiagram}
         onOpenDiff={onOpenDiff}
         onOpenShortcuts={onOpenShortcuts}
         onOpenImport={onOpenImport}

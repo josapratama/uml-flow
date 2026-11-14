@@ -34,7 +34,8 @@ import {
   type DiagramTemplate,
 } from "./services/templates";
 import { useI18n } from "./i18n";
-import { playCompileSuccessSound, playDeleteSound, playConnectSound } from "./services/sound-fx";
+import { playCompileSuccessSound, playDeleteSound, playConnectSound, playSnapSound } from "./services/sound-fx";
+import { repairDiagram } from "./services/diagram-repair";
 
 interface AppProps {
   initialCode?: string;
@@ -135,6 +136,7 @@ export default function App(props: AppProps = {}) {
   const [showDiff, setShowDiff] = useState(false);
   const [showAcademicCaption, setShowAcademicCaption] = useState(false);
   const [showAcademicMetadata, setShowAcademicMetadata] = useState(false);
+  const [showThesisBundle, setShowThesisBundle] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showMetrics, setShowMetrics] = useState(false);
@@ -612,6 +614,7 @@ export default function App(props: AppProps = {}) {
   const { handleExport } = useAppExport({
     diagram,
     onOpenAcademicCaption: () => setShowAcademicCaption(true),
+    onOpenThesisBundle: () => setShowThesisBundle(true),
     onOpenSQLExport: () => setShowSQLExport(true),
   });
 
@@ -951,6 +954,29 @@ export default function App(props: AppProps = {}) {
     [diagram, diagramHistory, isId]
   );
 
+  const handleRepairDiagram = useCallback(() => {
+    if (!diagram) return;
+    const { repairedDiagram, fixLogs, hasChanges } = repairDiagram(diagram);
+    if (!hasChanges) {
+      showToast(
+        isId
+          ? "Diagram dalam kondisi sehat! Tidak ditemukan masalah struktural."
+          : "Diagram is healthy! No issues found.",
+        "info"
+      );
+      return;
+    }
+    diagramHistory.set(repairedDiagram);
+    playSnapSound();
+    const summary =
+      fixLogs.slice(0, 2).join("; ") +
+      (fixLogs.length > 2 ? ` (+${fixLogs.length - 2} perbaikan lainnya)` : "");
+    showToast(
+      isId ? `🩺 Diagram diperbaiki: ${summary}` : `🩺 Diagram repaired: ${summary}`,
+      "success"
+    );
+  }, [diagram, diagramHistory, isId]);
+
   const handleSyncToCode = useCallback(async () => {
     if (!diagram) return;
     try {
@@ -1113,6 +1139,7 @@ export default function App(props: AppProps = {}) {
         onShowMetrics={() => setShowMetrics(true)}
         onOpenSimulator={() => setShowSimulator(true)}
         onOpenAcademicMetadata={() => setShowAcademicMetadata(true)}
+        onOpenThesisBundle={() => setShowThesisBundle(true)}
         onOpenCommandPalette={() => setShowCommandPalette(true)}
         onSaveCurrent={handleSaveCurrent}
         onShareLink={handleShareLink}
@@ -1188,6 +1215,7 @@ export default function App(props: AppProps = {}) {
         globalStyle={globalStyle}
         onGlobalStyleChange={handleGlobalStyleChange}
         onCopyPNG={handleCopyPNG}
+        onAutoRepair={handleRepairDiagram}
       />
 
       <StatusBar
@@ -1263,6 +1291,8 @@ export default function App(props: AppProps = {}) {
         onCloseSimulator={() => setShowSimulator(false)}
         showAcademicMetadata={showAcademicMetadata}
         onCloseAcademicMetadata={() => setShowAcademicMetadata(false)}
+        showThesisBundle={showThesisBundle}
+        onCloseThesisBundle={() => setShowThesisBundle(false)}
         showCommandPalette={showCommandPalette}
         onCloseCommandPalette={() => setShowCommandPalette(false)}
         onSelectNode={(id) => setSelectedNodeId(id)}
@@ -1272,10 +1302,12 @@ export default function App(props: AppProps = {}) {
         onOpenMetrics={() => setShowMetrics(true)}
         onOpenSimulator={() => setShowSimulator(true)}
         onOpenAcademicMetadata={() => setShowAcademicMetadata(true)}
+        onOpenThesisBundle={() => setShowThesisBundle(true)}
         onOpenAI={() => setShowAI(true)}
         onOpenTemplates={() => setShowTemplates(true)}
         onOpenLibrary={() => setShowLibrary(true)}
         onOpenAcademicCaption={() => setShowAcademicCaption(true)}
+        onRepairDiagram={handleRepairDiagram}
         onOpenDiff={() => setShowDiff(true)}
         onOpenShortcuts={() => setShowShortcuts(true)}
         onOpenImport={() => setShowImportModal(true)}

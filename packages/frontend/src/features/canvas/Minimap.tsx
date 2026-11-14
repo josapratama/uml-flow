@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useCallback } from "react";
 import type { Diagram } from "@uml-editor/shared";
 import type { CanvasTheme } from "../../hooks/useTheme";
 import { useI18n } from "../../i18n";
@@ -11,6 +11,8 @@ interface Props {
   containerWidth: number;
   containerHeight: number;
   theme?: CanvasTheme;
+  onPanTo?: (worldX: number, worldY: number) => void;
+  onZoomToFit?: () => void;
 }
 
 const MINIMAP_W = 120;
@@ -24,9 +26,14 @@ export function Minimap({
   containerWidth,
   containerHeight,
   theme = "light",
+  onPanTo,
+  onZoomToFit,
 }: Props) {
   const { locale } = useI18n();
   const isId = locale === "id";
+  const svgRef = useRef<SVGSVGElement>(null);
+  const isDraggingRef = useRef(false);
+
   const bounds = useMemo(() => {
     const allPositions: { x: number; y: number; w: number; h: number }[] = [];
     for (const n of diagram.nodes) {
@@ -92,6 +99,43 @@ export function Minimap({
 
   const [collapsed, setCollapsed] = useState(false);
 
+  const handlePointerNavigate = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!svgRef.current || !onPanTo) return;
+      const rect = svgRef.current.getBoundingClientRect();
+      const mx = clientX - rect.left;
+      const my = clientY - rect.top;
+      const worldX = bounds.minX + mx / s;
+      const worldY = bounds.minY + my / s;
+      onPanTo(worldX, worldY);
+    },
+    [bounds.minX, bounds.minY, s, onPanTo]
+  );
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<SVGSVGElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isDraggingRef.current = true;
+      handlePointerNavigate(e.clientX, e.clientY);
+
+      const onMove = (ev: MouseEvent) => {
+        if (!isDraggingRef.current) return;
+        handlePointerNavigate(ev.clientX, ev.clientY);
+      };
+
+      const onUp = () => {
+        isDraggingRef.current = false;
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    },
+    [handlePointerNavigate]
+  );
+
   const isDark = theme === "dark";
   const bgClass = isDark
     ? "bg-surface-2/95 border-border text-text"
@@ -118,19 +162,41 @@ export function Minimap({
 
   return (
     <div
-      className={`absolute bottom-3 right-3 z-10 ${bgClass} border rounded-xl shadow-lg overflow-hidden backdrop-blur-md transition-all`}
+      className={`absolute bottom-3 right-3 z-10 ${bgClass} border rounded-xl shadow-lg overflow-hidden backdrop-blur-md transition-all select-none`}
     >
-      <div className="flex items-center justify-between px-2 py-1 border-b border-border/40 text-[9px] font-semibold text-text-muted select-none">
-        <span>MINIMAP</span>
-        <button
-          onClick={() => setCollapsed(true)}
-          className="text-text-muted hover:text-text px-1 rounded hover:bg-surface-3 text-xs leading-none"
-          title={isId ? "Minimalkan peta" : "Minimize map"}
-        >
-          −
-        </button>
+      <div className="flex items-center justify-between px-2 py-1 border-b border-border/40 text-[9px] font-semibold text-text-muted">
+        <div className="flex items-center gap-1.5">
+          <span>MINIMAP</span>
+          <span className="text-[8px] font-mono opacity-60">
+            {Math.round(viewScale * 100)}%
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {onZoomToFit && (
+            <button
+              onClick={onZoomToFit}
+              className="px-1 py-0.2 rounded hover:bg-surface-3 text-[8px] font-medium text-accent hover:text-accent/90"
+              title={isId ? "Paskan seluruh diagram ke layar" : "Zoom to fit"}
+            >
+              Fit
+            </button>
+          )}
+          <button
+            onClick={() => setCollapsed(true)}
+            className="text-text-muted hover:text-text px-1 rounded hover:bg-surface-3 text-xs leading-none"
+            title={isId ? "Minimalkan peta" : "Minimize map"}
+          >
+            −
+          </button>
+        </div>
       </div>
-      <svg width={MINIMAP_W} height={MINIMAP_H}>
+      <svg
+        ref={svgRef}
+        width={MINIMAP_W}
+        height={MINIMAP_H}
+        className="cursor-crosshair active:cursor-grabbing"
+        onMouseDown={handleMouseDown}
+      >
         {/* Nodes */}
         {diagram.nodes.map((n) => (
           <rect
@@ -140,7 +206,7 @@ export function Minimap({
             width={n.size.width * s}
             height={n.size.height * s}
             fill={nodeColor}
-            opacity="0.3"
+            opacity="0.35"
             rx="1"
           />
         ))}
@@ -169,17 +235,18 @@ export function Minimap({
             />
           </g>
         ))}
-        {/* Viewport indicator */}
+        {/* Interactive Viewport indicator */}
         <rect
           x={vpX}
           y={vpY}
           width={vpW}
           height={vpH}
-          fill="none"
+          fill="rgba(99, 102, 241, 0.12)"
           stroke={vpStroke}
           strokeWidth="1.5"
           rx="1"
-          opacity="0.8"
+          opacity="0.9"
+          className="cursor-grab active:cursor-grabbing"
         />
       </svg>
     </div>

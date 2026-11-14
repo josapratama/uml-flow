@@ -101,6 +101,7 @@ interface CanvasLayersProps {
   ) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  onAutoRepair?: () => void;
   setMultiSelected: React.Dispatch<React.SetStateAction<Set<string>>>;
 }
 
@@ -149,6 +150,7 @@ export function CanvasLayers(props: CanvasLayersProps) {
     onContextMenu,
     onDragStart,
     onDragEnd,
+    onAutoRepair,
     setMultiSelected,
   } = props;
 
@@ -399,7 +401,7 @@ export function CanvasLayers(props: CanvasLayersProps) {
       )}
 
       {/* Validation warning icons */}
-      <ValidationOverlay diagram={diagram} />
+      <ValidationOverlay diagram={diagram} onAutoRepair={onAutoRepair} />
     </>
   );
 }

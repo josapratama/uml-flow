@@ -11,6 +11,7 @@ interface Props {
   onShowDiff?: () => void;
   onShowMetrics?: () => void;
   onOpenAcademicMetadata?: () => void;
+  onOpenThesisBundle?: () => void;
   onOpenCommandPalette?: () => void;
   onNewDiagram?: () => void;
   hasDiagram: boolean;
@@ -26,6 +27,7 @@ export function ProjectMenu({
   onShowDiff,
   onShowMetrics,
   onOpenAcademicMetadata,
+  onOpenThesisBundle,
   onOpenCommandPalette,
   onNewDiagram,
   hasDiagram,
@@ -255,6 +257,22 @@ export function ProjectMenu({
               <div>
                 <div className="font-medium">Kop Akademis & Watermark Skripsi</div>
                 <div className="text-[10px] text-text-muted">Atur metadata penulis, NIM & watermark</div>
+              </div>
+            </button>
+          )}
+
+          {onOpenThesisBundle && (
+            <button
+              onClick={() => {
+                onOpenThesisBundle();
+                setOpen(false);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text hover:bg-surface-3 transition-colors text-left"
+            >
+              <span className="text-base">📦</span>
+              <div>
+                <div className="font-medium text-accent">Paket Lampiran Skripsi (.md)</div>
+                <div className="text-[10px] text-text-muted">Kompilasi narasi, metrik, SQL & kode</div>
               </div>
             </button>
           )}

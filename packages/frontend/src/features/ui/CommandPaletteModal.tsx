@@ -23,6 +23,8 @@ interface Props {
   onOpenMetrics: () => void;
   onOpenSimulator?: () => void;
   onOpenAcademicMetadata?: () => void;
+  onOpenThesisBundle?: () => void;
+  onRepairDiagram?: () => void;
   onOpenAI: () => void;
   onOpenTemplates: () => void;
   onOpenLibrary: () => void;
@@ -49,6 +51,8 @@ export function CommandPaletteModal({
   onOpenMetrics,
   onOpenSimulator = () => {},
   onOpenAcademicMetadata = () => {},
+  onOpenThesisBundle = () => {},
+  onRepairDiagram = () => {},
   onOpenAI,
   onOpenTemplates,
   onOpenLibrary,
@@ -167,6 +171,14 @@ export function CommandPaletteModal({
         onSelect: onOpenAcademicMetadata,
       },
       {
+        id: "open-thesis-bundle",
+        title: isId ? "📦 Paket Lampiran Skripsi & Dokumen Teknis" : "📦 Thesis Appendix & Technical Packager",
+        description: isId ? "Kompilasi narasi, metrik cyclomatic, SQL, dan model domain ke .md" : "Package complete narrative, cyclomatic metrics, SQL & domain code",
+        icon: "📦",
+        category: "modals",
+        onSelect: onOpenThesisBundle,
+      },
+      {
         id: "open-diff",
         title: isId ? "Komparasi Versi Diagram (Visual Diff)" : "Diagram Version Diff",
         description: isId ? "Bandingkan perubahan node & edge antar versi" : "Compare visual changes between diagram versions",
@@ -190,6 +202,14 @@ export function CommandPaletteModal({
         icon: "📥",
         category: "modals",
         onSelect: onOpenImport,
+      },
+      {
+        id: "repair-diagram",
+        title: isId ? "🩺 Perbaiki Diagram Otomatis (Diagram Doctor)" : "🩺 Auto-Repair Diagram (Diagram Doctor)",
+        description: isId ? "Heal orphan nodes, tambahkan PK, dan perbaiki alur flowchart" : "Auto-fix orphan nodes, add missing PKs, and heal flow dead-ends",
+        icon: "🩺",
+        category: "actions",
+        onSelect: onRepairDiagram,
       }
     );
 
@@ -318,6 +338,22 @@ export function CommandPaletteModal({
         icon: "🦀",
         category: "export",
         onSelect: () => onExport("rust"),
+      },
+      {
+        id: "export-openapi-yaml",
+        title: "Export OpenAPI 3.1 Spec (YAML)",
+        description: isId ? "Spesifikasi Swagger API RESTful standar industri" : "Industry-standard OpenAPI 3.1 / Swagger YAML",
+        icon: "📜",
+        category: "export",
+        onSelect: () => onExport("openapi-yaml"),
+      },
+      {
+        id: "export-openapi-json",
+        title: "Export OpenAPI 3.1 Spec (JSON)",
+        description: isId ? "Spesifikasi Swagger API RESTful JSON" : "Industry-standard OpenAPI 3.1 / Swagger JSON",
+        icon: "📜",
+        category: "export",
+        onSelect: () => onExport("openapi-json"),
       },
       {
         id: "export-typescript",

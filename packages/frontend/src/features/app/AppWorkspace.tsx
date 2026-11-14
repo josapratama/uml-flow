@@ -57,6 +57,7 @@ export interface AppWorkspaceProps {
   ) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  onAutoRepair?: () => void;
   selectedNode?: DiagramNode | null;
   showStylePanel: "node" | "global" | "edge" | null;
   onOpenStylePanel: (panel: "node" | "global" | "edge" | null) => void;
@@ -100,6 +101,7 @@ export function AppWorkspace(props: AppWorkspaceProps) {
     onCanvasContextMenu,
     onDragStart,
     onDragEnd,
+    onAutoRepair,
     selectedNode,
     showStylePanel,
     onOpenStylePanel,
@@ -199,6 +201,7 @@ export function AppWorkspace(props: AppWorkspaceProps) {
               activeEdgeTool={activeEdgeTool}
               onQuickAddNode={onQuickAddNode}
               onCopyPNG={props.onCopyPNG}
+              onAutoRepair={onAutoRepair}
               onContextMenu={onCanvasContextMenu}
             />
           </div>
