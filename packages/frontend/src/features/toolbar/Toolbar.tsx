@@ -55,6 +55,7 @@ interface ToolbarProps {
   onPresentationMode?: () => void;
   onShowDiff?: () => void;
   onShowMetrics?: () => void;
+  onOpenSimulator?: () => void;
   onOpenCommandPalette?: () => void;
   onSaveCurrent?: () => void;
   onShareLink?: () => void;
@@ -106,6 +107,7 @@ export function Toolbar(props: ToolbarProps) {
     onPresentationMode,
     onShowDiff,
     onShowMetrics,
+    onOpenSimulator,
     onOpenCommandPalette,
     onSaveCurrent,
     onShareLink,
@@ -287,6 +289,19 @@ export function Toolbar(props: ToolbarProps) {
           >
             <span>📊</span>
             <span className="hidden 2xl:inline">{locale === "id" ? "Metrik" : "Metrics"}</span>
+          </button>
+        )}
+
+        {/* Interactive Flow Simulator */}
+        {onOpenSimulator && (
+          <button
+            onClick={onOpenSimulator}
+            disabled={!hasDiagram}
+            title={locale === "id" ? "Simulasi Alur & State Interaktif" : "Interactive Flow Simulator"}
+            className="h-8 px-2 sm:px-2.5 text-xs font-medium rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-xs active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed"
+          >
+            <span>▶️</span>
+            <span className="hidden xl:inline">{locale === "id" ? "Simulasi" : "Simulate"}</span>
           </button>
         )}
 

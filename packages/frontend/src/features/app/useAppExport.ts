@@ -249,6 +249,48 @@ export function useAppExport({
             );
             break;
           }
+          case "golang": {
+            if (diagram.type !== "class" && diagram.type !== "erd") {
+              showToast(
+                isId
+                  ? "Ekspor Go hanya didukung untuk Diagram Class dan ERD"
+                  : "Go export only works for Class and ERD diagrams",
+                "error"
+              );
+              break;
+            }
+            const { generateGolang } = await import(
+              "../../services/code-generator"
+            );
+            const code = generateGolang(diagram);
+            downloadFile(code, `${diagram.name.toLowerCase()}_models.go`, "text/plain");
+            showToast(
+              isId ? "Go Structs berhasil diekspor" : "Go Structs exported",
+              "success"
+            );
+            break;
+          }
+          case "graphql": {
+            if (diagram.type !== "class" && diagram.type !== "erd") {
+              showToast(
+                isId
+                  ? "Ekspor GraphQL hanya didukung untuk Diagram Class dan ERD"
+                  : "GraphQL export only works for Class and ERD diagrams",
+                "error"
+              );
+              break;
+            }
+            const { generateGraphQL } = await import(
+              "../../services/code-generator"
+            );
+            const code = generateGraphQL(diagram);
+            downloadFile(code, `${diagram.name.toLowerCase()}_schema.graphql`, "text/plain");
+            showToast(
+              isId ? "GraphQL Schema (SDL) berhasil diekspor" : "GraphQL Schema (SDL) exported",
+              "success"
+            );
+            break;
+          }
           case "sql": {
             if (diagram.type !== "erd") {
               showToast(isId ? "Ekspor SQL hanya didukung untuk Diagram ERD" : "SQL export only works for ERD diagrams", "error");

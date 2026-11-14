@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { isSQLDDL, parseSQLToERD } from "../../services/sql-importer";
 import { isMermaidCode, parseMermaidToDSL } from "../../services/mermaid-importer";
 import { isPlantUMLCode, parsePlantUMLToDSL } from "../../services/plantuml-importer";
+import { isTypeScriptCode, parseTypeScriptToDSL } from "../../services/typescript-importer";
 import { showToast } from "./Toast";
 import { useI18n } from "../../i18n";
 
@@ -11,7 +12,7 @@ interface Props {
   onImportDSL: (dsl: string) => void;
 }
 
-type ImportSource = "auto" | "sql" | "mermaid" | "plantuml";
+type ImportSource = "auto" | "sql" | "mermaid" | "plantuml" | "typescript";
 
 const SAMPLES = {
   sql: `-- Contoh SQL DDL untuk ERD Skripsi
@@ -36,6 +37,27 @@ CREATE TABLE posts (
   FOREIGN KEY (user_id) REFERENCES users(id),
   FOREIGN KEY (category_id) REFERENCES categories(id)
 );`,
+
+  typescript: `// Contoh TypeScript Interfaces & Types
+export interface User {
+  id: number;
+  username: string;
+  email?: string;
+  isActive: boolean;
+  login(password: string): boolean;
+}
+
+export enum UserRole {
+  ADMIN = "ADMIN",
+  MEMBER = "MEMBER",
+  GUEST = "GUEST"
+}
+
+export interface AdminUser extends User {
+  role: UserRole;
+  permissions: string[];
+  banUser(userId: number): boolean;
+}`,
 
   mermaid: `%% Contoh Mermaid Class Diagram
 classDiagram
@@ -87,6 +109,7 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
 
       if (source === "auto") {
         if (isSQLDDL(trimmed)) detectedType = "sql";
+        else if (isTypeScriptCode(trimmed)) detectedType = "typescript";
         else if (isMermaidCode(trimmed)) detectedType = "mermaid";
         else if (isPlantUMLCode(trimmed)) detectedType = "plantuml";
         else {
@@ -98,6 +121,9 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
       if (detectedType === "sql") {
         resultDSL = parseSQLToERD(trimmed, diagramName);
         showToast(isId ? "SQL DDL berhasil dikonversi ke ERD!" : "SQL DDL successfully converted to ERD!", "success");
+      } else if (detectedType === "typescript") {
+        resultDSL = parseTypeScriptToDSL(trimmed);
+        showToast(isId ? "TypeScript berhasil dikonversi ke Class Diagram!" : "TypeScript successfully converted to Class Diagram!", "success");
       } else if (detectedType === "mermaid") {
         resultDSL = parseMermaidToDSL(trimmed, diagramName);
         showToast(isId ? "Mermaid berhasil dikonversi ke UML Flow!" : "Mermaid successfully converted to UML Flow!", "success");
@@ -118,10 +144,11 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
     }
   };
 
-  const loadSample = (type: "sql" | "mermaid" | "plantuml") => {
+  const loadSample = (type: "sql" | "typescript" | "mermaid" | "plantuml") => {
     setSource(type);
     setInputText(SAMPLES[type]);
     if (type === "sql") setDiagramName("Database Schema ERD");
+    else if (type === "typescript") setDiagramName("TypeScript Class Model");
     else if (type === "mermaid") setDiagramName("Mermaid Flow");
     else setDiagramName("PlantUML Class");
   };
@@ -163,6 +190,7 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
           <div className="flex items-center gap-1 bg-surface-3 p-1 rounded-lg border border-border/60">
             {[
               { id: "auto", label: "Auto-Detect" },
+              { id: "typescript", label: "TypeScript" },
               { id: "sql", label: "SQL DDL" },
               { id: "mermaid", label: "Mermaid" },
               { id: "plantuml", label: "PlantUML" },
@@ -183,6 +211,12 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
 
           <div className="flex items-center gap-1.5 text-xs text-text-muted">
             <span>{isId ? "Isi Contoh:" : "Load Sample:"}</span>
+            <button
+              onClick={() => loadSample("typescript")}
+              className="px-2 py-0.5 rounded bg-surface border border-border hover:border-accent text-[11px]"
+            >
+              TS
+            </button>
             <button
               onClick={() => loadSample("sql")}
               className="px-2 py-0.5 rounded bg-surface border border-border hover:border-accent text-[11px]"

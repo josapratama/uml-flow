@@ -136,6 +136,7 @@ export default function App(props: AppProps = {}) {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showMetrics, setShowMetrics] = useState(false);
+  const [showSimulator, setShowSimulator] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [templates, setTemplates] = useState<DiagramTemplate[]>(() =>
@@ -1074,6 +1075,7 @@ export default function App(props: AppProps = {}) {
         onPresentationMode={() => setShowPresentation(true)}
         onShowDiff={() => setShowDiff(true)}
         onShowMetrics={() => setShowMetrics(true)}
+        onOpenSimulator={() => setShowSimulator(true)}
         onOpenCommandPalette={() => setShowCommandPalette(true)}
         onSaveCurrent={handleSaveCurrent}
         onShareLink={handleShareLink}
@@ -1220,6 +1222,8 @@ export default function App(props: AppProps = {}) {
         shareUrl={shareUrl}
         showMetrics={showMetrics}
         onCloseMetrics={() => setShowMetrics(false)}
+        showSimulator={showSimulator}
+        onCloseSimulator={() => setShowSimulator(false)}
         showCommandPalette={showCommandPalette}
         onCloseCommandPalette={() => setShowCommandPalette(false)}
         onSelectNode={(id) => setSelectedNodeId(id)}
@@ -1227,6 +1231,7 @@ export default function App(props: AppProps = {}) {
         onLayout={handleLayout}
         onExport={handleExport}
         onOpenMetrics={() => setShowMetrics(true)}
+        onOpenSimulator={() => setShowSimulator(true)}
         onOpenAI={() => setShowAI(true)}
         onOpenTemplates={() => setShowTemplates(true)}
         onOpenLibrary={() => setShowLibrary(true)}

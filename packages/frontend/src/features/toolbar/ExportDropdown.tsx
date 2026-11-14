@@ -110,6 +110,22 @@ function getExportOptions(locale: Locale): ExportOption[] {
       requiredTypes: ["class", "erd"],
     },
     {
+      id: "golang",
+      label: "Go Structs & Models",
+      icon: "🐹",
+      description: isId ? "Struct Go dengan json/db tags" : "Go structs with json/db tags & methods",
+      category: "code",
+      requiredTypes: ["class", "erd"],
+    },
+    {
+      id: "graphql",
+      label: "GraphQL Schema (SDL)",
+      icon: "🕸️",
+      description: isId ? "Definisi type, input & query SDL" : "GraphQL types, inputs & queries SDL",
+      category: "code",
+      requiredTypes: ["class", "erd"],
+    },
+    {
       id: "xstate",
       label: "XState Machine",
       icon: "⚙️",

@@ -11,5 +11,7 @@ export {
   generatePythonPydantic,
   generatePythonSQLAlchemy,
   generateCSharp,
+  generateGraphQL,
+  generateGolang,
   type PythonTarget,
 } from "./generators";

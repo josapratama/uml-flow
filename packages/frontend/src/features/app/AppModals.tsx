@@ -15,6 +15,7 @@ import { ImportModal } from "../ui/ImportModal";
 import { ShareModal } from "../ui/ShareModal";
 import { DiagramMetricsModal } from "../ui/DiagramMetricsModal";
 import { CommandPaletteModal } from "../ui/CommandPaletteModal";
+import { FlowSimulatorModal } from "../ui/FlowSimulatorModal";
 
 interface AppModalsProps {
   showShortcuts: boolean;
@@ -56,6 +57,8 @@ interface AppModalsProps {
   shareUrl?: string;
   showMetrics?: boolean;
   onCloseMetrics?: () => void;
+  showSimulator?: boolean;
+  onCloseSimulator?: () => void;
   showCommandPalette?: boolean;
   onCloseCommandPalette?: () => void;
   onSelectNode?: (nodeId: string) => void;
@@ -63,6 +66,7 @@ interface AppModalsProps {
   onLayout?: (preset: string) => void;
   onExport?: (format: string) => void;
   onOpenMetrics?: () => void;
+  onOpenSimulator?: () => void;
   onOpenAI?: () => void;
   onOpenTemplates?: () => void;
   onOpenLibrary?: () => void;
@@ -118,6 +122,8 @@ export function AppModals({
   shareUrl = "",
   showMetrics = false,
   onCloseMetrics,
+  showSimulator = false,
+  onCloseSimulator,
   showCommandPalette = false,
   onCloseCommandPalette,
   onSelectNode = () => {},
@@ -125,6 +131,7 @@ export function AppModals({
   onLayout = () => {},
   onExport = () => {},
   onOpenMetrics = () => {},
+  onOpenSimulator = () => {},
   onOpenAI = () => {},
   onOpenTemplates = () => {},
   onOpenLibrary = () => {},
@@ -218,6 +225,14 @@ export function AppModals({
         diagram={diagram}
       />
 
+      <FlowSimulatorModal
+        isOpen={showSimulator}
+        onClose={onCloseSimulator || (() => {})}
+        diagram={diagram}
+        onSelectNode={onSelectNode}
+        onFocusNode={onFocusNode}
+      />
+
       <CommandPaletteModal
         isOpen={showCommandPalette}
         onClose={onCloseCommandPalette || (() => {})}
@@ -227,6 +242,7 @@ export function AppModals({
         onLayout={onLayout}
         onExport={onExport}
         onOpenMetrics={onOpenMetrics}
+        onOpenSimulator={onOpenSimulator}
         onOpenAI={onOpenAI}
         onOpenTemplates={onOpenTemplates}
         onOpenLibrary={onOpenLibrary}

@@ -21,6 +21,7 @@ interface Props {
   onLayout: (preset: string) => void;
   onExport: (format: string) => void;
   onOpenMetrics: () => void;
+  onOpenSimulator?: () => void;
   onOpenAI: () => void;
   onOpenTemplates: () => void;
   onOpenLibrary: () => void;
@@ -45,6 +46,7 @@ export function CommandPaletteModal({
   onLayout,
   onExport,
   onOpenMetrics,
+  onOpenSimulator = () => {},
   onOpenAI,
   onOpenTemplates,
   onOpenLibrary,
@@ -113,6 +115,14 @@ export function CommandPaletteModal({
         icon: "📊",
         category: "modals",
         onSelect: onOpenMetrics,
+      },
+      {
+        id: "open-simulator",
+        title: isId ? "Simulator Alur & State Interaktif (Step-through)" : "Interactive Flow & State Simulator",
+        description: isId ? "Simulasikan eksekusi alur langkah demi langkah dengan active token" : "Simulate step-by-step flow execution with active token",
+        icon: "▶️",
+        category: "modals",
+        onSelect: onOpenSimulator,
       },
       {
         id: "open-ai",
@@ -274,6 +284,22 @@ export function CommandPaletteModal({
         icon: "🔷",
         category: "export",
         onSelect: () => onExport("csharp"),
+      },
+      {
+        id: "export-golang",
+        title: "Export Go Structs & Models",
+        description: isId ? "Struct Go dengan tag json/db & methods" : "Go structs with json/db tags & methods",
+        icon: "🐹",
+        category: "export",
+        onSelect: () => onExport("golang"),
+      },
+      {
+        id: "export-graphql",
+        title: "Export GraphQL Schema (SDL)",
+        description: isId ? "Definisi type, input, query SDL" : "GraphQL SDL types, inputs & queries",
+        icon: "🕸️",
+        category: "export",
+        onSelect: () => onExport("graphql"),
       },
       {
         id: "export-typescript",
