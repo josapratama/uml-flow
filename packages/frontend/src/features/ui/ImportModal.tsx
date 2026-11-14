@@ -3,6 +3,8 @@ import { isSQLDDL, parseSQLToERD } from "../../services/sql-importer";
 import { isMermaidCode, parseMermaidToDSL } from "../../services/mermaid-importer";
 import { isPlantUMLCode, parsePlantUMLToDSL } from "../../services/plantuml-importer";
 import { isTypeScriptCode, parseTypeScriptToDSL } from "../../services/typescript-importer";
+import { isPrismaCode, parsePrismaToDSL } from "../../services/prisma-importer";
+import { isJSONPayload, parseJSONToDSL } from "../../services/json-importer";
 import { showToast } from "./Toast";
 import { useI18n } from "../../i18n";
 
@@ -12,9 +14,51 @@ interface Props {
   onImportDSL: (dsl: string) => void;
 }
 
-type ImportSource = "auto" | "sql" | "mermaid" | "plantuml" | "typescript";
+type ImportSource = "auto" | "sql" | "prisma" | "json" | "mermaid" | "plantuml" | "typescript";
 
 const SAMPLES = {
+  prisma: `// Contoh Prisma Schema
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  role      Role     @default(USER)
+  posts     Post[]
+  createdAt DateTime @default(now())
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+enum Role {
+  USER
+  ADMIN
+}`,
+
+  json: `{
+  "id": 101,
+  "title": "MacBook Pro M3",
+  "price": 1999.99,
+  "inStock": true,
+  "category": {
+    "id": 5,
+    "name": "Electronics"
+  },
+  "tags": ["laptop", "apple", "hardware"],
+  "createdAt": "2026-11-14T10:00:00Z"
+}`,
+
   sql: `-- Contoh SQL DDL untuk ERD Skripsi
 CREATE TABLE users (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -109,6 +153,8 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
 
       if (source === "auto") {
         if (isSQLDDL(trimmed)) detectedType = "sql";
+        else if (isPrismaCode(trimmed)) detectedType = "prisma";
+        else if (isJSONPayload(trimmed)) detectedType = "json";
         else if (isTypeScriptCode(trimmed)) detectedType = "typescript";
         else if (isMermaidCode(trimmed)) detectedType = "mermaid";
         else if (isPlantUMLCode(trimmed)) detectedType = "plantuml";
@@ -121,6 +167,12 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
       if (detectedType === "sql") {
         resultDSL = parseSQLToERD(trimmed, diagramName);
         showToast(isId ? "SQL DDL berhasil dikonversi ke ERD!" : "SQL DDL successfully converted to ERD!", "success");
+      } else if (detectedType === "prisma") {
+        resultDSL = parsePrismaToDSL(trimmed);
+        showToast(isId ? "Prisma Schema berhasil dikonversi ke ERD!" : "Prisma Schema successfully converted to ERD!", "success");
+      } else if (detectedType === "json") {
+        resultDSL = parseJSONToDSL(trimmed, "erd");
+        showToast(isId ? "JSON Payload berhasil dikonversi ke Diagram!" : "JSON Payload successfully converted to Diagram!", "success");
       } else if (detectedType === "typescript") {
         resultDSL = parseTypeScriptToDSL(trimmed);
         showToast(isId ? "TypeScript berhasil dikonversi ke Class Diagram!" : "TypeScript successfully converted to Class Diagram!", "success");
@@ -144,10 +196,12 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
     }
   };
 
-  const loadSample = (type: "sql" | "typescript" | "mermaid" | "plantuml") => {
+  const loadSample = (type: "sql" | "prisma" | "json" | "typescript" | "mermaid" | "plantuml") => {
     setSource(type);
     setInputText(SAMPLES[type]);
     if (type === "sql") setDiagramName("Database Schema ERD");
+    else if (type === "prisma") setDiagramName("Prisma Schema ERD");
+    else if (type === "json") setDiagramName("API Response Model");
     else if (type === "typescript") setDiagramName("TypeScript Class Model");
     else if (type === "mermaid") setDiagramName("Mermaid Flow");
     else setDiagramName("PlantUML Class");
@@ -190,15 +244,17 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
           <div className="flex items-center gap-1 bg-surface-3 p-1 rounded-lg border border-border/60">
             {[
               { id: "auto", label: "Auto-Detect" },
+              { id: "prisma", label: "Prisma" },
+              { id: "json", label: "JSON" },
               { id: "typescript", label: "TypeScript" },
-              { id: "sql", label: "SQL DDL" },
+              { id: "sql", label: "SQL" },
               { id: "mermaid", label: "Mermaid" },
               { id: "plantuml", label: "PlantUML" },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setSource(tab.id as ImportSource)}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
+                className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${
                   source === tab.id
                     ? "bg-accent text-white shadow-xs"
                     : "text-text-muted hover:text-text"
@@ -210,16 +266,28 @@ export function ImportModal({ isOpen, onClose, onImportDSL }: Props) {
           </div>
 
           <div className="flex items-center gap-1.5 text-xs text-text-muted">
-            <span>{isId ? "Isi Contoh:" : "Load Sample:"}</span>
+            <span>{isId ? "Contoh:" : "Sample:"}</span>
+            <button
+              onClick={() => loadSample("prisma")}
+              className="px-1.5 py-0.5 rounded bg-surface border border-border hover:border-accent text-[11px]"
+            >
+              Prisma
+            </button>
+            <button
+              onClick={() => loadSample("json")}
+              className="px-1.5 py-0.5 rounded bg-surface border border-border hover:border-accent text-[11px]"
+            >
+              JSON
+            </button>
             <button
               onClick={() => loadSample("typescript")}
-              className="px-2 py-0.5 rounded bg-surface border border-border hover:border-accent text-[11px]"
+              className="px-1.5 py-0.5 rounded bg-surface border border-border hover:border-accent text-[11px]"
             >
               TS
             </button>
             <button
               onClick={() => loadSample("sql")}
-              className="px-2 py-0.5 rounded bg-surface border border-border hover:border-accent text-[11px]"
+              className="px-1.5 py-0.5 rounded bg-surface border border-border hover:border-accent text-[11px]"
             >
               SQL
             </button>

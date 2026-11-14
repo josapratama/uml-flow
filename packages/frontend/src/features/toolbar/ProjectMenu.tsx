@@ -12,6 +12,8 @@ interface Props {
   onShowMetrics?: () => void;
   onOpenAcademicMetadata?: () => void;
   onOpenThesisBundle?: () => void;
+  onOpenTestCases?: () => void;
+  onOpenMockData?: () => void;
   onOpenCommandPalette?: () => void;
   onNewDiagram?: () => void;
   hasDiagram: boolean;
@@ -28,6 +30,8 @@ export function ProjectMenu({
   onShowMetrics,
   onOpenAcademicMetadata,
   onOpenThesisBundle,
+  onOpenTestCases,
+  onOpenMockData,
   onOpenCommandPalette,
   onNewDiagram,
   hasDiagram,
@@ -273,6 +277,39 @@ export function ProjectMenu({
               <div>
                 <div className="font-medium text-accent">Paket Lampiran Skripsi (.md)</div>
                 <div className="text-[10px] text-text-muted">Kompilasi narasi, metrik, SQL & kode</div>
+              </div>
+            </button>
+          )}
+
+          {onOpenTestCases && (
+            <button
+              onClick={() => {
+                onOpenTestCases();
+                setOpen(false);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text hover:bg-surface-3 transition-colors text-left"
+            >
+              <span className="text-base">🧪</span>
+              <div>
+                <div className="font-medium">Matriks Pengujian Sistem</div>
+                <div className="text-[10px] text-text-muted">White-box basis path & functional test cases</div>
+              </div>
+            </button>
+          )}
+
+          {onOpenMockData && (
+            <button
+              onClick={() => {
+                onOpenMockData();
+                setOpen(false);
+              }}
+              disabled={!hasDiagram}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text hover:bg-surface-3 transition-colors text-left disabled:opacity-40"
+            >
+              <span className="text-base">🎲</span>
+              <div>
+                <div className="font-medium">Generator Data Dummy (Seed)</div>
+                <div className="text-[10px] text-text-muted">Generate JSON mock & SQL INSERT seed</div>
               </div>
             </button>
           )}

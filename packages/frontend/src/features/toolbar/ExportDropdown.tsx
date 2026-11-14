@@ -36,6 +36,13 @@ function getExportOptions(locale: Locale): ExportOption[] {
       description: isId ? "Bundel naskah lengkap: narasi, metrik, SQL & model" : "Full appendix bundle with narrative, metrics & code",
       category: "doc",
     },
+    {
+      id: "test-cases",
+      label: isId ? "Matriks Pengujian Sistem (.md)" : "Test Case Matrix (.md)",
+      icon: "🧪",
+      description: isId ? "Tabel uji White-Box basis path & functional" : "White-box basis path & functional test table",
+      category: "doc",
+    },
 
     // --- Gambar Visual ---
     {
@@ -153,6 +160,22 @@ function getExportOptions(locale: Locale): ExportOption[] {
       label: "OpenAPI 3.1 Spec (JSON)",
       icon: "📜",
       description: isId ? "Spesifikasi Swagger API RESTful (JSON)" : "OpenAPI 3.1 REST API specification (JSON)",
+      category: "code",
+      requiredTypes: ["class", "erd"],
+    },
+    {
+      id: "prisma",
+      label: "Prisma Schema (.prisma)",
+      icon: "💎",
+      description: isId ? "Skema ORM Prisma Next.js/Node.js" : "Prisma ORM schema for Node.js / Next.js",
+      category: "code",
+      requiredTypes: ["class", "erd"],
+    },
+    {
+      id: "mock-data",
+      label: isId ? "Generator Data Dummy (Seed)" : "Mock Data & Database Seed",
+      icon: "🎲",
+      description: isId ? "Generate JSON mock atau SQL INSERT seed" : "Generate realistic JSON mock or SQL INSERT seed",
       category: "code",
       requiredTypes: ["class", "erd"],
     },

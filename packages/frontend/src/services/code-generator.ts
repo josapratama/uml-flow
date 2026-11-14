@@ -15,5 +15,6 @@ export {
   generateGolang,
   generateRust,
   generateOpenAPI,
+  generatePrisma,
   type PythonTarget,
 } from "./generators";

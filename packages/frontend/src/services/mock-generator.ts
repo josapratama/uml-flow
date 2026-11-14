@@ -1,0 +1,179 @@
+import type { Diagram, DiagramNode } from "@uml-editor/shared";
+
+export interface MockDataOptions {
+  count?: number;
+  format?: "json" | "sql";
+}
+
+const FIRST_NAMES = ["Ahmad", "Budi", "Citra", "Dian", "Eko", "Fajar", "Gita", "Hendra", "Indah", "Joko"];
+const LAST_NAMES = ["Pratama", "Santoso", "Dewi", "Anggraini", "Prasetyo", "Hidayat", "Kusuma", "Wijaya", "Siregar", "Lestari"];
+const CITIES = ["Jakarta", "Bandung", "Surabaya", "Yogyakarta", "Semarang", "Medan", "Makassar", "Denpasar"];
+const TITLES = [
+  "Perancangan Sistem Terintegrasi",
+  "Implementasi Arsitektur Microservices",
+  "Optimasi Kinerja Basis Data",
+  "Analisis Rekayasa Perangkat Lunak",
+  "Pengembangan API Gateway Skalabel",
+  "Desain Antarmuka Berbasis Komponen",
+];
+
+function generateFieldValue(fieldName: string, rawType: string, index: number): any {
+  const name = fieldName.toLowerCase();
+  const type = (rawType || "string").toLowerCase();
+
+  // Primary Key
+  if (name === "id" || name === "_id") {
+    return index + 1;
+  }
+  if (name.includes("uuid")) {
+    return `550e8400-e29b-41d4-a716-44665544000${index}`;
+  }
+
+  // Foreign Key
+  if (name.endsWith("_id") || name.endsWith("id")) {
+    return (index % 5) + 1;
+  }
+
+  // Email
+  if (name.includes("email")) {
+    const fn = FIRST_NAMES[index % FIRST_NAMES.length].toLowerCase();
+    const ln = LAST_NAMES[index % LAST_NAMES.length].toLowerCase();
+    return `${fn}.${ln}${index + 1}@example.com`;
+  }
+
+  // Name
+  if (name.includes("name") || name.includes("nama") || name.includes("user") || name.includes("author")) {
+    const fn = FIRST_NAMES[index % FIRST_NAMES.length];
+    const ln = LAST_NAMES[index % LAST_NAMES.length];
+    return `${fn} ${ln}`;
+  }
+
+  // Phone
+  if (name.includes("phone") || name.includes("telp") || name.includes("hp")) {
+    return `+62812${String(1000000 + index * 12345).slice(0, 7)}`;
+  }
+
+  // Address
+  if (name.includes("address") || name.includes("alamat") || name.includes("city") || name.includes("kota")) {
+    const city = CITIES[index % CITIES.length];
+    return `Jl. Merdeka No. ${index + 10}, ${city}`;
+  }
+
+  // Title / Judul
+  if (name.includes("title") || name.includes("judul") || name.includes("subject")) {
+    return `${TITLES[index % TITLES.length]} (Vol. ${index + 1})`;
+  }
+
+  // Status / Role
+  if (name.includes("status") || name.includes("state")) {
+    const statuses = ["ACTIVE", "PENDING", "COMPLETED", "APPROVED"];
+    return statuses[index % statuses.length];
+  }
+  if (name.includes("role")) {
+    return index === 0 ? "ADMIN" : "USER";
+  }
+
+  // Price / Amount / Currency
+  if (name.includes("price") || name.includes("amount") || name.includes("total") || name.includes("harga") || name.includes("saldo")) {
+    return (index + 1) * 25000;
+  }
+
+  // Boolean
+  if (type === "bool" || type === "boolean" || name.startsWith("is_") || name.startsWith("has_")) {
+    return index % 2 === 0;
+  }
+
+  // DateTime / Timestamp
+  if (type.includes("date") || type.includes("time") || name.includes("created") || name.includes("updated")) {
+    const d = new Date(Date.now() - index * 86400000);
+    return d.toISOString();
+  }
+
+  // Integer
+  if (type === "int" || type === "integer" || type === "number") {
+    return (index + 1) * 10;
+  }
+
+  // Float
+  if (type === "float" || type === "double" || type === "decimal") {
+    return parseFloat(((index + 1) * 12.5).toFixed(2));
+  }
+
+  return `${fieldName}_sample_${index + 1}`;
+}
+
+/**
+ * Generate realistic mock data in JSON or SQL Seed statements from ERD or Class Diagram
+ */
+export function generateMockData(
+  diagram: Diagram,
+  options: MockDataOptions = { count: 5, format: "json" }
+): string {
+  const count = options.count || 5;
+  const format = options.format || "json";
+
+  const entities = (diagram.nodes || []).filter(
+    (n) => (n.type as string) !== "note" && (n.type as string) !== "system" && (n.type as string) !== "boundary"
+  );
+
+  if (entities.length === 0) {
+    return format === "json" ? "{}" : "-- No entities found to generate mock data";
+  }
+
+  if (format === "json") {
+    const result: Record<string, any[]> = {};
+
+    for (const ent of entities) {
+      const records: any[] = [];
+      const attrs = (ent as any).attributes || [];
+
+      for (let i = 0; i < count; i++) {
+        const record: Record<string, any> = {};
+        for (const attr of attrs) {
+          const fieldName = attr.name || "field";
+          record[fieldName] = generateFieldValue(fieldName, attr.type, i);
+        }
+        if (attrs.length === 0) {
+          record.id = i + 1;
+          record.name = `${ent.name}_Item_${i + 1}`;
+        }
+        records.push(record);
+      }
+
+      result[ent.name || ent.id] = records;
+    }
+
+    return JSON.stringify(result, null, 2);
+  }
+
+  // SQL Seed Format
+  let sql = `-- ----------------------------------------------------------------------------\n`;
+  sql += `-- SQL Database Seed Data generated by UML Flow Mock Engine\n`;
+  sql += `-- Diagram: ${diagram.name} (${diagram.type})\n`;
+  sql += `-- Generated At: ${new Date().toISOString()}\n`;
+  sql += `-- ----------------------------------------------------------------------------\n\n`;
+
+  for (const ent of entities) {
+    const tableName = (ent.name || ent.id).toLowerCase();
+    const attrs = (ent as any).attributes || [];
+    if (attrs.length === 0) continue;
+
+    const colNames = attrs.map((a: any) => a.name).join(", ");
+    sql += `-- Seed data for '${tableName}'\n`;
+
+    for (let i = 0; i < count; i++) {
+      const values = attrs.map((attr: any) => {
+        const val = generateFieldValue(attr.name, attr.type, i);
+        if (typeof val === "string") return `'${val.replace(/'/g, "''")}'`;
+        if (typeof val === "boolean") return val ? "TRUE" : "FALSE";
+        if (val === null || val === undefined) return "NULL";
+        return val;
+      });
+
+      sql += `INSERT INTO ${tableName} (${colNames}) VALUES (${values.join(", ")});\n`;
+    }
+    sql += `\n`;
+  }
+
+  return sql.trim() + "\n";
+}

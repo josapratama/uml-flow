@@ -18,6 +18,8 @@ interface UseAppExportOptions {
   diagram: Diagram | null;
   onOpenAcademicCaption: () => void;
   onOpenThesisBundle?: () => void;
+  onOpenTestCases?: () => void;
+  onOpenMockData?: () => void;
   onOpenSQLExport?: () => void;
 }
 
@@ -25,6 +27,8 @@ export function useAppExport({
   diagram,
   onOpenAcademicCaption,
   onOpenThesisBundle,
+  onOpenTestCases,
+  onOpenMockData,
   onOpenSQLExport,
 }: UseAppExportOptions) {
   const { locale } = useI18n();
@@ -101,6 +105,27 @@ export function useAppExport({
           case "thesis-bundle": {
             if (onOpenThesisBundle) {
               onOpenThesisBundle();
+            }
+            break;
+          }
+          case "test-cases": {
+            if (onOpenTestCases) {
+              onOpenTestCases();
+            }
+            break;
+          }
+          case "mock-data": {
+            if (diagram.type !== "class" && diagram.type !== "erd") {
+              showToast(
+                isId
+                  ? "Generator Mock Data hanya didukung untuk Diagram Class dan ERD"
+                  : "Mock Data generator only works for Class and ERD diagrams",
+                "error"
+              );
+              break;
+            }
+            if (onOpenMockData) {
+              onOpenMockData();
             }
             break;
           }
@@ -341,6 +366,27 @@ export function useAppExport({
             downloadFile(content, `${diagram.name.toLowerCase()}_openapi.${ext}`, mime);
             showToast(
               isId ? `OpenAPI 3.1 (${ext.toUpperCase()}) berhasil diekspor` : `OpenAPI 3.1 (${ext.toUpperCase()}) exported`,
+              "success"
+            );
+            break;
+          }
+          case "prisma": {
+            if (diagram.type !== "class" && diagram.type !== "erd") {
+              showToast(
+                isId
+                  ? "Ekspor Prisma hanya didukung untuk Diagram Class dan ERD"
+                  : "Prisma export only works for Class and ERD diagrams",
+                "error"
+              );
+              break;
+            }
+            const { generatePrisma } = await import(
+              "../../services/code-generator"
+            );
+            const schema = generatePrisma(diagram);
+            downloadFile(schema, "schema.prisma", "text/plain");
+            showToast(
+              isId ? "Prisma Schema (schema.prisma) berhasil diekspor" : "Prisma Schema (schema.prisma) exported",
               "success"
             );
             break;

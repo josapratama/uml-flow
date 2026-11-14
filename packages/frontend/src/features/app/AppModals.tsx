@@ -18,6 +18,8 @@ import { CommandPaletteModal } from "../ui/CommandPaletteModal";
 import { FlowSimulatorModal } from "../ui/FlowSimulatorModal";
 import { AcademicMetadataModal } from "../ui/AcademicMetadataModal";
 import { ThesisBundleModal } from "../ui/ThesisBundleModal";
+import { TestCaseModal } from "../ui/TestCaseModal";
+import { MockDataModal } from "../ui/MockDataModal";
 
 interface AppModalsProps {
   showShortcuts: boolean;
@@ -68,6 +70,10 @@ interface AppModalsProps {
   onCloseAcademicMetadata?: () => void;
   showThesisBundle?: boolean;
   onCloseThesisBundle?: () => void;
+  showTestCases?: boolean;
+  onCloseTestCases?: () => void;
+  showMockData?: boolean;
+  onCloseMockData?: () => void;
   showCommandPalette?: boolean;
   onCloseCommandPalette?: () => void;
   onSelectNode?: (nodeId: string) => void;
@@ -78,6 +84,8 @@ interface AppModalsProps {
   onOpenSimulator?: () => void;
   onOpenAcademicMetadata?: () => void;
   onOpenThesisBundle?: () => void;
+  onOpenTestCases?: () => void;
+  onOpenMockData?: () => void;
   onOpenAI?: () => void;
   onOpenTemplates?: () => void;
   onOpenLibrary?: () => void;
@@ -140,6 +148,10 @@ export function AppModals({
   onCloseAcademicMetadata,
   showThesisBundle = false,
   onCloseThesisBundle,
+  showTestCases = false,
+  onCloseTestCases,
+  showMockData = false,
+  onCloseMockData,
   showCommandPalette = false,
   onCloseCommandPalette,
   onSelectNode = () => {},
@@ -150,6 +162,8 @@ export function AppModals({
   onOpenSimulator = () => {},
   onOpenAcademicMetadata = () => {},
   onOpenThesisBundle = () => {},
+  onOpenTestCases = () => {},
+  onOpenMockData = () => {},
   onOpenAI = () => {},
   onOpenTemplates = () => {},
   onOpenLibrary = () => {},
@@ -265,6 +279,18 @@ export function AppModals({
         diagram={diagram}
       />
 
+      <TestCaseModal
+        isOpen={showTestCases}
+        onClose={onCloseTestCases || (() => {})}
+        diagram={diagram}
+      />
+
+      <MockDataModal
+        isOpen={showMockData}
+        onClose={onCloseMockData || (() => {})}
+        diagram={diagram}
+      />
+
       <CommandPaletteModal
         isOpen={showCommandPalette}
         onClose={onCloseCommandPalette || (() => {})}
@@ -277,6 +303,8 @@ export function AppModals({
         onOpenSimulator={onOpenSimulator}
         onOpenAcademicMetadata={onOpenAcademicMetadata}
         onOpenThesisBundle={onOpenThesisBundle}
+        onOpenTestCases={onOpenTestCases}
+        onOpenMockData={onOpenMockData}
         onOpenAI={onOpenAI}
         onOpenTemplates={onOpenTemplates}
         onOpenLibrary={onOpenLibrary}

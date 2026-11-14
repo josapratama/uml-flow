@@ -24,6 +24,8 @@ interface Props {
   onOpenSimulator?: () => void;
   onOpenAcademicMetadata?: () => void;
   onOpenThesisBundle?: () => void;
+  onOpenTestCases?: () => void;
+  onOpenMockData?: () => void;
   onRepairDiagram?: () => void;
   onOpenAI: () => void;
   onOpenTemplates: () => void;
@@ -52,6 +54,8 @@ export function CommandPaletteModal({
   onOpenSimulator = () => {},
   onOpenAcademicMetadata = () => {},
   onOpenThesisBundle = () => {},
+  onOpenTestCases = () => {},
+  onOpenMockData = () => {},
   onRepairDiagram = () => {},
   onOpenAI,
   onOpenTemplates,
@@ -177,6 +181,22 @@ export function CommandPaletteModal({
         icon: "📦",
         category: "modals",
         onSelect: onOpenThesisBundle,
+      },
+      {
+        id: "open-test-cases",
+        title: isId ? "🧪 Matriks Pengujian Sistem (Test Cases)" : "🧪 Test Case Specification Matrix",
+        description: isId ? "Analisis skenario uji white-box, basis path & fungsional" : "Generate white-box basis paths & functional test cases",
+        icon: "🧪",
+        category: "modals",
+        onSelect: onOpenTestCases,
+      },
+      {
+        id: "open-mock-data",
+        title: isId ? "🎲 Generator Data Dummy & Database Seed" : "🎲 Mock Data & Seed Generator",
+        description: isId ? "Generate JSON payload realistis atau SQL INSERT seed" : "Generate realistic mock JSON or SQL INSERT seeds",
+        icon: "🎲",
+        category: "modals",
+        onSelect: onOpenMockData,
       },
       {
         id: "open-diff",
@@ -354,6 +374,14 @@ export function CommandPaletteModal({
         icon: "📜",
         category: "export",
         onSelect: () => onExport("openapi-json"),
+      },
+      {
+        id: "export-prisma",
+        title: "Export Prisma Schema (.prisma)",
+        description: isId ? "Skema ORM Prisma Next.js & Node.js" : "Prisma ORM schema definition",
+        icon: "💎",
+        category: "export",
+        onSelect: () => onExport("prisma"),
       },
       {
         id: "export-typescript",

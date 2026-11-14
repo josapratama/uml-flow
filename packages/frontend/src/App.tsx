@@ -137,6 +137,8 @@ export default function App(props: AppProps = {}) {
   const [showAcademicCaption, setShowAcademicCaption] = useState(false);
   const [showAcademicMetadata, setShowAcademicMetadata] = useState(false);
   const [showThesisBundle, setShowThesisBundle] = useState(false);
+  const [showTestCases, setShowTestCases] = useState(false);
+  const [showMockData, setShowMockData] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showMetrics, setShowMetrics] = useState(false);
@@ -615,6 +617,8 @@ export default function App(props: AppProps = {}) {
     diagram,
     onOpenAcademicCaption: () => setShowAcademicCaption(true),
     onOpenThesisBundle: () => setShowThesisBundle(true),
+    onOpenTestCases: () => setShowTestCases(true),
+    onOpenMockData: () => setShowMockData(true),
     onOpenSQLExport: () => setShowSQLExport(true),
   });
 
@@ -1140,6 +1144,8 @@ export default function App(props: AppProps = {}) {
         onOpenSimulator={() => setShowSimulator(true)}
         onOpenAcademicMetadata={() => setShowAcademicMetadata(true)}
         onOpenThesisBundle={() => setShowThesisBundle(true)}
+        onOpenTestCases={() => setShowTestCases(true)}
+        onOpenMockData={() => setShowMockData(true)}
         onOpenCommandPalette={() => setShowCommandPalette(true)}
         onSaveCurrent={handleSaveCurrent}
         onShareLink={handleShareLink}
@@ -1293,6 +1299,10 @@ export default function App(props: AppProps = {}) {
         onCloseAcademicMetadata={() => setShowAcademicMetadata(false)}
         showThesisBundle={showThesisBundle}
         onCloseThesisBundle={() => setShowThesisBundle(false)}
+        showTestCases={showTestCases}
+        onCloseTestCases={() => setShowTestCases(false)}
+        showMockData={showMockData}
+        onCloseMockData={() => setShowMockData(false)}
         showCommandPalette={showCommandPalette}
         onCloseCommandPalette={() => setShowCommandPalette(false)}
         onSelectNode={(id) => setSelectedNodeId(id)}
@@ -1303,6 +1313,8 @@ export default function App(props: AppProps = {}) {
         onOpenSimulator={() => setShowSimulator(true)}
         onOpenAcademicMetadata={() => setShowAcademicMetadata(true)}
         onOpenThesisBundle={() => setShowThesisBundle(true)}
+        onOpenTestCases={() => setShowTestCases(true)}
+        onOpenMockData={() => setShowMockData(true)}
         onOpenAI={() => setShowAI(true)}
         onOpenTemplates={() => setShowTemplates(true)}
         onOpenLibrary={() => setShowLibrary(true)}

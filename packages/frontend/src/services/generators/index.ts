@@ -13,3 +13,4 @@ export { generateGraphQL } from "./graphql";
 export { generateGolang } from "./golang";
 export { generateRust } from "./rust";
 export { generateOpenAPI } from "./openapi";
+export { generatePrisma } from "./prisma";

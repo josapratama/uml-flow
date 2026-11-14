@@ -6,6 +6,11 @@ import { generateGraphQL } from "./graphql";
 import { generateGolang } from "./golang";
 import { generateRust } from "./rust";
 import { generateOpenAPI } from "./openapi";
+import { generatePrisma } from "./prisma";
+import { isPrismaCode, parsePrismaToDSL } from "../prisma-importer";
+import { isJSONPayload, parseJSONToDSL } from "../json-importer";
+import { generateMockData } from "../mock-generator";
+import { generateTestCases, exportTestCasesMarkdown } from "../test-case-generator";
 import { calculateDiagramMetrics, exportMetricsMarkdown } from "../diagram-metrics";
 import { isTypeScriptCode, parseTypeScriptToDSL } from "../typescript-importer";
 import { initSimulation, stepSimulation } from "../flow-simulator";
@@ -454,5 +459,123 @@ describe("Thesis Appendix Bundle Packager", () => {
     expect(bundle).toContain("Cyclomatic Complexity");
     expect(bundle).toContain("Implementasi Model Domain Backend (Rust & Serde)");
     expect(bundle).toContain("pub struct User");
+  });
+});
+
+describe("Prisma Schema Generator & Reverse Importer", () => {
+  it("generates Prisma schema with datasource, models, enums and attributes", () => {
+    const prisma = generatePrisma(sampleClassDiagram);
+    expect(prisma).toContain('datasource db {');
+    expect(prisma).toContain('provider = "postgresql"');
+    expect(prisma).toContain("model User {");
+    expect(prisma).toContain("id               Int");
+    expect(prisma).toContain("@id");
+    expect(prisma).toContain("email            String");
+    expect(prisma).toContain("isActive         Boolean");
+    expect(prisma).toContain("enum Role {");
+    expect(prisma).toContain("ADMIN");
+    expect(prisma).toContain("USER");
+  });
+
+  it("detects and parses Prisma schema definitions into UML Flow ERD DSL", () => {
+    const prismaInput = `
+      model Customer {
+        id        Int      @id @default(autoincrement())
+        email     String   @unique
+        orders    Order[]
+      }
+      model Order {
+        id         Int      @id @default(autoincrement())
+        amount     Float
+        customerId Int
+        customer   Customer @relation(fields: [customerId], references: [id])
+      }
+    `;
+
+    expect(isPrismaCode(prismaInput)).toBe(true);
+    const dsl = parsePrismaToDSL(prismaInput);
+    expect(dsl).toContain("@diagram erd");
+    expect(dsl).toContain("entity Customer {");
+    expect(dsl).toContain("id: int [PK]");
+    expect(dsl).toContain("email: string [UNIQUE]");
+    expect(dsl).toContain("entity Order {");
+    expect(dsl).toContain("amount: float");
+    expect(dsl).toContain('Customer ||--o{ Order : "has"');
+  });
+});
+
+describe("JSON Payload to Diagram Importer", () => {
+  it("detects valid JSON payload and parses into ERD DSL with inferred types", () => {
+    const jsonInput = `[
+      {
+        "id": 1,
+        "productName": "Keyboard Mechanical",
+        "price": 850000.50,
+        "isAvailable": true,
+        "createdAt": "2026-11-14T08:00:00Z",
+        "vendor": {
+          "id": 10,
+          "vendorName": "Keychron"
+        }
+      }
+    ]`;
+
+    expect(isJSONPayload(jsonInput)).toBe(true);
+    const dsl = parseJSONToDSL(jsonInput, "erd");
+    expect(dsl).toContain("@diagram erd");
+    expect(dsl).toContain("entity Record {");
+    expect(dsl).toContain("id: int [PK]");
+    expect(dsl).toContain("productName: string");
+    expect(dsl).toContain("price: float");
+    expect(dsl).toContain("isAvailable: bool");
+    expect(dsl).toContain("createdAt: datetime");
+    expect(dsl).toContain("entity Vendor {");
+    expect(dsl).toContain('Record ||--o{ Vendor : "has"');
+  });
+});
+
+describe("Mock Data & Database Seed Generator", () => {
+  it("generates realistic mock JSON array and SQL seed statements", () => {
+    const mockJson = generateMockData(sampleClassDiagram, { count: 3, format: "json" });
+    const parsed = JSON.parse(mockJson);
+    expect(parsed.User).toBeDefined();
+    expect(parsed.User.length).toBe(3);
+    expect(parsed.User[0].id).toBe(1);
+    expect(parsed.User[0].email).toContain("@example.com");
+
+    const mockSql = generateMockData(sampleClassDiagram, { count: 3, format: "sql" });
+    expect(mockSql).toContain("INSERT INTO user");
+    expect(mockSql).toContain("VALUES");
+  });
+});
+
+describe("Automated Test Case & Scenario Matrix Generator", () => {
+  it("generates White-Box basis path and decision branch test cases from flowchart", () => {
+    const flowchartDiagram: Diagram = {
+      id: "fc-test",
+      name: "AuthenticationFlow",
+      type: "flowchart",
+      nodes: [
+        { id: "s1", name: "Mulai", type: "start", position: { x: 0, y: 0 }, size: { width: 80, height: 40 } },
+        { id: "d1", name: "Password Valid?", type: "decision", position: { x: 0, y: 80 }, size: { width: 100, height: 60 } },
+        { id: "p1", name: "Dashboard", type: "process", position: { x: -80, y: 160 }, size: { width: 100, height: 50 } },
+        { id: "p2", name: "Error Msg", type: "process", position: { x: 80, y: 160 }, size: { width: 100, height: 50 } },
+        { id: "e1", name: "Selesai", type: "end", position: { x: 0, y: 240 }, size: { width: 80, height: 40 } },
+      ],
+      edges: [
+        { id: "e1", source: "s1", target: "d1" },
+        { id: "e2", source: "d1", target: "p1", label: { text: "Ya" } },
+        { id: "e3", source: "d1", target: "p2", label: { text: "Tidak" } },
+      ],
+    };
+
+    const cases = generateTestCases(flowchartDiagram);
+    expect(cases.length).toBeGreaterThanOrEqual(2);
+    expect(cases.some(c => c.name.includes("Password Valid?"))).toBe(true);
+
+    const md = exportTestCasesMarkdown(flowchartDiagram, cases);
+    expect(md).toContain("# MATRIKS PENGUJIAN PERANGKAT LUNAK");
+    expect(md).toContain("AuthenticationFlow");
+    expect(md).toContain("TC-001");
   });
 });
