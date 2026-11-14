@@ -20,6 +20,9 @@ import { AcademicMetadataModal } from "../ui/AcademicMetadataModal";
 import { ThesisBundleModal } from "../ui/ThesisBundleModal";
 import { TestCaseModal } from "../ui/TestCaseModal";
 import { MockDataModal } from "../ui/MockDataModal";
+import { DependencyMatrixModal } from "../ui/DependencyMatrixModal";
+import { WorkspaceBackupModal } from "../ui/WorkspaceBackupModal";
+import { NodeHierarchyModal } from "../ui/NodeHierarchyModal";
 
 interface AppModalsProps {
   showShortcuts: boolean;
@@ -74,6 +77,16 @@ interface AppModalsProps {
   onCloseTestCases?: () => void;
   showMockData?: boolean;
   onCloseMockData?: () => void;
+  showDependencyMatrix?: boolean;
+  onCloseDependencyMatrix?: () => void;
+  onOpenDependencyMatrix?: () => void;
+  showWorkspaceBackup?: boolean;
+  onCloseWorkspaceBackup?: () => void;
+  onOpenWorkspaceBackup?: () => void;
+  onRestoreSuccess?: () => void;
+  showNodeHierarchy?: boolean;
+  onCloseNodeHierarchy?: () => void;
+  onOpenNodeHierarchy?: () => void;
   showCommandPalette?: boolean;
   onCloseCommandPalette?: () => void;
   onSelectNode?: (nodeId: string) => void;
@@ -152,6 +165,16 @@ export function AppModals({
   onCloseTestCases,
   showMockData = false,
   onCloseMockData,
+  showDependencyMatrix = false,
+  onCloseDependencyMatrix,
+  onOpenDependencyMatrix = () => {},
+  showWorkspaceBackup = false,
+  onCloseWorkspaceBackup,
+  onOpenWorkspaceBackup = () => {},
+  onRestoreSuccess = () => {},
+  showNodeHierarchy = false,
+  onCloseNodeHierarchy,
+  onOpenNodeHierarchy = () => {},
   showCommandPalette = false,
   onCloseCommandPalette,
   onSelectNode = () => {},
@@ -237,7 +260,7 @@ export function AppModals({
 
       <SQLExportModal
         isOpen={showSQLExport}
-        onClose={onCloseSQLExport || (() => {})}
+        onClose={onCloseSQLExport || (() => { })}
         diagram={diagram}
       />
 
@@ -249,20 +272,20 @@ export function AppModals({
 
       <ShareModal
         isOpen={showShareModal}
-        onClose={onCloseShareModal || (() => {})}
+        onClose={onCloseShareModal || (() => { })}
         shareUrl={shareUrl}
         diagram={diagram}
       />
 
       <DiagramMetricsModal
         isOpen={showMetrics}
-        onClose={onCloseMetrics || (() => {})}
+        onClose={onCloseMetrics || (() => { })}
         diagram={diagram}
       />
 
       <FlowSimulatorModal
         isOpen={showSimulator}
-        onClose={onCloseSimulator || (() => {})}
+        onClose={onCloseSimulator || (() => { })}
         diagram={diagram}
         onSelectNode={onSelectNode}
         onFocusNode={onFocusNode}
@@ -270,12 +293,12 @@ export function AppModals({
 
       <AcademicMetadataModal
         isOpen={showAcademicMetadata}
-        onClose={onCloseAcademicMetadata || (() => {})}
+        onClose={onCloseAcademicMetadata || (() => { })}
       />
 
       <ThesisBundleModal
         isOpen={showThesisBundle}
-        onClose={onCloseThesisBundle || (() => {})}
+        onClose={onCloseThesisBundle || (() => { })}
         diagram={diagram}
       />
 
@@ -291,9 +314,29 @@ export function AppModals({
         diagram={diagram}
       />
 
+      <DependencyMatrixModal
+        isOpen={showDependencyMatrix}
+        onClose={onCloseDependencyMatrix || (() => {})}
+        diagram={diagram}
+      />
+
+      <WorkspaceBackupModal
+        isOpen={showWorkspaceBackup}
+        onClose={onCloseWorkspaceBackup || (() => {})}
+        onRestoreSuccess={onRestoreSuccess}
+      />
+
+      <NodeHierarchyModal
+        isOpen={showNodeHierarchy}
+        onClose={onCloseNodeHierarchy || (() => {})}
+        diagram={diagram}
+        onSelectNode={onSelectNode}
+        onFocusNode={onFocusNode}
+      />
+
       <CommandPaletteModal
         isOpen={showCommandPalette}
-        onClose={onCloseCommandPalette || (() => {})}
+        onClose={onCloseCommandPalette || (() => { })}
         diagram={diagram}
         onSelectNode={onSelectNode}
         onFocusNode={onFocusNode}
@@ -305,6 +348,9 @@ export function AppModals({
         onOpenThesisBundle={onOpenThesisBundle}
         onOpenTestCases={onOpenTestCases}
         onOpenMockData={onOpenMockData}
+        onOpenDependencyMatrix={onOpenDependencyMatrix}
+        onOpenWorkspaceBackup={onOpenWorkspaceBackup}
+        onOpenNodeHierarchy={onOpenNodeHierarchy}
         onOpenAI={onOpenAI}
         onOpenTemplates={onOpenTemplates}
         onOpenLibrary={onOpenLibrary}

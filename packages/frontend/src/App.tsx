@@ -139,6 +139,9 @@ export default function App(props: AppProps = {}) {
   const [showThesisBundle, setShowThesisBundle] = useState(false);
   const [showTestCases, setShowTestCases] = useState(false);
   const [showMockData, setShowMockData] = useState(false);
+  const [showDependencyMatrix, setShowDependencyMatrix] = useState(false);
+  const [showWorkspaceBackup, setShowWorkspaceBackup] = useState(false);
+  const [showNodeHierarchy, setShowNodeHierarchy] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showMetrics, setShowMetrics] = useState(false);
@@ -1146,6 +1149,9 @@ export default function App(props: AppProps = {}) {
         onOpenThesisBundle={() => setShowThesisBundle(true)}
         onOpenTestCases={() => setShowTestCases(true)}
         onOpenMockData={() => setShowMockData(true)}
+        onOpenDependencyMatrix={() => setShowDependencyMatrix(true)}
+        onOpenWorkspaceBackup={() => setShowWorkspaceBackup(true)}
+        onOpenNodeHierarchy={() => setShowNodeHierarchy(true)}
         onOpenCommandPalette={() => setShowCommandPalette(true)}
         onSaveCurrent={handleSaveCurrent}
         onShareLink={handleShareLink}
@@ -1303,6 +1309,23 @@ export default function App(props: AppProps = {}) {
         onCloseTestCases={() => setShowTestCases(false)}
         showMockData={showMockData}
         onCloseMockData={() => setShowMockData(false)}
+        showDependencyMatrix={showDependencyMatrix}
+        onCloseDependencyMatrix={() => setShowDependencyMatrix(false)}
+        onOpenDependencyMatrix={() => setShowDependencyMatrix(true)}
+        showWorkspaceBackup={showWorkspaceBackup}
+        onCloseWorkspaceBackup={() => setShowWorkspaceBackup(false)}
+        onOpenWorkspaceBackup={() => setShowWorkspaceBackup(true)}
+        onRestoreSuccess={() => {
+          refreshTabs();
+          const curr = storage.loadCurrent();
+          if (curr) diagramHistory.set(curr);
+          const savedCode = storage.loadCode();
+          if (savedCode) setCode(savedCode);
+          showToast(isId ? "Workspace berhasil dipulihkan & dimuat ulang" : "Workspace restored & reloaded", "success");
+        }}
+        showNodeHierarchy={showNodeHierarchy}
+        onCloseNodeHierarchy={() => setShowNodeHierarchy(false)}
+        onOpenNodeHierarchy={() => setShowNodeHierarchy(true)}
         showCommandPalette={showCommandPalette}
         onCloseCommandPalette={() => setShowCommandPalette(false)}
         onSelectNode={(id) => setSelectedNodeId(id)}
@@ -1315,6 +1338,9 @@ export default function App(props: AppProps = {}) {
         onOpenThesisBundle={() => setShowThesisBundle(true)}
         onOpenTestCases={() => setShowTestCases(true)}
         onOpenMockData={() => setShowMockData(true)}
+        onOpenDependencyMatrix={() => setShowDependencyMatrix(true)}
+        onOpenWorkspaceBackup={() => setShowWorkspaceBackup(true)}
+        onOpenNodeHierarchy={() => setShowNodeHierarchy(true)}
         onOpenAI={() => setShowAI(true)}
         onOpenTemplates={() => setShowTemplates(true)}
         onOpenLibrary={() => setShowLibrary(true)}

@@ -14,6 +14,9 @@ interface Props {
   onOpenThesisBundle?: () => void;
   onOpenTestCases?: () => void;
   onOpenMockData?: () => void;
+  onOpenDependencyMatrix?: () => void;
+  onOpenWorkspaceBackup?: () => void;
+  onOpenNodeHierarchy?: () => void;
   onOpenCommandPalette?: () => void;
   onNewDiagram?: () => void;
   hasDiagram: boolean;
@@ -32,6 +35,9 @@ export function ProjectMenu({
   onOpenThesisBundle,
   onOpenTestCases,
   onOpenMockData,
+  onOpenDependencyMatrix,
+  onOpenWorkspaceBackup,
+  onOpenNodeHierarchy,
   onOpenCommandPalette,
   onNewDiagram,
   hasDiagram,
@@ -55,11 +61,10 @@ export function ProjectMenu({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`h-8 px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 ${
-          open
-            ? "bg-surface-4 text-text border-accent shadow-xs"
-            : "bg-surface-3 text-text-muted hover:text-text hover:bg-surface-4 border-border"
-        }`}
+        className={`h-8 px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 ${open
+          ? "bg-surface-4 text-text border-accent shadow-xs"
+          : "bg-surface-3 text-text-muted hover:text-text hover:bg-surface-4 border-border"
+          }`}
         title={t("toolbar.projectMenuDesc")}
       >
         <span className="text-sm">📁</span>
@@ -310,6 +315,56 @@ export function ProjectMenu({
               <div>
                 <div className="font-medium">Generator Data Dummy (Seed)</div>
                 <div className="text-[10px] text-text-muted">Generate JSON mock & SQL INSERT seed</div>
+              </div>
+            </button>
+          )}
+
+          {onOpenDependencyMatrix && (
+            <button
+              onClick={() => {
+                onOpenDependencyMatrix();
+                setOpen(false);
+              }}
+              disabled={!hasDiagram}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text hover:bg-surface-3 transition-colors text-left disabled:opacity-40"
+            >
+              <span className="text-base">🕸️</span>
+              <div>
+                <div className="font-medium">Matriks Dependensi (DSM) & Siklus</div>
+                <div className="text-[10px] text-text-muted">Kopling Ca/Ce, deteksi circular cycle & decoupling</div>
+              </div>
+            </button>
+          )}
+
+          {onOpenNodeHierarchy && (
+            <button
+              onClick={() => {
+                onOpenNodeHierarchy();
+                setOpen(false);
+              }}
+              disabled={!hasDiagram}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text hover:bg-surface-3 transition-colors text-left disabled:opacity-40"
+            >
+              <span className="text-base">🌳</span>
+              <div>
+                <div className="font-medium">Navigator Hierarki & Arsitektur</div>
+                <div className="text-[10px] text-text-muted">Pohon komponen, in/out degree & fokus canvas</div>
+              </div>
+            </button>
+          )}
+
+          {onOpenWorkspaceBackup && (
+            <button
+              onClick={() => {
+                onOpenWorkspaceBackup();
+                setOpen(false);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text hover:bg-surface-3 transition-colors text-left"
+            >
+              <span className="text-base">💾</span>
+              <div>
+                <div className="font-medium text-accent">Backup & Restore Ruang Kerja</div>
+                <div className="text-[10px] text-text-muted">Snapshot lengkap seluruh diagram & metadata (JSON)</div>
               </div>
             </button>
           )}

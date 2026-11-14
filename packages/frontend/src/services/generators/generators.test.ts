@@ -17,6 +17,9 @@ import { initSimulation, stepSimulation } from "../flow-simulator";
 import { getAcademicMetadata, saveAcademicMetadata, formatAcademicWatermark } from "../academic-metadata";
 import { repairDiagram } from "../diagram-repair";
 import { generateThesisAppendixBundle } from "../thesis-bundle";
+import { analyzeDependencies } from "../dependency-analyzer";
+import { exportWorkspaceBackup, restoreWorkspaceBackup } from "../workspace-backup";
+import { generateTikZ, escapeLaTeX } from "./tikz";
 
 const sampleClassDiagram: Diagram = {
   id: "diag-1",
@@ -577,5 +580,144 @@ describe("Automated Test Case & Scenario Matrix Generator", () => {
     expect(md).toContain("# MATRIKS PENGUJIAN PERANGKAT LUNAK");
     expect(md).toContain("AuthenticationFlow");
     expect(md).toContain("TC-001");
+  });
+});
+
+describe("Dependency Structure Matrix (DSM) & Circular Cycle Detector", () => {
+  it("builds DSM adjacency matrix and detects circular dependency loop A -> B -> C -> A", () => {
+    const cyclicDiagram: Diagram = {
+      id: "diag-cycle",
+      name: "CircularArchitecture",
+      type: "class",
+      nodes: [
+        { id: "A", name: "ServiceA", type: "class", position: { x: 0, y: 0 } },
+        { id: "B", name: "ServiceB", type: "class", position: { x: 100, y: 0 } },
+        { id: "C", name: "ServiceC", type: "class", position: { x: 200, y: 0 } },
+        { id: "D", name: "HelperD", type: "class", position: { x: 300, y: 0 } },
+      ],
+      edges: [
+        { id: "e1", source: "A", target: "B" },
+        { id: "e2", source: "B", target: "C" },
+        { id: "e3", source: "C", target: "A" }, // Creates cycle A -> B -> C -> A
+        { id: "e4", source: "A", target: "D" },
+      ],
+    };
+
+    const analysis = analyzeDependencies(cyclicDiagram);
+    expect(analysis.matrix.length).toBe(4);
+    expect(analysis.cycles.length).toBeGreaterThanOrEqual(1);
+
+    // Verify circular path includes ServiceA, ServiceB, ServiceC
+    const cycleNames = analysis.cycles[0].nodeNames;
+    expect(cycleNames).toContain("ServiceA");
+    expect(cycleNames).toContain("ServiceB");
+    expect(cycleNames).toContain("ServiceC");
+
+    // Verify instability metrics calculation
+    const statA = analysis.couplings.find((s) => s.nodeName === "ServiceA");
+    expect(statA).toBeDefined();
+    expect(statA!.efferentCoupling).toBe(2); // depends on B and D
+    expect(statA!.afferentCoupling).toBe(1); // C depends on A
+    expect(statA!.instability).toBeCloseTo(2 / 3, 2);
+  });
+
+  it("handles acyclic diagrams with zero cycles", () => {
+    const acyclicDiagram: Diagram = {
+      id: "diag-clean",
+      name: "CleanArch",
+      type: "class",
+      nodes: [
+        { id: "ctrl", name: "UserController", type: "class" },
+        { id: "srv", name: "UserService", type: "class" },
+        { id: "repo", name: "UserRepository", type: "class" },
+      ],
+      edges: [
+        { id: "e1", source: "ctrl", target: "srv" },
+        { id: "e2", source: "srv", target: "repo" },
+      ],
+    };
+
+    const analysis = analyzeDependencies(acyclicDiagram);
+    expect(analysis.cycles.length).toBe(0);
+    expect(analysis.recommendation.length).toBeGreaterThan(0);
+  });
+});
+
+describe("Full Workspace Backup & Restore Suite", () => {
+  it("exports valid workspace backup snapshot JSON", () => {
+    const json = exportWorkspaceBackup();
+    const snapshot = JSON.parse(json);
+
+    expect(snapshot.version).toBe("1.0");
+    expect(snapshot.appName).toBe("uml-flow");
+    expect(Array.isArray(snapshot.diagrams)).toBe(true);
+    expect(typeof snapshot.exportedAt).toBe("string");
+  });
+
+  it("restores workspace snapshot safely in merge and replace modes", () => {
+    const mockSnapshot = {
+      version: "1.0",
+      exportedAt: new Date().toISOString(),
+      appName: "uml-flow",
+      diagrams: [
+        {
+          id: "test-snap-1",
+          name: "Snapshot Diagram 1",
+          type: "class",
+          code: "class Test {}",
+          updatedAt: Date.now(),
+        },
+      ],
+      openTabIds: ["test-snap-1"],
+      templates: [],
+      academicMetadata: { enabled: false },
+    };
+
+    // Test merge mode
+    const mergeResult = restoreWorkspaceBackup(JSON.stringify(mockSnapshot), "merge");
+    expect(mergeResult.restoredCount).toBeGreaterThanOrEqual(1);
+
+    // Test replace mode
+    const replaceResult = restoreWorkspaceBackup(JSON.stringify(mockSnapshot), "replace");
+    expect(replaceResult.restoredCount).toBe(1);
+  });
+});
+
+describe("LaTeX TikZ Code Exporter", () => {
+  it("escapes LaTeX special characters properly", () => {
+    expect(escapeLaTeX("user_id & count % $ # { }")).toBe(
+      "user\\_id \\& count \\% \\$ \\# \\{ \\}"
+    );
+  });
+
+  it("generates native LaTeX TikZ vector markup for class diagram", () => {
+    const tikz = generateTikZ(sampleClassDiagram);
+    expect(tikz).toContain("\\begin{tikzpicture}");
+    expect(tikz).toContain("\\end{tikzpicture}");
+    expect(tikz).toContain("\\node[umlbox]");
+    expect(tikz).toContain("\\textbf{User}");
+    expect(tikz).toContain("email");
+    expect(tikz).toContain("login()");
+  });
+
+  it("generates TikZ nodes and edges for flowchart", () => {
+    const flowchartDiagram: Diagram = {
+      id: "fc-tikz",
+      name: "SimpleFlow",
+      type: "flowchart",
+      nodes: [
+        { id: "start", name: "Start", type: "start", position: { x: 100, y: 100 } },
+        { id: "proc", name: "Compute", type: "process", position: { x: 100, y: 200 } },
+      ],
+      edges: [
+        { id: "e1", source: "start", target: "proc", label: { text: "proceed" } },
+      ],
+    };
+
+    const tikz = generateTikZ(flowchartDiagram);
+    expect(tikz).toContain("flowstart");
+    expect(tikz).toContain("flowproc");
+    expect(tikz).toContain("\\draw[baseedge]");
+    expect(tikz).toContain("proceed");
   });
 });

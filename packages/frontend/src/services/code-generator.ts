@@ -16,5 +16,7 @@ export {
   generateRust,
   generateOpenAPI,
   generatePrisma,
+  generateTikZ,
+  escapeLaTeX,
   type PythonTarget,
 } from "./generators";

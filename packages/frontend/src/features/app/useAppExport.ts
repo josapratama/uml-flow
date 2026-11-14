@@ -412,6 +412,34 @@ export function useAppExport({
             showToast(isId ? "SQL DDL berhasil diekspor" : "SQL DDL exported", "success");
             break;
           }
+          case "tikz": {
+            const { generateTikZ } = await import(
+              "../../services/code-generator"
+            );
+            const tikzCode = generateTikZ(diagram);
+            downloadFile(
+              tikzCode,
+              `${diagram.name.toLowerCase().replace(/[^a-z0-9_]/g, "_")}.tex`,
+              "text/x-tex"
+            );
+            try {
+              await navigator.clipboard.writeText(tikzCode);
+              showToast(
+                isId
+                  ? "Kode LaTeX TikZ (.tex) diekspor & disalin ke clipboard"
+                  : "LaTeX TikZ code (.tex) exported & copied to clipboard",
+                "success"
+              );
+            } catch {
+              showToast(
+                isId
+                  ? "Kode LaTeX TikZ (.tex) berhasil diunduh"
+                  : "LaTeX TikZ code (.tex) exported",
+                "success"
+              );
+            }
+            break;
+          }
           case "xstate": {
             if (diagram.type !== "state") {
               showToast(isId ? "Ekspor XState hanya didukung untuk Diagram State" : "XState export only works for State diagrams", "error");

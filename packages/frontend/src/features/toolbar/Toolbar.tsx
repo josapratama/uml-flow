@@ -60,6 +60,9 @@ interface ToolbarProps {
   onOpenThesisBundle?: () => void;
   onOpenTestCases?: () => void;
   onOpenMockData?: () => void;
+  onOpenDependencyMatrix?: () => void;
+  onOpenWorkspaceBackup?: () => void;
+  onOpenNodeHierarchy?: () => void;
   onOpenCommandPalette?: () => void;
   onSaveCurrent?: () => void;
   onShareLink?: () => void;
@@ -116,6 +119,9 @@ export function Toolbar(props: ToolbarProps) {
     onOpenThesisBundle,
     onOpenTestCases,
     onOpenMockData,
+    onOpenDependencyMatrix,
+    onOpenWorkspaceBackup,
+    onOpenNodeHierarchy,
     onOpenCommandPalette,
     onSaveCurrent,
     onShareLink,
@@ -176,6 +182,9 @@ export function Toolbar(props: ToolbarProps) {
           onOpenThesisBundle={onOpenThesisBundle}
           onOpenTestCases={onOpenTestCases}
           onOpenMockData={onOpenMockData}
+          onOpenDependencyMatrix={onOpenDependencyMatrix}
+          onOpenWorkspaceBackup={onOpenWorkspaceBackup}
+          onOpenNodeHierarchy={onOpenNodeHierarchy}
           onOpenCommandPalette={onOpenCommandPalette}
           onNewDiagram={onNewDiagram}
           hasDiagram={hasDiagram}
@@ -184,7 +193,7 @@ export function Toolbar(props: ToolbarProps) {
         {/* Active Diagram Type Badge */}
         <DiagramTypeBadge
           currentType={diagramType}
-          onSelectType={onSelectDiagramType || (() => {})}
+          onSelectType={onSelectDiagramType || (() => { })}
           tabs={tabs}
           activeTabId={activeTabId}
           onOpenTab={onOpenTab}
@@ -224,11 +233,10 @@ export function Toolbar(props: ToolbarProps) {
       <div className="flex items-center justify-center shrink-0">
         <div className="flex items-center h-8 bg-surface-3 border border-border rounded-lg p-0.5 shadow-2xs">
           <button
-            className={`h-7 px-2 sm:px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${
-              mode === "code"
-                ? "bg-accent text-white shadow-xs"
-                : "text-text-muted hover:text-text"
-            }`}
+            className={`h-7 px-2 sm:px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${mode === "code"
+              ? "bg-accent text-white shadow-xs"
+              : "text-text-muted hover:text-text"
+              }`}
             onClick={() => onModeChange("code")}
             title={t("toolbar.codeMode")}
           >
@@ -236,11 +244,10 @@ export function Toolbar(props: ToolbarProps) {
             <span className="hidden md:inline">{t("toolbar.codeMode")}</span>
           </button>
           <button
-            className={`h-7 px-2 sm:px-2.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${
-              mode === "split"
-                ? "bg-accent text-white shadow-xs"
-                : "text-text-muted hover:text-text"
-            }`}
+            className={`h-7 px-2 sm:px-2.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${mode === "split"
+              ? "bg-accent text-white shadow-xs"
+              : "text-text-muted hover:text-text"
+              }`}
             onClick={() => onModeChange("split")}
             title={t("toolbar.splitMode")}
           >
@@ -248,11 +255,10 @@ export function Toolbar(props: ToolbarProps) {
             <span className="hidden md:inline">{t("toolbar.splitMode")}</span>
           </button>
           <button
-            className={`h-7 px-2 sm:px-2.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${
-              mode === "visual"
-                ? "bg-accent text-white shadow-xs"
-                : "text-text-muted hover:text-text"
-            }`}
+            className={`h-7 px-2 sm:px-2.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${mode === "visual"
+              ? "bg-accent text-white shadow-xs"
+              : "text-text-muted hover:text-text"
+              }`}
             onClick={() => onModeChange("visual")}
             title={t("toolbar.visualMode")}
           >

@@ -26,6 +26,9 @@ interface Props {
   onOpenThesisBundle?: () => void;
   onOpenTestCases?: () => void;
   onOpenMockData?: () => void;
+  onOpenDependencyMatrix?: () => void;
+  onOpenWorkspaceBackup?: () => void;
+  onOpenNodeHierarchy?: () => void;
   onRepairDiagram?: () => void;
   onOpenAI: () => void;
   onOpenTemplates: () => void;
@@ -56,6 +59,9 @@ export function CommandPaletteModal({
   onOpenThesisBundle = () => {},
   onOpenTestCases = () => {},
   onOpenMockData = () => {},
+  onOpenDependencyMatrix = () => {},
+  onOpenWorkspaceBackup = () => {},
+  onOpenNodeHierarchy = () => {},
   onRepairDiagram = () => {},
   onOpenAI,
   onOpenTemplates,
@@ -197,6 +203,30 @@ export function CommandPaletteModal({
         icon: "🎲",
         category: "modals",
         onSelect: onOpenMockData,
+      },
+      {
+        id: "open-dsm",
+        title: isId ? "🕸️ Matriks Struktur Dependensi (DSM) & Siklus Sirkular" : "🕸️ Dependency Structure Matrix (DSM) & Cycle Detector",
+        description: isId ? "Analisis matriks kopling ketergantungan, deteksi siklus A→B→A, dan metrik instabilitas" : "Analyze dependency coupling matrix, circular cycle detection & instability metrics",
+        icon: "🕸️",
+        category: "modals",
+        onSelect: onOpenDependencyMatrix,
+      },
+      {
+        id: "open-workspace-backup",
+        title: isId ? "💾 Backup & Restore Seluruh Ruang Kerja" : "💾 Workspace Backup & Restore Suite",
+        description: isId ? "Ekspor/impor seluruh diagram, tab aktif, template dan konfigurasi dalam 1 berkas JSON" : "Export or import full workspace diagrams, tabs, templates & metadata snapshot",
+        icon: "💾",
+        category: "modals",
+        onSelect: onOpenWorkspaceBackup,
+      },
+      {
+        id: "open-node-hierarchy",
+        title: isId ? "🌳 Navigator Hierarki & Lapisan Arsitektur" : "🌳 Architecture Layer & Node Hierarchy Navigator",
+        description: isId ? "Jelajahi struktur node, derajat relasi in/out, dan lompat langsung ke canvas" : "Browse node structure, in/out degrees, and smoothly zoom to node on canvas",
+        icon: "🌳",
+        category: "modals",
+        onSelect: onOpenNodeHierarchy,
       },
       {
         id: "open-diff",
@@ -583,11 +613,10 @@ export function CommandPaletteModal({
                     onClose();
                   }}
                   onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer text-left transition-colors ${
-                    isSelected
-                      ? "bg-accent text-white"
-                      : "hover:bg-surface-3 text-text"
-                  }`}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer text-left transition-colors ${isSelected
+                    ? "bg-accent text-white"
+                    : "hover:bg-surface-3 text-text"
+                    }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="text-base shrink-0">{cmd.icon}</span>
@@ -597,9 +626,8 @@ export function CommandPaletteModal({
                       </div>
                       {cmd.description && (
                         <div
-                          className={`text-[11px] truncate ${
-                            isSelected ? "text-white/80" : "text-text-muted"
-                          }`}
+                          className={`text-[11px] truncate ${isSelected ? "text-white/80" : "text-text-muted"
+                            }`}
                         >
                           {cmd.description}
                         </div>
@@ -609,11 +637,10 @@ export function CommandPaletteModal({
 
                   {cmd.shortcut && (
                     <kbd
-                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ml-2 ${
-                        isSelected
-                          ? "bg-white/20 text-white"
-                          : "bg-surface-4 border border-border text-text-muted"
-                      }`}
+                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ml-2 ${isSelected
+                        ? "bg-white/20 text-white"
+                        : "bg-surface-4 border border-border text-text-muted"
+                        }`}
                     >
                       {cmd.shortcut}
                     </kbd>

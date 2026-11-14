@@ -164,7 +164,7 @@ export function Canvas({
       const next = !v;
       try {
         localStorage.setItem("uml_canvas_watermark", String(next));
-      } catch {}
+      } catch { }
       return next;
     });
   }, []);
@@ -466,11 +466,10 @@ export function Canvas({
       {/* Canvas Info / Watermark Badge */}
       {showWatermark && (
         <div
-          className={`absolute bottom-3 left-3 flex items-center gap-2 rounded-xl px-3 py-1.5 shadow-lg backdrop-blur-md z-10 border transition-all ${
-            canvasTheme === "dark"
-              ? "bg-surface-2/90 border-border/80 text-text"
-              : "bg-white/90 border-slate-200 text-slate-800"
-          }`}
+          className={`absolute bottom-3 left-3 flex items-center gap-2 rounded-xl px-3 py-1.5 shadow-lg backdrop-blur-md z-10 border transition-all ${canvasTheme === "dark"
+            ? "bg-surface-2/90 border-border/80 text-text"
+            : "bg-white/90 border-slate-200 text-slate-800"
+            }`}
         >
           <span className="text-base">
             {getAcademicMetadata().enabled ? "🎓" : DIAGRAM_TYPES.find((d) => d.id === diagram.type)?.icon || "📐"}

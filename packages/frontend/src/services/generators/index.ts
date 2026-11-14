@@ -14,3 +14,4 @@ export { generateGolang } from "./golang";
 export { generateRust } from "./rust";
 export { generateOpenAPI } from "./openapi";
 export { generatePrisma } from "./prisma";
+export { generateTikZ, escapeLaTeX } from "./tikz";

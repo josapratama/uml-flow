@@ -43,6 +43,13 @@ function getExportOptions(locale: Locale): ExportOption[] {
       description: isId ? "Tabel uji White-Box basis path & functional" : "White-box basis path & functional test table",
       category: "doc",
     },
+    {
+      id: "tikz",
+      label: "LaTeX TikZ Vector (.tex)",
+      icon: "📑",
+      description: isId ? "Kode gambar vektor native LaTeX / Overleaf" : "Native LaTeX / Overleaf TikZ vector code",
+      category: "doc",
+    },
 
     // --- Gambar Visual ---
     {
