@@ -16,6 +16,8 @@ interface CanvasControlsProps {
   onCopyPNG?: () => void;
   showWatermark?: boolean;
   onToggleWatermark?: () => void;
+  isAnnotating?: boolean;
+  onToggleAnnotation?: () => void;
 }
 
 export function CanvasControls({
@@ -32,6 +34,8 @@ export function CanvasControls({
   onCopyPNG,
   showWatermark,
   onToggleWatermark,
+  isAnnotating,
+  onToggleAnnotation,
 }: CanvasControlsProps) {
   const { t, locale } = useI18n();
   const isId = locale === "id";
@@ -57,6 +61,23 @@ export function CanvasControls({
       >
         🔍
       </button>
+
+      {/* Freehand Annotation Pencil Toggle */}
+      {onToggleAnnotation && (
+        <button
+          onClick={onToggleAnnotation}
+          className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition-colors ${
+            isAnnotating
+              ? "bg-accent text-white shadow-xs"
+              : canvasTheme === "dark"
+              ? "hover:bg-surface-3 text-text"
+              : "hover:bg-slate-100 text-slate-700"
+          }`}
+          title={isId ? "Mode Coretan & Anotasi Bebas (Pen & Stabilo)" : "Freehand Annotation Mode"}
+        >
+          ✏️
+        </button>
+      )}
 
       <div className="w-px h-4 bg-border/60 mx-0.5" />
 

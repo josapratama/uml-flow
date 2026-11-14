@@ -184,7 +184,9 @@ export function AppModals({
         onGenerate={onAIGenerate}
       />
 
-      {showPresentation && <PresentationMode onExit={onExitPresentation} />}
+      {showPresentation && (
+        <PresentationMode onExit={onExitPresentation} diagram={diagram} />
+      )}
 
       <DiagramDiffPanel
         isOpen={showDiff}

@@ -34,6 +34,7 @@ import {
   type DiagramTemplate,
 } from "./services/templates";
 import { useI18n } from "./i18n";
+import { playCompileSuccessSound, playDeleteSound } from "./services/sound-fx";
 
 interface AppProps {
   initialCode?: string;
@@ -197,6 +198,7 @@ export default function App(props: AppProps = {}) {
           }
           diagramHistory.set(newDiagram);
           setErrors([]);
+          playCompileSuccessSound();
 
           // Automatically sync active tab name from parsed diagram name
           const currentCode = dslCode ?? code;
@@ -984,7 +986,10 @@ export default function App(props: AppProps = {}) {
     setSelectedEdgeIds,
     onUndo: diagramHistory.undo,
     onRedo: diagramHistory.redo,
-    onDeleteNode: actions.deleteNode,
+    onDeleteNode: (id) => {
+      actions.deleteNode(id);
+      playDeleteSound();
+    },
     onDeleteEdge: actions.deleteEdge,
     onDeleteMultiEdges: (ids) => {
       if (diagram) {

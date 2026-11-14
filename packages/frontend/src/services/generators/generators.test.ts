@@ -236,3 +236,26 @@ describe("Diagram Metrics & Cyclomatic Complexity", () => {
     expect(md).toContain("Basis Execution Paths");
   });
 });
+
+describe("Enterprise Architecture Templates & Sound FX", () => {
+  it("loads enterprise architecture templates with GoF Observer and Clean Architecture", async () => {
+    const { ENTERPRISE_ARCHITECTURE_TEMPLATES } = await import("../templates/presets/enterpriseArchitectureTemplates");
+    expect(ENTERPRISE_ARCHITECTURE_TEMPLATES.length).toBeGreaterThanOrEqual(3);
+    const observer = ENTERPRISE_ARCHITECTURE_TEMPLATES.find(t => t.id === "tmpl_gof_observer");
+    expect(observer).toBeDefined();
+    expect(observer?.dsl).toContain("Subject");
+    expect(observer?.dsl).toContain("Observer");
+
+    const cleanArch = ENTERPRISE_ARCHITECTURE_TEMPLATES.find(t => t.id === "tmpl_clean_architecture");
+    expect(cleanArch).toBeDefined();
+    expect(cleanArch?.diagram.nodes.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("handles sound FX configuration state correctly", async () => {
+    const { isSoundEnabled, setSoundEnabled } = await import("../sound-fx");
+    setSoundEnabled(false);
+    expect(isSoundEnabled()).toBe(false);
+    setSoundEnabled(true);
+    expect(isSoundEnabled()).toBe(true);
+  });
+});

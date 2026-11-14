@@ -8,6 +8,7 @@ import {
 } from "../../services/flow-simulator";
 import { useI18n } from "../../i18n";
 import { showToast } from "./Toast";
+import { playStepSound } from "../../services/sound-fx";
 
 interface Props {
   isOpen: boolean;
@@ -59,6 +60,7 @@ export function FlowSimulatorModal({
   if (!isOpen || !diagram || !state) return null;
 
   const handleStep = (transition: AvailableTransition) => {
+    playStepSound();
     const nextState = stepSimulation(diagram, state, transition);
     setState(nextState);
 

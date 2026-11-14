@@ -8,6 +8,8 @@ import { AlignToolbar } from "./AlignToolbar";
 import { CanvasSearchBar } from "./CanvasSearchBar";
 import { CanvasControls } from "./CanvasControls";
 import { CanvasEmptyState } from "./CanvasEmptyState";
+import { AnnotationToolbar, type AnnotationTool } from "./AnnotationToolbar";
+import { AnnotationLayer, type AnnotationStroke } from "./AnnotationLayer";
 import { CanvasLayers } from "./CanvasLayers";
 import { getVisualSize } from "./nodes/getVisualSize";
 import { computeEdgeRoutingLayout } from "./utils/edgeRoutingLayout";
@@ -252,6 +254,12 @@ export function Canvas({
   // --- Search state & Ctrl+F shortcut ---
   const [showSearch, setShowSearch] = useState(false);
 
+  // --- Freehand Annotation Layer state ---
+  const [isAnnotating, setIsAnnotating] = useState(false);
+  const [annotationTool, setAnnotationTool] = useState<AnnotationTool>("pen");
+  const [annotationColor, setAnnotationColor] = useState("#ef4444");
+  const [strokes, setStrokes] = useState<AnnotationStroke[]>([]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
@@ -431,7 +439,23 @@ export function Canvas({
         onCopyPNG={onCopyPNG}
         showWatermark={showWatermark}
         onToggleWatermark={handleToggleWatermark}
+        isAnnotating={isAnnotating}
+        onToggleAnnotation={() => setIsAnnotating((v) => !v)}
       />
+
+      {/* Floating Freehand Annotation Toolbar */}
+      {isAnnotating && (
+        <AnnotationToolbar
+          activeTool={annotationTool}
+          onChangeTool={setAnnotationTool}
+          activeColor={annotationColor}
+          onChangeColor={setAnnotationColor}
+          strokeCount={strokes.length}
+          onUndoStroke={() => setStrokes((prev) => prev.slice(0, -1))}
+          onClearAll={() => setStrokes([])}
+          onClose={() => setIsAnnotating(false)}
+        />
+      )}
 
       {/* Canvas Info / Watermark Badge */}
       {showWatermark && (
@@ -697,6 +721,19 @@ export function Canvas({
               ))}
             </g>
           )}
+
+          {/* Freehand Annotation & Review Layer */}
+          <AnnotationLayer
+            strokes={strokes}
+            isAnnotating={isAnnotating}
+            activeTool={annotationTool}
+            activeColor={annotationColor}
+            onAddStroke={(s) => setStrokes((prev) => [...prev, s])}
+            viewScale={view.scale}
+            viewOffsetX={view.offsetX}
+            viewOffsetY={view.offsetY}
+            svgRef={svgRef}
+          />
         </g>
       </svg>
     </div>
