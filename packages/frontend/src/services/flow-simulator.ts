@@ -1,4 +1,4 @@
-import type { Diagram, DiagramNode, DiagramEdge } from "@uml-editor/shared";
+import type { Diagram, DiagramNode, DiagramEdge, SequenceParticipant, SequenceMessage } from "@uml-editor/shared";
 
 export interface TraceEntry {
   step: number;
@@ -25,14 +25,12 @@ export interface SimulationState {
   isCompleted: boolean;
   isDeadEnd: boolean;
   stepCount: number;
+  sequenceMessageIndex?: number;
 }
 
 const START_TYPES = new Set(["start", "initial", "start_event"]);
 const END_TYPES = new Set(["end", "final", "terminate", "stop"]);
 
-/**
- * Find the initial entry node of a diagram
- */
 export function findStartNode(diagram: Diagram): DiagramNode | null {
   const nodes = diagram.nodes || [];
   if (nodes.length === 0) return null;
@@ -50,9 +48,6 @@ export function findStartNode(diagram: Diagram): DiagramNode | null {
   return nodes[0];
 }
 
-/**
- * Get outgoing transitions for a node
- */
 export function getTransitions(diagram: Diagram, fromNodeId: string): AvailableTransition[] {
   const edges = (diagram.edges || []).filter(e => e.source === fromNodeId);
   const nodes = diagram.nodes || [];
@@ -74,9 +69,61 @@ export function getTransitions(diagram: Diagram, fromNodeId: string): AvailableT
 }
 
 /**
- * Initialize a new simulation run
+ * Initialize a new simulation run (Flowchart or Sequence)
  */
 export function initSimulation(diagram: Diagram): SimulationState {
+  if (diagram.type === "sequence") {
+    const participants = diagram.participants || [];
+    const messages = [...(diagram.messages || [])].sort((a, b) => a.order - b.order);
+
+    if (messages.length === 0) {
+      return {
+        currentNodeId: participants[0]?.id || null,
+        currentNode: { id: participants[0]?.id || "", name: participants[0]?.name || "", type: "participant", position: { x: 0, y: 0 }, size: { width: 100, height: 50 } } as any,
+        visitedNodeIds: participants[0] ? [participants[0].id] : [],
+        traceLog: [],
+        availableTransitions: [],
+        isCompleted: true,
+        isDeadEnd: true,
+        stepCount: 0,
+        sequenceMessageIndex: 0,
+      };
+    }
+
+    const firstMsg = messages[0];
+    const fromP = participants.find(p => p.id === firstMsg.from);
+    const toP = participants.find(p => p.id === firstMsg.to);
+
+    const transition: AvailableTransition = {
+      edgeId: firstMsg.id,
+      targetId: firstMsg.to,
+      targetName: toP?.name || firstMsg.to,
+      label: firstMsg.label ? `${firstMsg.label} (${firstMsg.type})` : `Kirim pesan ke ${toP?.name || firstMsg.to}`,
+    };
+
+    const initialEntry: TraceEntry = {
+      step: 1,
+      nodeId: firstMsg.from,
+      nodeName: fromP?.name || firstMsg.from,
+      nodeType: "participant",
+      edgeLabel: firstMsg.label,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+
+    return {
+      currentNodeId: firstMsg.from,
+      currentNode: { id: firstMsg.from, name: fromP?.name || firstMsg.from, type: "participant", position: { x: 0, y: 0 }, size: { width: 100, height: 50 } } as any,
+      visitedNodeIds: [firstMsg.from],
+      traceLog: [initialEntry],
+      availableTransitions: [transition],
+      isCompleted: messages.length === 1,
+      isDeadEnd: false,
+      stepCount: 1,
+      sequenceMessageIndex: 0,
+    };
+  }
+
+  // Standard Flowchart / Graph Simulation
   const start = findStartNode(diagram);
   if (!start) {
     return {
@@ -115,13 +162,60 @@ export function initSimulation(diagram: Diagram): SimulationState {
 }
 
 /**
- * Step forward along a selected transition edge
+ * Step forward along a selected transition
  */
 export function stepSimulation(
   diagram: Diagram,
   currentState: SimulationState,
   transition: AvailableTransition
 ): SimulationState {
+  if (diagram.type === "sequence") {
+    const participants = diagram.participants || [];
+    const messages = [...(diagram.messages || [])].sort((a, b) => a.order - b.order);
+    const nextMsgIdx = (currentState.sequenceMessageIndex ?? 0) + 1;
+    const isCompleted = nextMsgIdx >= messages.length;
+
+    const currentMsg = messages[currentState.sequenceMessageIndex ?? 0];
+    const toP = participants.find(p => p.id === transition.targetId);
+    const newStep = currentState.stepCount + 1;
+
+    const entry: TraceEntry = {
+      step: newStep,
+      nodeId: transition.targetId,
+      nodeName: toP?.name || transition.targetId,
+      nodeType: "participant",
+      edgeLabel: transition.label,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+
+    let nextTransitions: AvailableTransition[] = [];
+    if (!isCompleted && messages[nextMsgIdx]) {
+      const nextMsg = messages[nextMsgIdx];
+      const targetP = participants.find(p => p.id === nextMsg.to);
+      nextTransitions = [
+        {
+          edgeId: nextMsg.id,
+          targetId: nextMsg.to,
+          targetName: targetP?.name || nextMsg.to,
+          label: nextMsg.label ? `${nextMsg.label} (${nextMsg.type})` : `Pesan #${nextMsgIdx + 1}`,
+        },
+      ];
+    }
+
+    return {
+      currentNodeId: transition.targetId,
+      currentNode: { id: transition.targetId, name: toP?.name || transition.targetId, type: "participant", position: { x: 0, y: 0 }, size: { width: 100, height: 50 } } as any,
+      visitedNodeIds: [...currentState.visitedNodeIds, transition.targetId],
+      traceLog: [...currentState.traceLog, entry],
+      availableTransitions: nextTransitions,
+      isCompleted,
+      isDeadEnd: isCompleted,
+      stepCount: newStep,
+      sequenceMessageIndex: nextMsgIdx,
+    };
+  }
+
+  // Standard graph step
   const nodes = diagram.nodes || [];
   const targetNode = nodes.find(n => n.id === transition.targetId);
 

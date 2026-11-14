@@ -291,6 +291,27 @@ export function useAppExport({
             );
             break;
           }
+          case "rust": {
+            if (diagram.type !== "class" && diagram.type !== "erd") {
+              showToast(
+                isId
+                  ? "Ekspor Rust hanya didukung untuk Diagram Class dan ERD"
+                  : "Rust export only works for Class and ERD diagrams",
+                "error"
+              );
+              break;
+            }
+            const { generateRust } = await import(
+              "../../services/code-generator"
+            );
+            const code = generateRust(diagram);
+            downloadFile(code, `${diagram.name.toLowerCase()}_models.rs`, "text/plain");
+            showToast(
+              isId ? "Rust Structs & Enums berhasil diekspor" : "Rust Structs & Enums exported",
+              "success"
+            );
+            break;
+          }
           case "sql": {
             if (diagram.type !== "erd") {
               showToast(isId ? "Ekspor SQL hanya didukung untuk Diagram ERD" : "SQL export only works for ERD diagrams", "error");

@@ -126,6 +126,14 @@ function getExportOptions(locale: Locale): ExportOption[] {
       requiredTypes: ["class", "erd"],
     },
     {
+      id: "rust",
+      label: "Rust Structs & Enums",
+      icon: "🦀",
+      description: isId ? "Struct Rust dengan serde derive" : "Idiomatic Rust structs with serde",
+      category: "code",
+      requiredTypes: ["class", "erd"],
+    },
+    {
       id: "xstate",
       label: "XState Machine",
       icon: "⚙️",

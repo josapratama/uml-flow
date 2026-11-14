@@ -10,6 +10,7 @@ interface Props {
   onShareLink?: () => void;
   onShowDiff?: () => void;
   onShowMetrics?: () => void;
+  onOpenAcademicMetadata?: () => void;
   onOpenCommandPalette?: () => void;
   onNewDiagram?: () => void;
   hasDiagram: boolean;
@@ -24,6 +25,7 @@ export function ProjectMenu({
   onShareLink,
   onShowDiff,
   onShowMetrics,
+  onOpenAcademicMetadata,
   onOpenCommandPalette,
   onNewDiagram,
   hasDiagram,
@@ -237,6 +239,22 @@ export function ProjectMenu({
               <div>
                 <div className="font-medium">Analisis Metrik & Kompleksitas</div>
                 <div className="text-[10px] text-text-muted">McCabe Cyclomatic, OO CBO/DIT & audit</div>
+              </div>
+            </button>
+          )}
+
+          {onOpenAcademicMetadata && (
+            <button
+              onClick={() => {
+                onOpenAcademicMetadata();
+                setOpen(false);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text hover:bg-surface-3 transition-colors text-left"
+            >
+              <span className="text-base">🎓</span>
+              <div>
+                <div className="font-medium">Kop Akademis & Watermark Skripsi</div>
+                <div className="text-[10px] text-text-muted">Atur metadata penulis, NIM & watermark</div>
               </div>
             </button>
           )}

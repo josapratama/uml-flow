@@ -86,7 +86,10 @@ interface CanvasLayersProps {
     label: string,
     type: string
   ) => void;
-  onQuickAddNode?: (sourceNodeId: string) => void;
+  onQuickAddNode?: (
+    sourceNodeId: string,
+    direction?: "right" | "bottom" | "left" | "top"
+  ) => void;
   onContextMenu?: (
     e: React.MouseEvent,
     target: {

@@ -24,7 +24,7 @@ interface CanvasNodeItemProps {
   onDoubleClick: () => void;
   onAnchorMouseDown: (anchor: Position, side: string, e: React.MouseEvent) => void;
   onResizeStart: (handle: ResizeHandle, e: React.MouseEvent) => void;
-  onQuickAddNode?: (nodeId: string) => void;
+  onQuickAddNode?: (nodeId: string, direction?: "right" | "bottom" | "left" | "top") => void;
   onRenameSubmit: (val: string) => void;
   onRenameChange?: (val: string) => void;
   onRenameCancel: () => void;
@@ -168,40 +168,76 @@ export function CanvasNodeItem({
           onResizeStart={onResizeStart}
         />
 
-        {/* Quick-Add Node Connector button */}
+        {/* Smart Directional Quick Extender Buttons (+ Cabang Kilat 4 Arah) */}
         {isSelected && !hasMultiSelection && onQuickAddNode && (
-          <g
-            className="cursor-pointer group"
-            transform={`translate(${node.position.x + visualSize.width + 16}, ${node.position.y + visualSize.height / 2})`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onQuickAddNode(node.id);
-            }}
-          >
-            <line
-              x1={-16}
-              y1={0}
-              x2={-4}
-              y2={0}
-              stroke="#6366f1"
-              strokeWidth="1.5"
-              strokeDasharray="2,2"
-            />
-            <circle
-              r={10}
-              fill="#6366f1"
-              className="hover:fill-indigo-500 transition-colors shadow-sm"
-            />
-            <text
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill="#ffffff"
-              fontSize="13"
-              fontWeight="bold"
-              className="select-none pointer-events-none"
+          <g className="quick-extender-controls">
+            {/* Right: + / → */}
+            <g
+              className="cursor-pointer group"
+              transform={`translate(${node.position.x + visualSize.width + 16}, ${node.position.y + visualSize.height / 2})`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickAddNode(node.id, "right");
+              }}
             >
-              +
-            </text>
+              <title>Tambah node ke kanan (→)</title>
+              <line x1={-16} y1={0} x2={-4} y2={0} stroke="#6366f1" strokeWidth="1.5" strokeDasharray="2,2" />
+              <circle r={9.5} fill="#6366f1" className="hover:fill-indigo-500 transition-colors shadow-sm" />
+              <text textAnchor="middle" dominantBaseline="central" fill="#ffffff" fontSize="12" fontWeight="bold" className="select-none pointer-events-none">
+                →
+              </text>
+            </g>
+
+            {/* Bottom: ↓ */}
+            <g
+              className="cursor-pointer group"
+              transform={`translate(${node.position.x + visualSize.width / 2}, ${node.position.y + visualSize.height + 16})`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickAddNode(node.id, "bottom");
+              }}
+            >
+              <title>Tambah node ke bawah (↓)</title>
+              <line x1={0} y1={-16} x2={0} y2={-4} stroke="#6366f1" strokeWidth="1.5" strokeDasharray="2,2" />
+              <circle r={9.5} fill="#6366f1" className="hover:fill-indigo-500 transition-colors shadow-sm" />
+              <text textAnchor="middle" dominantBaseline="central" fill="#ffffff" fontSize="12" fontWeight="bold" className="select-none pointer-events-none">
+                ↓
+              </text>
+            </g>
+
+            {/* Left: ← */}
+            <g
+              className="cursor-pointer group"
+              transform={`translate(${node.position.x - 16}, ${node.position.y + visualSize.height / 2})`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickAddNode(node.id, "left");
+              }}
+            >
+              <title>Tambah node ke kiri (←)</title>
+              <line x1={16} y1={0} x2={4} y2={0} stroke="#818cf8" strokeWidth="1.5" strokeDasharray="2,2" />
+              <circle r={9.5} fill="#818cf8" className="hover:fill-indigo-400 transition-colors shadow-sm" />
+              <text textAnchor="middle" dominantBaseline="central" fill="#ffffff" fontSize="12" fontWeight="bold" className="select-none pointer-events-none">
+                ←
+              </text>
+            </g>
+
+            {/* Top: ↑ */}
+            <g
+              className="cursor-pointer group"
+              transform={`translate(${node.position.x + visualSize.width / 2}, ${node.position.y - 16})`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickAddNode(node.id, "top");
+              }}
+            >
+              <title>Tambah node ke atas (↑)</title>
+              <line x1={0} y1={16} x2={0} y2={4} stroke="#818cf8" strokeWidth="1.5" strokeDasharray="2,2" />
+              <circle r={9.5} fill="#818cf8" className="hover:fill-indigo-400 transition-colors shadow-sm" />
+              <text textAnchor="middle" dominantBaseline="central" fill="#ffffff" fontSize="12" fontWeight="bold" className="select-none pointer-events-none">
+                ↑
+              </text>
+            </g>
           </g>
         )}
       </g>

@@ -4,9 +4,11 @@ import { generatePythonPydantic, generatePythonSQLAlchemy } from "./python";
 import { generateCSharp } from "./csharp";
 import { generateGraphQL } from "./graphql";
 import { generateGolang } from "./golang";
+import { generateRust } from "./rust";
 import { calculateDiagramMetrics, exportMetricsMarkdown } from "../diagram-metrics";
 import { isTypeScriptCode, parseTypeScriptToDSL } from "../typescript-importer";
 import { initSimulation, stepSimulation } from "../flow-simulator";
+import { getAcademicMetadata, saveAcademicMetadata, formatAcademicWatermark } from "../academic-metadata";
 
 const sampleClassDiagram: Diagram = {
   id: "diag-1",
@@ -257,5 +259,97 @@ describe("Enterprise Architecture Templates & Sound FX", () => {
     expect(isSoundEnabled()).toBe(false);
     setSoundEnabled(true);
     expect(isSoundEnabled()).toBe(true);
+  });
+});
+
+describe("Rust Generator", () => {
+  it("generates idiomatic Rust structs, serde derives, enums, and constructors", () => {
+    const code = generateRust(sampleClassDiagram);
+    expect(code).toContain("use serde::{Serialize, Deserialize};");
+    expect(code).toContain("#[derive(Debug, Clone, Serialize, Deserialize)]");
+    expect(code).toContain("pub struct User {");
+    expect(code).toContain("pub id: i32,");
+    expect(code).toContain("pub email: String,");
+    expect(code).toContain("pub is_active: bool,");
+    expect(code).toContain("pub fn new() -> Self");
+    expect(code).toContain("pub fn login(&self, password: String) -> bool");
+    expect(code).toContain("pub enum Role {");
+    expect(code).toContain("ADMIN,");
+    expect(code).toContain("USER,");
+  });
+});
+
+describe("Sequence Diagram Simulation & Academic Metadata", () => {
+  const sequenceDiagram: Diagram = {
+    id: "seq-1",
+    name: "UserLoginSequence",
+    type: "sequence",
+    nodes: [],
+    edges: [],
+    participants: [
+      { id: "p1", name: "Client", type: "actor" },
+      { id: "p2", name: "AuthServer", type: "service" },
+      { id: "p3", name: "Database", type: "database" },
+    ],
+    messages: [
+      { id: "m1", from: "p1", to: "p2", label: "POST /login", type: "sync", order: 1 },
+      { id: "m2", from: "p2", to: "p3", label: "findUserByEmail(email)", type: "sync", order: 2 },
+      { id: "m3", from: "p3", to: "p2", label: "UserRecord", type: "return", order: 3 },
+      { id: "m4", from: "p2", to: "p1", label: "200 OK + JWT", type: "return", order: 4 },
+    ],
+  };
+
+  it("initializes and steps through sequence diagram messages chronologically", () => {
+    const state = initSimulation(sequenceDiagram);
+    expect(state.currentNodeId).toBe("p1");
+    expect(state.stepCount).toBe(1);
+    expect(state.traceLog.length).toBe(1);
+    expect(state.availableTransitions.length).toBe(1);
+    expect(state.availableTransitions[0].label).toContain("POST /login");
+
+    // Step 2: findUserByEmail -> Database (p3)
+    const step2 = stepSimulation(sequenceDiagram, state, state.availableTransitions[0]);
+    expect(step2.currentNodeId).toBe("p2");
+    expect(step2.stepCount).toBe(2);
+    expect(step2.availableTransitions[0].label).toContain("findUserByEmail");
+
+    // Step 3: UserRecord -> AuthServer (p2)
+    const step3 = stepSimulation(sequenceDiagram, step2, step2.availableTransitions[0]);
+    expect(step3.currentNodeId).toBe("p3");
+    expect(step3.stepCount).toBe(3);
+
+    // Step 4: 200 OK -> Client (p1)
+    const step4 = stepSimulation(sequenceDiagram, step3, step3.availableTransitions[0]);
+    expect(step4.currentNodeId).toBe("p2");
+
+    // Step 5: Complete
+    const step5 = stepSimulation(sequenceDiagram, step4, step4.availableTransitions[0]);
+    expect(step5.currentNodeId).toBe("p1");
+    expect(step5.isCompleted).toBe(true);
+  });
+
+  it("manages academic metadata and formats watermark string correctly", () => {
+    const meta = getAcademicMetadata();
+    expect(meta).toBeDefined();
+
+    saveAcademicMetadata({
+      authorName: "Ahmad Dahlan",
+      studentId: "2024001928",
+      institution: "Universitas Indonesia",
+      programStudy: "Teknik Informatika",
+      supervisorName: "Dr. Budi Santoso",
+      documentChapter: "BAB IV",
+      enabled: true,
+    });
+
+    const updated = getAcademicMetadata();
+    expect(updated.authorName).toBe("Ahmad Dahlan");
+    expect(updated.studentId).toBe("2024001928");
+
+    const watermark = formatAcademicWatermark();
+    expect(watermark).toContain("BAB IV");
+    expect(watermark).toContain("Ahmad Dahlan");
+    expect(watermark).toContain("2024001928");
+    expect(watermark).toContain("Teknik Informatika");
   });
 });

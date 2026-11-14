@@ -13,5 +13,6 @@ export {
   generateCSharp,
   generateGraphQL,
   generateGolang,
+  generateRust,
   type PythonTarget,
 } from "./generators";

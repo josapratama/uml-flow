@@ -34,7 +34,7 @@ import {
   type DiagramTemplate,
 } from "./services/templates";
 import { useI18n } from "./i18n";
-import { playCompileSuccessSound, playDeleteSound } from "./services/sound-fx";
+import { playCompileSuccessSound, playDeleteSound, playConnectSound } from "./services/sound-fx";
 
 interface AppProps {
   initialCode?: string;
@@ -134,6 +134,7 @@ export default function App(props: AppProps = {}) {
   const [showHistory, setShowHistory] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
   const [showAcademicCaption, setShowAcademicCaption] = useState(false);
+  const [showAcademicMetadata, setShowAcademicMetadata] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showMetrics, setShowMetrics] = useState(false);
@@ -879,12 +880,13 @@ export default function App(props: AppProps = {}) {
   );
 
   const handleQuickAddNode = useCallback(
-    (sourceNodeId: string) => {
+    (sourceNodeId: string, direction: "right" | "bottom" | "left" | "top" = "right") => {
       if (!diagram) return;
       const sourceNode = diagram.nodes.find((n) => n.id === sourceNodeId);
       if (!sourceNode) return;
 
       const sourceWidth = sourceNode.size?.width || 160;
+      const sourceHeight = sourceNode.size?.height || 80;
       const targetType =
         sourceNode.type || (diagram.type === "class" ? "class" : "process");
       const newNode = createDefaultNode(
@@ -892,10 +894,33 @@ export default function App(props: AppProps = {}) {
         diagram.type,
         diagram.nodes.length
       );
-      newNode.position = {
+
+      const newWidth = newNode.size?.width || 160;
+      const newHeight = newNode.size?.height || 80;
+
+      let targetPos = {
         x: sourceNode.position.x + sourceWidth + 80,
         y: sourceNode.position.y,
       };
+
+      if (direction === "bottom") {
+        targetPos = {
+          x: sourceNode.position.x,
+          y: sourceNode.position.y + sourceHeight + 70,
+        };
+      } else if (direction === "left") {
+        targetPos = {
+          x: sourceNode.position.x - newWidth - 80,
+          y: sourceNode.position.y,
+        };
+      } else if (direction === "top") {
+        targetPos = {
+          x: sourceNode.position.x,
+          y: sourceNode.position.y - newHeight - 70,
+        };
+      }
+
+      newNode.position = targetPos;
 
       const newEdge: any = {
         id: `edge_${Date.now()}`,
@@ -915,7 +940,13 @@ export default function App(props: AppProps = {}) {
         edges: [...diagram.edges, newEdge],
       });
       setSelectedNodeId(newNode.id);
-      showToast(isId ? "Node berhasil ditambahkan dan dihubungkan" : "Node added and connected", "success");
+      playConnectSound();
+      showToast(
+        isId
+          ? `Node berhasil ditambahkan (${direction})`
+          : `Node added (${direction})`,
+        "success"
+      );
     },
     [diagram, diagramHistory, isId]
   );
@@ -1081,6 +1112,7 @@ export default function App(props: AppProps = {}) {
         onShowDiff={() => setShowDiff(true)}
         onShowMetrics={() => setShowMetrics(true)}
         onOpenSimulator={() => setShowSimulator(true)}
+        onOpenAcademicMetadata={() => setShowAcademicMetadata(true)}
         onOpenCommandPalette={() => setShowCommandPalette(true)}
         onSaveCurrent={handleSaveCurrent}
         onShareLink={handleShareLink}
@@ -1229,6 +1261,8 @@ export default function App(props: AppProps = {}) {
         onCloseMetrics={() => setShowMetrics(false)}
         showSimulator={showSimulator}
         onCloseSimulator={() => setShowSimulator(false)}
+        showAcademicMetadata={showAcademicMetadata}
+        onCloseAcademicMetadata={() => setShowAcademicMetadata(false)}
         showCommandPalette={showCommandPalette}
         onCloseCommandPalette={() => setShowCommandPalette(false)}
         onSelectNode={(id) => setSelectedNodeId(id)}
@@ -1237,6 +1271,7 @@ export default function App(props: AppProps = {}) {
         onExport={handleExport}
         onOpenMetrics={() => setShowMetrics(true)}
         onOpenSimulator={() => setShowSimulator(true)}
+        onOpenAcademicMetadata={() => setShowAcademicMetadata(true)}
         onOpenAI={() => setShowAI(true)}
         onOpenTemplates={() => setShowTemplates(true)}
         onOpenLibrary={() => setShowLibrary(true)}

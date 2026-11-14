@@ -10,6 +10,7 @@ import { CanvasControls } from "./CanvasControls";
 import { CanvasEmptyState } from "./CanvasEmptyState";
 import { AnnotationToolbar, type AnnotationTool } from "./AnnotationToolbar";
 import { AnnotationLayer, type AnnotationStroke } from "./AnnotationLayer";
+import { getAcademicMetadata } from "../../services/academic-metadata";
 import { CanvasLayers } from "./CanvasLayers";
 import { getVisualSize } from "./nodes/getVisualSize";
 import { computeEdgeRoutingLayout } from "./utils/edgeRoutingLayout";
@@ -90,7 +91,10 @@ interface CanvasProps {
   edgeRouting?: "straight" | "orthogonal";
   onEdgeRoutingToggle?: () => void;
   activeEdgeTool?: string | null;
-  onQuickAddNode?: (sourceNodeId: string) => void;
+  onQuickAddNode?: (
+    sourceNodeId: string,
+    direction?: "right" | "bottom" | "left" | "top"
+  ) => void;
   onCreateNewDiagram?: (type: DiagramType) => void;
   onCopyPNG?: () => void;
   onContextMenu?: (
@@ -467,14 +471,20 @@ export function Canvas({
           }`}
         >
           <span className="text-base">
-            {DIAGRAM_TYPES.find((d) => d.id === diagram.type)?.icon || "📐"}
+            {getAcademicMetadata().enabled ? "🎓" : DIAGRAM_TYPES.find((d) => d.id === diagram.type)?.icon || "📐"}
           </span>
           <div className="flex flex-col min-w-0">
-            <div className="text-xs font-bold truncate max-w-[200px]">
-              {diagram.name || "Diagram"}
+            <div className="text-xs font-bold truncate max-w-[260px]">
+              {getAcademicMetadata().enabled && getAcademicMetadata().authorName
+                ? `${getAcademicMetadata().documentChapter || "BAB III"} · ${getAcademicMetadata().authorName} (${getAcademicMetadata().studentId || "NIM"})`
+                : diagram.name || "Diagram"}
             </div>
             <div className="text-[10px] text-text-muted flex items-center gap-1">
-              <span>{DIAGRAM_TYPES.find((d) => d.id === diagram.type)?.label || diagram.type}</span>
+              <span>
+                {getAcademicMetadata().enabled && getAcademicMetadata().institution
+                  ? `${getAcademicMetadata().programStudy} · ${getAcademicMetadata().institution}`
+                  : DIAGRAM_TYPES.find((d) => d.id === diagram.type)?.label || diagram.type}
+              </span>
               <span>·</span>
               <span className="font-semibold text-accent">UML Flow</span>
             </div>

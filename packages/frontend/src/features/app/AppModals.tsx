@@ -16,6 +16,7 @@ import { ShareModal } from "../ui/ShareModal";
 import { DiagramMetricsModal } from "../ui/DiagramMetricsModal";
 import { CommandPaletteModal } from "../ui/CommandPaletteModal";
 import { FlowSimulatorModal } from "../ui/FlowSimulatorModal";
+import { AcademicMetadataModal } from "../ui/AcademicMetadataModal";
 
 interface AppModalsProps {
   showShortcuts: boolean;
@@ -47,6 +48,9 @@ interface AppModalsProps {
   onLoadDiffVersion: (d: Diagram) => void;
   showAcademicCaption: boolean;
   onCloseAcademicCaption: () => void;
+  showAcademicMetadata?: boolean;
+  onCloseAcademicMetadata?: () => void;
+  onOpenAcademicMetadata?: () => void;
   showSQLExport?: boolean;
   onCloseSQLExport?: () => void;
   showImportModal: boolean;
@@ -59,6 +63,8 @@ interface AppModalsProps {
   onCloseMetrics?: () => void;
   showSimulator?: boolean;
   onCloseSimulator?: () => void;
+  showAcademicMetadata?: boolean;
+  onCloseAcademicMetadata?: () => void;
   showCommandPalette?: boolean;
   onCloseCommandPalette?: () => void;
   onSelectNode?: (nodeId: string) => void;
@@ -67,6 +73,7 @@ interface AppModalsProps {
   onExport?: (format: string) => void;
   onOpenMetrics?: () => void;
   onOpenSimulator?: () => void;
+  onOpenAcademicMetadata?: () => void;
   onOpenAI?: () => void;
   onOpenTemplates?: () => void;
   onOpenLibrary?: () => void;
@@ -124,6 +131,8 @@ export function AppModals({
   onCloseMetrics,
   showSimulator = false,
   onCloseSimulator,
+  showAcademicMetadata = false,
+  onCloseAcademicMetadata,
   showCommandPalette = false,
   onCloseCommandPalette,
   onSelectNode = () => {},
@@ -132,6 +141,7 @@ export function AppModals({
   onExport = () => {},
   onOpenMetrics = () => {},
   onOpenSimulator = () => {},
+  onOpenAcademicMetadata = () => {},
   onOpenAI = () => {},
   onOpenTemplates = () => {},
   onOpenLibrary = () => {},
@@ -235,6 +245,11 @@ export function AppModals({
         onFocusNode={onFocusNode}
       />
 
+      <AcademicMetadataModal
+        isOpen={showAcademicMetadata}
+        onClose={onCloseAcademicMetadata || (() => {})}
+      />
+
       <CommandPaletteModal
         isOpen={showCommandPalette}
         onClose={onCloseCommandPalette || (() => {})}
@@ -245,6 +260,7 @@ export function AppModals({
         onExport={onExport}
         onOpenMetrics={onOpenMetrics}
         onOpenSimulator={onOpenSimulator}
+        onOpenAcademicMetadata={onOpenAcademicMetadata}
         onOpenAI={onOpenAI}
         onOpenTemplates={onOpenTemplates}
         onOpenLibrary={onOpenLibrary}

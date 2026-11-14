@@ -11,3 +11,4 @@ export {
 export { generateCSharp } from "./csharp";
 export { generateGraphQL } from "./graphql";
 export { generateGolang } from "./golang";
+export { generateRust } from "./rust";

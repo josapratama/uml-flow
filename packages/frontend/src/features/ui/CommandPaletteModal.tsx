@@ -22,6 +22,7 @@ interface Props {
   onExport: (format: string) => void;
   onOpenMetrics: () => void;
   onOpenSimulator?: () => void;
+  onOpenAcademicMetadata?: () => void;
   onOpenAI: () => void;
   onOpenTemplates: () => void;
   onOpenLibrary: () => void;
@@ -47,6 +48,7 @@ export function CommandPaletteModal({
   onExport,
   onOpenMetrics,
   onOpenSimulator = () => {},
+  onOpenAcademicMetadata = () => {},
   onOpenAI,
   onOpenTemplates,
   onOpenLibrary,
@@ -155,6 +157,14 @@ export function CommandPaletteModal({
         icon: "🎓",
         category: "modals",
         onSelect: onOpenAcademicCaption,
+      },
+      {
+        id: "open-academic-metadata",
+        title: isId ? "Konfigurasi Watermark & Kop Naskah Skripsi" : "Academic Thesis Watermark & Metadata",
+        description: isId ? "Atur nama mahasiswa, NIM, prodi, dan watermark bab" : "Configure student name, NIM, institution & live watermark",
+        icon: "🏛️",
+        category: "modals",
+        onSelect: onOpenAcademicMetadata,
       },
       {
         id: "open-diff",
@@ -300,6 +310,14 @@ export function CommandPaletteModal({
         icon: "🕸️",
         category: "export",
         onSelect: () => onExport("graphql"),
+      },
+      {
+        id: "export-rust",
+        title: "Export Rust Structs & Enums",
+        description: isId ? "Struct Rust dengan serde serialize/deserialize" : "Idiomatic Rust structs with Serde",
+        icon: "🦀",
+        category: "export",
+        onSelect: () => onExport("rust"),
       },
       {
         id: "export-typescript",

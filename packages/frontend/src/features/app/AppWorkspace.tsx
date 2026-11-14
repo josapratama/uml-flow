@@ -42,7 +42,10 @@ export interface AppWorkspaceProps {
   snapEnabled: boolean;
   edgeRouting: "straight" | "orthogonal";
   onEdgeRoutingToggle: () => void;
-  onQuickAddNode?: (sourceNodeId: string) => void;
+  onQuickAddNode?: (
+    sourceNodeId: string,
+    direction?: "right" | "bottom" | "left" | "top"
+  ) => void;
   onCanvasContextMenu: (
     e: React.MouseEvent,
     target: {
