@@ -135,6 +135,8 @@ export default function App(props: AppProps = {}) {
   const [showAcademicCaption, setShowAcademicCaption] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showMetrics, setShowMetrics] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [templates, setTemplates] = useState<DiagramTemplate[]>(() =>
     loadTemplates()
@@ -1010,6 +1012,7 @@ export default function App(props: AppProps = {}) {
     showPresentation,
     setShowPresentation,
     onToggleShortcuts: () => setShowShortcuts((v) => !v),
+    onToggleCommandPalette: () => setShowCommandPalette((v) => !v),
   });
 
   useEffect(() => {
@@ -1070,6 +1073,8 @@ export default function App(props: AppProps = {}) {
         onShowHistory={() => setShowHistory((v) => !v)}
         onPresentationMode={() => setShowPresentation(true)}
         onShowDiff={() => setShowDiff(true)}
+        onShowMetrics={() => setShowMetrics(true)}
+        onOpenCommandPalette={() => setShowCommandPalette(true)}
         onSaveCurrent={handleSaveCurrent}
         onShareLink={handleShareLink}
         onNewDiagram={handleNewTab}
@@ -1213,6 +1218,28 @@ export default function App(props: AppProps = {}) {
         showShareModal={showShareModal}
         onCloseShareModal={() => setShowShareModal(false)}
         shareUrl={shareUrl}
+        showMetrics={showMetrics}
+        onCloseMetrics={() => setShowMetrics(false)}
+        showCommandPalette={showCommandPalette}
+        onCloseCommandPalette={() => setShowCommandPalette(false)}
+        onSelectNode={(id) => setSelectedNodeId(id)}
+        onFocusNode={(id) => setSelectedNodeId(id)}
+        onLayout={handleLayout}
+        onExport={handleExport}
+        onOpenMetrics={() => setShowMetrics(true)}
+        onOpenAI={() => setShowAI(true)}
+        onOpenTemplates={() => setShowTemplates(true)}
+        onOpenLibrary={() => setShowLibrary(true)}
+        onOpenAcademicCaption={() => setShowAcademicCaption(true)}
+        onOpenDiff={() => setShowDiff(true)}
+        onOpenShortcuts={() => setShowShortcuts(true)}
+        onOpenImport={() => setShowImportModal(true)}
+        onToggleTheme={toggleCanvasTheme}
+        onUndo={diagramHistory.undo}
+        onRedo={diagramHistory.redo}
+        onNewDiagram={handleNewTab}
+        canUndo={diagramHistory.canUndo}
+        canRedo={diagramHistory.canRedo}
       />
 
       <ToastContainer />

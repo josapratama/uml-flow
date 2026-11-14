@@ -23,6 +23,7 @@ interface UseAppKeyboardShortcutsProps {
   showPresentation: boolean;
   setShowPresentation: (v: boolean) => void;
   onToggleShortcuts: () => void;
+  onToggleCommandPalette?: () => void;
 }
 
 export function useAppKeyboardShortcuts({
@@ -47,10 +48,16 @@ export function useAppKeyboardShortcuts({
   showPresentation,
   setShowPresentation,
   onToggleShortcuts,
+  onToggleCommandPalette,
 }: UseAppKeyboardShortcutsProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       // Global app-level keys (always active unless typing in inputs)
+      if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+        e.preventDefault();
+        onToggleCommandPalette?.();
+        return;
+      }
       if (e.ctrlKey && e.key === "n") {
         e.preventDefault();
         onNewTab();

@@ -9,6 +9,8 @@ interface Props {
   onSaveCurrent?: () => void;
   onShareLink?: () => void;
   onShowDiff?: () => void;
+  onShowMetrics?: () => void;
+  onOpenCommandPalette?: () => void;
   onNewDiagram?: () => void;
   hasDiagram: boolean;
 }
@@ -21,6 +23,8 @@ export function ProjectMenu({
   onSaveCurrent,
   onShareLink,
   onShowDiff,
+  onShowMetrics,
+  onOpenCommandPalette,
   onNewDiagram,
   hasDiagram,
 }: Props) {
@@ -215,6 +219,46 @@ export function ProjectMenu({
                 <div className="font-medium">{t("toolbar.versionDiffMenu")}</div>
                 <div className="text-[10px] text-text-muted">{t("toolbar.versionDiffMenuDesc")}</div>
               </div>
+            </button>
+          )}
+
+          <div className="h-px bg-border/50 my-1" />
+
+          {onShowMetrics && (
+            <button
+              onClick={() => {
+                onShowMetrics();
+                setOpen(false);
+              }}
+              disabled={!hasDiagram}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text hover:bg-surface-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-left"
+            >
+              <span className="text-base">📊</span>
+              <div>
+                <div className="font-medium">Analisis Metrik & Kompleksitas</div>
+                <div className="text-[10px] text-text-muted">McCabe Cyclomatic, OO CBO/DIT & audit</div>
+              </div>
+            </button>
+          )}
+
+          {onOpenCommandPalette && (
+            <button
+              onClick={() => {
+                onOpenCommandPalette();
+                setOpen(false);
+              }}
+              className="w-full flex items-center justify-between px-3 py-2 text-xs text-text hover:bg-surface-3 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-base">⚡</span>
+                <div>
+                  <div className="font-medium">Command Palette</div>
+                  <div className="text-[10px] text-text-muted">Aksi kilat & cari node</div>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-3 text-text-muted border border-border/50">
+                Ctrl+K
+              </span>
             </button>
           )}
         </div>

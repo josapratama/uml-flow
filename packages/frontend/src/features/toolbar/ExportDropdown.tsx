@@ -8,6 +8,7 @@ interface ExportOption {
   description: string;
   category: "doc" | "image" | "code";
   requiredType?: "class" | "erd" | "state";
+  requiredTypes?: Array<"class" | "erd" | "state">;
 }
 
 function getExportOptions(locale: Locale): ExportOption[] {
@@ -85,6 +86,30 @@ function getExportOptions(locale: Locale): ExportOption[] {
       requiredType: "class",
     },
     {
+      id: "python-pydantic",
+      label: "Python (Pydantic v2)",
+      icon: "🐍",
+      description: isId ? "Skema BaseModel Pydantic v2" : "Pydantic v2 BaseModel schemas",
+      category: "code",
+      requiredTypes: ["class", "erd"],
+    },
+    {
+      id: "python-sqlalchemy",
+      label: "Python (SQLAlchemy 2.0)",
+      icon: "🐍",
+      description: isId ? "ORM Mapped declarative models" : "SQLAlchemy 2.0 Mapped declarative models",
+      category: "code",
+      requiredTypes: ["class", "erd"],
+    },
+    {
+      id: "csharp",
+      label: "C# (.NET 8 POCO)",
+      icon: "🔷",
+      description: isId ? "POCO Class & Interface C# 12" : "C# 12 / .NET 8 POCO & entity models",
+      category: "code",
+      requiredTypes: ["class", "erd"],
+    },
+    {
       id: "xstate",
       label: "XState Machine",
       icon: "⚙️",
@@ -157,8 +182,13 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
           </span>
         </div>
         {items.map((opt) => {
-          const isDisabled =
-            opt.requiredType !== undefined && opt.requiredType !== diagramType;
+          const isDisabled = opt.requiredTypes
+            ? !opt.requiredTypes.includes(diagramType as any)
+            : opt.requiredType !== undefined && opt.requiredType !== diagramType;
+
+          const requiredText = opt.requiredTypes
+            ? opt.requiredTypes.map((t) => t.toUpperCase()).join(" / ")
+            : opt.requiredType?.toUpperCase();
 
           return (
             <button
@@ -177,8 +207,8 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
               title={
                 isDisabled
                   ? locale === "id"
-                    ? `Khusus diagram ${opt.requiredType?.toUpperCase()}`
-                    : `${opt.requiredType?.toUpperCase()} diagram only`
+                    ? `Khusus diagram ${requiredText}`
+                    : `${requiredText} diagram only`
                   : opt.description
               }
               disabled={isDisabled}

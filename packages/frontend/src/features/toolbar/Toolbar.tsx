@@ -54,6 +54,8 @@ interface ToolbarProps {
   onShowHistory?: () => void;
   onPresentationMode?: () => void;
   onShowDiff?: () => void;
+  onShowMetrics?: () => void;
+  onOpenCommandPalette?: () => void;
   onSaveCurrent?: () => void;
   onShareLink?: () => void;
   onNewDiagram?: () => void;
@@ -103,6 +105,8 @@ export function Toolbar(props: ToolbarProps) {
     onShowHistory,
     onPresentationMode,
     onShowDiff,
+    onShowMetrics,
+    onOpenCommandPalette,
     onSaveCurrent,
     onShareLink,
     onNewDiagram,
@@ -157,6 +161,8 @@ export function Toolbar(props: ToolbarProps) {
           onSaveCurrent={onSaveCurrent}
           onShareLink={onShareLink}
           onShowDiff={onShowDiff}
+          onShowMetrics={onShowMetrics}
+          onOpenCommandPalette={onOpenCommandPalette}
           onNewDiagram={onNewDiagram}
           hasDiagram={hasDiagram}
         />
@@ -254,6 +260,33 @@ export function Toolbar(props: ToolbarProps) {
           >
             <span className="text-emerald-400 font-bold">✓</span>
             <span className="hidden 2xl:inline">{t("common.validate")}</span>
+          </button>
+        )}
+
+        {/* Command Palette Trigger */}
+        {onOpenCommandPalette && (
+          <button
+            onClick={onOpenCommandPalette}
+            title={locale === "id" ? "Command Palette (Ctrl+K)" : "Command Palette (Ctrl+K)"}
+            className="h-8 px-2 sm:px-2.5 text-xs font-medium rounded-lg border border-border bg-surface-3 hover:bg-surface-4 text-text-muted hover:text-text transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-xs active:scale-95"
+          >
+            <span>⚡</span>
+            <kbd className="hidden sm:inline font-mono text-[10px] px-1 py-0.5 rounded bg-surface-2 border border-border/70 text-text-muted">
+              Ctrl+K
+            </kbd>
+          </button>
+        )}
+
+        {/* Diagram Complexity & Metrics Analyzer */}
+        {onShowMetrics && (
+          <button
+            onClick={onShowMetrics}
+            disabled={!hasDiagram}
+            title={locale === "id" ? "Analisis Kompleksitas & Metrik Cyclomatic" : "Diagram Complexity & Metrics"}
+            className="h-8 px-2 sm:px-2.5 text-xs font-medium rounded-lg border border-border bg-surface-3 hover:bg-surface-4 text-text-muted hover:text-text transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-xs active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed"
+          >
+            <span>📊</span>
+            <span className="hidden 2xl:inline">{locale === "id" ? "Metrik" : "Metrics"}</span>
           </button>
         )}
 

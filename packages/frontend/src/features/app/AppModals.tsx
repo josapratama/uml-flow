@@ -13,6 +13,8 @@ import { AcademicCaptionModal } from "../ui/AcademicCaptionModal";
 import { SQLExportModal } from "../ui/SQLExportModal";
 import { ImportModal } from "../ui/ImportModal";
 import { ShareModal } from "../ui/ShareModal";
+import { DiagramMetricsModal } from "../ui/DiagramMetricsModal";
+import { CommandPaletteModal } from "../ui/CommandPaletteModal";
 
 interface AppModalsProps {
   showShortcuts: boolean;
@@ -52,6 +54,28 @@ interface AppModalsProps {
   showShareModal?: boolean;
   onCloseShareModal?: () => void;
   shareUrl?: string;
+  showMetrics?: boolean;
+  onCloseMetrics?: () => void;
+  showCommandPalette?: boolean;
+  onCloseCommandPalette?: () => void;
+  onSelectNode?: (nodeId: string) => void;
+  onFocusNode?: (nodeId: string) => void;
+  onLayout?: (preset: string) => void;
+  onExport?: (format: string) => void;
+  onOpenMetrics?: () => void;
+  onOpenAI?: () => void;
+  onOpenTemplates?: () => void;
+  onOpenLibrary?: () => void;
+  onOpenAcademicCaption?: () => void;
+  onOpenDiff?: () => void;
+  onOpenShortcuts?: () => void;
+  onOpenImport?: () => void;
+  onToggleTheme?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  onNewDiagram?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }
 
 export function AppModals({
@@ -92,6 +116,28 @@ export function AppModals({
   showShareModal = false,
   onCloseShareModal,
   shareUrl = "",
+  showMetrics = false,
+  onCloseMetrics,
+  showCommandPalette = false,
+  onCloseCommandPalette,
+  onSelectNode = () => {},
+  onFocusNode = () => {},
+  onLayout = () => {},
+  onExport = () => {},
+  onOpenMetrics = () => {},
+  onOpenAI = () => {},
+  onOpenTemplates = () => {},
+  onOpenLibrary = () => {},
+  onOpenAcademicCaption = () => {},
+  onOpenDiff = () => {},
+  onOpenShortcuts = () => {},
+  onOpenImport = () => {},
+  onToggleTheme = () => {},
+  onUndo = () => {},
+  onRedo = () => {},
+  onNewDiagram = () => {},
+  canUndo = false,
+  canRedo = false,
 }: AppModalsProps) {
   return (
     <>
@@ -164,6 +210,36 @@ export function AppModals({
         onClose={onCloseShareModal || (() => {})}
         shareUrl={shareUrl}
         diagram={diagram}
+      />
+
+      <DiagramMetricsModal
+        isOpen={showMetrics}
+        onClose={onCloseMetrics || (() => {})}
+        diagram={diagram}
+      />
+
+      <CommandPaletteModal
+        isOpen={showCommandPalette}
+        onClose={onCloseCommandPalette || (() => {})}
+        diagram={diagram}
+        onSelectNode={onSelectNode}
+        onFocusNode={onFocusNode}
+        onLayout={onLayout}
+        onExport={onExport}
+        onOpenMetrics={onOpenMetrics}
+        onOpenAI={onOpenAI}
+        onOpenTemplates={onOpenTemplates}
+        onOpenLibrary={onOpenLibrary}
+        onOpenAcademicCaption={onOpenAcademicCaption}
+        onOpenDiff={onOpenDiff}
+        onOpenShortcuts={onOpenShortcuts}
+        onOpenImport={onOpenImport}
+        onToggleTheme={onToggleTheme}
+        onUndo={onUndo}
+        onRedo={onRedo}
+        onNewDiagram={onNewDiagram}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
     </>
   );

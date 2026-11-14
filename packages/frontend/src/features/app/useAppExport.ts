@@ -186,6 +186,69 @@ export function useAppExport({
             showToast(isId ? "Java berhasil diekspor" : "Java exported", "success");
             break;
           }
+          case "python-pydantic": {
+            if (diagram.type !== "class" && diagram.type !== "erd") {
+              showToast(
+                isId
+                  ? "Ekspor Pydantic hanya didukung untuk Diagram Class dan ERD"
+                  : "Pydantic export only works for Class and ERD diagrams",
+                "error"
+              );
+              break;
+            }
+            const { generatePythonPydantic } = await import(
+              "../../services/code-generator"
+            );
+            const code = generatePythonPydantic(diagram);
+            downloadFile(code, `${diagram.name}_models.py`, "text/x-python");
+            showToast(
+              isId ? "Python (Pydantic v2) berhasil diekspor" : "Python (Pydantic v2) exported",
+              "success"
+            );
+            break;
+          }
+          case "python-sqlalchemy": {
+            if (diagram.type !== "class" && diagram.type !== "erd") {
+              showToast(
+                isId
+                  ? "Ekspor SQLAlchemy hanya didukung untuk Diagram Class dan ERD"
+                  : "SQLAlchemy export only works for Class and ERD diagrams",
+                "error"
+              );
+              break;
+            }
+            const { generatePythonSQLAlchemy } = await import(
+              "../../services/code-generator"
+            );
+            const code = generatePythonSQLAlchemy(diagram);
+            downloadFile(code, `${diagram.name}_orm.py`, "text/x-python");
+            showToast(
+              isId ? "Python (SQLAlchemy 2.0) berhasil diekspor" : "Python (SQLAlchemy 2.0) exported",
+              "success"
+            );
+            break;
+          }
+          case "csharp": {
+            if (diagram.type !== "class" && diagram.type !== "erd") {
+              showToast(
+                isId
+                  ? "Ekspor C# hanya didukung untuk Diagram Class dan ERD"
+                  : "C# export only works for Class and ERD diagrams",
+                "error"
+              );
+              break;
+            }
+            const { generateCSharp } = await import(
+              "../../services/code-generator"
+            );
+            const code = generateCSharp(diagram);
+            downloadFile(code, `${diagram.name}Entities.cs`, "text/plain");
+            showToast(
+              isId ? "C# (.NET 8 POCO) berhasil diekspor" : "C# (.NET 8 POCO) exported",
+              "success"
+            );
+            break;
+          }
           case "sql": {
             if (diagram.type !== "erd") {
               showToast(isId ? "Ekspor SQL hanya didukung untuk Diagram ERD" : "SQL export only works for ERD diagrams", "error");

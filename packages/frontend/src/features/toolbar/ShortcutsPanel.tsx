@@ -13,6 +13,7 @@ function getShortcuts(locale: Locale) {
       category: isId ? "Umum" : "General",
       items: [
         { keys: "Ctrl + Enter", action: isId ? "Kompilasi kode DSL" : "Compile DSL" },
+        { keys: "Ctrl + K", action: isId ? "Buka Quick Command & Spotlight Palette" : "Open Quick Command Palette" },
         { keys: "Ctrl + S", action: isId ? "Simpan ke pustaka lokal" : "Save to library" },
         { keys: "Ctrl + N", action: isId ? "Buat tab diagram baru" : "New diagram tab" },
         { keys: "Ctrl + Z", action: isId ? "Urungkan perubahan (Undo)" : "Undo" },
