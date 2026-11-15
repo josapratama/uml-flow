@@ -505,26 +505,26 @@ export function Canvas({
       {/* Minimap */}
       {(diagram.nodes.length > 3 ||
         (diagram.participants?.length ?? 0) > 2) && (
-        <Minimap
-          diagram={diagram}
-          viewOffsetX={view.offsetX}
-          viewOffsetY={view.offsetY}
-          viewScale={view.scale}
-          containerWidth={svgRef.current?.clientWidth || 800}
-          containerHeight={svgRef.current?.clientHeight || 600}
-          theme={canvasTheme}
-          onPanTo={(worldX, worldY) => {
-            const w = svgRef.current?.clientWidth || 800;
-            const h = svgRef.current?.clientHeight || 600;
-            setView((v) => ({
-              ...v,
-              offsetX: w / 2 - worldX * v.scale,
-              offsetY: h / 2 - worldY * v.scale,
-            }));
-          }}
-          onZoomToFit={zoomToFit}
-        />
-      )}
+          <Minimap
+            diagram={diagram}
+            viewOffsetX={view.offsetX}
+            viewOffsetY={view.offsetY}
+            viewScale={view.scale}
+            containerWidth={svgRef.current?.clientWidth || 800}
+            containerHeight={svgRef.current?.clientHeight || 600}
+            theme={canvasTheme}
+            onPanTo={(worldX, worldY) => {
+              const w = svgRef.current?.clientWidth || 800;
+              const h = svgRef.current?.clientHeight || 600;
+              setView((v) => ({
+                ...v,
+                offsetX: w / 2 - worldX * v.scale,
+                offsetY: h / 2 - worldY * v.scale,
+              }));
+            }}
+            onZoomToFit={zoomToFit}
+          />
+        )}
 
       {/* Align toolbar for multi-select */}
       {multiSelected.size >= 2 && onAlignNodes && onDistributeNodes && (

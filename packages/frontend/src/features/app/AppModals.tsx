@@ -167,38 +167,38 @@ export function AppModals({
   onCloseMockData,
   showDependencyMatrix = false,
   onCloseDependencyMatrix,
-  onOpenDependencyMatrix = () => {},
+  onOpenDependencyMatrix = () => { },
   showWorkspaceBackup = false,
   onCloseWorkspaceBackup,
-  onOpenWorkspaceBackup = () => {},
-  onRestoreSuccess = () => {},
+  onOpenWorkspaceBackup = () => { },
+  onRestoreSuccess = () => { },
   showNodeHierarchy = false,
   onCloseNodeHierarchy,
-  onOpenNodeHierarchy = () => {},
+  onOpenNodeHierarchy = () => { },
   showCommandPalette = false,
   onCloseCommandPalette,
-  onSelectNode = () => {},
-  onFocusNode = () => {},
-  onLayout = () => {},
-  onExport = () => {},
-  onOpenMetrics = () => {},
-  onOpenSimulator = () => {},
-  onOpenAcademicMetadata = () => {},
-  onOpenThesisBundle = () => {},
-  onOpenTestCases = () => {},
-  onOpenMockData = () => {},
-  onOpenAI = () => {},
-  onOpenTemplates = () => {},
-  onOpenLibrary = () => {},
-  onOpenAcademicCaption = () => {},
-  onRepairDiagram = () => {},
-  onOpenDiff = () => {},
-  onOpenShortcuts = () => {},
-  onOpenImport = () => {},
-  onToggleTheme = () => {},
-  onUndo = () => {},
-  onRedo = () => {},
-  onNewDiagram = () => {},
+  onSelectNode = () => { },
+  onFocusNode = () => { },
+  onLayout = () => { },
+  onExport = () => { },
+  onOpenMetrics = () => { },
+  onOpenSimulator = () => { },
+  onOpenAcademicMetadata = () => { },
+  onOpenThesisBundle = () => { },
+  onOpenTestCases = () => { },
+  onOpenMockData = () => { },
+  onOpenAI = () => { },
+  onOpenTemplates = () => { },
+  onOpenLibrary = () => { },
+  onOpenAcademicCaption = () => { },
+  onRepairDiagram = () => { },
+  onOpenDiff = () => { },
+  onOpenShortcuts = () => { },
+  onOpenImport = () => { },
+  onToggleTheme = () => { },
+  onUndo = () => { },
+  onRedo = () => { },
+  onNewDiagram = () => { },
   canUndo = false,
   canRedo = false,
 }: AppModalsProps) {
@@ -304,31 +304,31 @@ export function AppModals({
 
       <TestCaseModal
         isOpen={showTestCases}
-        onClose={onCloseTestCases || (() => {})}
+        onClose={onCloseTestCases || (() => { })}
         diagram={diagram}
       />
 
       <MockDataModal
         isOpen={showMockData}
-        onClose={onCloseMockData || (() => {})}
+        onClose={onCloseMockData || (() => { })}
         diagram={diagram}
       />
 
       <DependencyMatrixModal
         isOpen={showDependencyMatrix}
-        onClose={onCloseDependencyMatrix || (() => {})}
+        onClose={onCloseDependencyMatrix || (() => { })}
         diagram={diagram}
       />
 
       <WorkspaceBackupModal
         isOpen={showWorkspaceBackup}
-        onClose={onCloseWorkspaceBackup || (() => {})}
+        onClose={onCloseWorkspaceBackup || (() => { })}
         onRestoreSuccess={onRestoreSuccess}
       />
 
       <NodeHierarchyModal
         isOpen={showNodeHierarchy}
-        onClose={onCloseNodeHierarchy || (() => {})}
+        onClose={onCloseNodeHierarchy || (() => { })}
         diagram={diagram}
         onSelectNode={onSelectNode}
         onFocusNode={onFocusNode}

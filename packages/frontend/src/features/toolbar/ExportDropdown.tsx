@@ -270,11 +270,10 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
           return (
             <button
               key={opt.id}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors text-xs group ${
-                isDisabled
-                  ? "opacity-35 cursor-not-allowed"
-                  : "hover:bg-surface-3 active:scale-[0.99]"
-              }`}
+              className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors text-xs group ${isDisabled
+                ? "opacity-35 cursor-not-allowed"
+                : "hover:bg-surface-3 active:scale-[0.99]"
+                }`}
               onClick={() => {
                 if (!isDisabled) {
                   onExport(opt.id);
@@ -316,11 +315,10 @@ export function ExportDropdown({ onExport, disabled, diagramType }: Props) {
   return (
     <div ref={ref} className="relative">
       <button
-        className={`h-8 px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 disabled:opacity-35 disabled:cursor-not-allowed ${
-          open
-            ? "bg-surface-4 text-text border-accent shadow-xs"
-            : "bg-surface-3 text-text-muted hover:text-text hover:bg-surface-4 border-border"
-        }`}
+        className={`h-8 px-2.5 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 disabled:opacity-35 disabled:cursor-not-allowed ${open
+          ? "bg-surface-4 text-text border-accent shadow-xs"
+          : "bg-surface-3 text-text-muted hover:text-text hover:bg-surface-4 border-border"
+          }`}
         onClick={() => setOpen(!open)}
         disabled={disabled}
         title={t("toolbar.exportDiagram")}

@@ -71,7 +71,7 @@ export default function App(props: AppProps = {}) {
     try {
       const saved = localStorage.getItem("uml_snap_enabled");
       if (saved !== null) return saved === "true";
-    } catch {}
+    } catch { }
     return true;
   });
   const [edgeRouting, setEdgeRouting] = useState<"straight" | "orthogonal">(
@@ -79,7 +79,7 @@ export default function App(props: AppProps = {}) {
       try {
         const saved = localStorage.getItem("uml_edge_routing");
         if (saved === "orthogonal" || saved === "straight") return saved;
-      } catch {}
+      } catch { }
       return "straight";
     }
   );
@@ -406,7 +406,7 @@ export default function App(props: AppProps = {}) {
       const next = !prev;
       try {
         localStorage.setItem("uml_snap_enabled", String(next));
-      } catch {}
+      } catch { }
       showToast(
         next
           ? isId
@@ -488,7 +488,7 @@ export default function App(props: AppProps = {}) {
           );
           try {
             window.history.replaceState(null, "", `${window.location.pathname}#editor`);
-          } catch {}
+          } catch { }
         }
       });
     });
@@ -577,7 +577,7 @@ export default function App(props: AppProps = {}) {
             lastCompiledCode.current = dsl;
             setCode(dsl);
           }
-        } catch {}
+        } catch { }
       }
     },
     800,
@@ -673,21 +673,21 @@ export default function App(props: AppProps = {}) {
       setErrors(
         r.issues.length === 0
           ? [
-              {
-                line: 0,
-                column: 0,
-                message: isId ? "✓ Valid — tidak ada masalah sintaks/struktur" : "✓ Valid — no issues",
-                severity: "info",
-              },
-            ]
-          : r.issues.map((i: any) => ({
+            {
               line: 0,
               column: 0,
-              message: `[${i.rule}] ${i.message}`,
-              severity: i.severity,
-            }))
+              message: isId ? "✓ Valid — tidak ada masalah sintaks/struktur" : "✓ Valid — no issues",
+              severity: "info",
+            },
+          ]
+          : r.issues.map((i: any) => ({
+            line: 0,
+            column: 0,
+            message: `[${i.rule}] ${i.message}`,
+            severity: i.severity,
+          }))
       );
-    } catch {}
+    } catch { }
   }, [diagram, isId]);
 
   // --- Samples ---
@@ -849,7 +849,7 @@ export default function App(props: AppProps = {}) {
       const next = prev === "straight" ? "orthogonal" : "straight";
       try {
         localStorage.setItem("uml_edge_routing", next);
-      } catch {}
+      } catch { }
       showToast(
         next === "orthogonal"
           ? isId
