@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import type { Diagram } from "@uml-editor/shared";
 import {
   generateTestCases,
   generateBlackBoxCases,
   generateUATMatrix,
+  calculateUATVerdict,
   exportTestCasesMarkdown,
+  exportTestCasesExcel,
   type TestCase,
   type BlackBoxCase,
   type UATItem,
@@ -24,33 +26,76 @@ export function TestCaseModal({ isOpen, onClose, diagram }: Props) {
 
   const [activeTab, setActiveTab] = useState<"whitebox" | "blackbox" | "uat">("whitebox");
   const [filterType, setFilterType] = useState<string>("all");
+  const [respondents, setRespondents] = useState<number>(10);
 
   const testCases: TestCase[] = useMemo(() => {
     if (!diagram) return [];
     return generateTestCases(diagram);
   }, [diagram]);
 
-  const blackBoxCases: BlackBoxCase[] = useMemo(() => {
-    if (!diagram) return [];
-    return generateBlackBoxCases(diagram);
-  }, [diagram]);
+  const [blackBoxCases, setBlackBoxCases] = useState<BlackBoxCase[]>([]);
+  const [uatItems, setUatItems] = useState<UATItem[]>([]);
 
-  const uatItems: UATItem[] = useMemo(() => {
-    if (!diagram) return [];
-    return generateUATMatrix(diagram);
-  }, [diagram]);
+  useEffect(() => {
+    if (diagram) {
+      setBlackBoxCases(generateBlackBoxCases(diagram));
+      setUatItems(generateUATMatrix(diagram, respondents));
+    }
+  }, [diagram, respondents]);
 
   const filteredCases = useMemo(() => {
     if (filterType === "all") return testCases;
     return testCases.filter((tc) => tc.testType.toLowerCase().includes(filterType.toLowerCase()));
   }, [testCases, filterType]);
 
+  const { avgUatPercentage, overallVerdict } = useMemo(() => {
+    if (uatItems.length === 0) return { avgUatPercentage: 0, overallVerdict: "Cukup" };
+    let total = 0;
+    for (const u of uatItems) total += u.percentage;
+    const avg = Number((total / uatItems.length).toFixed(1));
+    return {
+      avgUatPercentage: avg,
+      overallVerdict: calculateUATVerdict(avg),
+    };
+  }, [uatItems]);
+
   const markdownContent = useMemo(() => {
     if (!diagram) return "";
-    return exportTestCasesMarkdown(diagram, testCases);
-  }, [diagram, testCases]);
+    return exportTestCasesMarkdown(diagram, testCases, blackBoxCases, uatItems);
+  }, [diagram, testCases, blackBoxCases, uatItems]);
 
   if (!isOpen || !diagram) return null;
+
+  const handleScoreChange = (id: string, newScore: number) => {
+    const clamped = Math.max(1, Math.min(5, Number(newScore) || 1));
+    const percent = Math.round((clamped / 5) * 100);
+    setUatItems((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              scoreAvg: clamped,
+              percentage: percent,
+              verdict: calculateUATVerdict(percent),
+            }
+          : item
+      )
+    );
+  };
+
+  const handleToggleStatus = (id: string) => {
+    setBlackBoxCases((prev) =>
+      prev.map((b) =>
+        b.id === id ? { ...b, status: b.status === "Valid" ? "Invalid" : "Valid" } : b
+      )
+    );
+  };
+
+  const handleActualResultChange = (id: string, text: string) => {
+    setBlackBoxCases((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, actualResult: text } : b))
+    );
+  };
 
   const handleCopy = async () => {
     try {
@@ -72,6 +117,20 @@ export function TestCaseModal({ isOpen, onClose, diagram }: Props) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     showToast(isId ? "File laporan_pengujian.md berhasil diunduh!" : "laporan_pengujian.md downloaded!", "success");
+  };
+
+  const handleDownloadExcel = () => {
+    const xls = exportTestCasesExcel(diagram, testCases, blackBoxCases, uatItems);
+    const blob = new Blob([xls], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `laporan_pengujian_${diagram.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(isId ? "File laporan_pengujian.xls berhasil diunduh!" : "laporan_pengujian.xls downloaded!", "success");
   };
 
   return (
@@ -160,28 +219,48 @@ export function TestCaseModal({ isOpen, onClose, diagram }: Props) {
                 ))}
               </div>
             </div>
-          ) : (
+          ) : activeTab === "blackbox" ? (
             <div className="text-xs text-text-muted font-medium">
-              {activeTab === "blackbox"
-                ? (isId ? "Metode Equivalence Partitioning & Boundary Value Analysis" : "Equivalence Partitioning & Boundary Value Analysis")
-                : (isId ? "Rubrik Evaluasi Skala Likert 5 Poin (ISO/IEC 25010)" : "5-Point Likert Evaluation Rubric (ISO/IEC 25010)")}
+              💡 {isId ? "Klik status untuk beralih Valid/Invalid. Hasil pengamatan dapat diedit langsung." : "Click status to toggle Valid/Invalid. Observed result is editable."}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <span className="text-text-muted font-medium">{isId ? "Jumlah Responden (N):" : "Respondents (N):"}</span>
+              <input
+                type="number"
+                min={1}
+                max={500}
+                value={respondents}
+                onChange={(e) => setRespondents(Math.max(1, Number(e.target.value) || 1))}
+                className="w-16 px-2 py-1 rounded bg-surface-3 border border-border text-xs text-text font-bold text-center"
+              />
+              <span className="text-[11px] text-text-muted">
+                {isId ? `Skor Max per aspek = ${respondents * 5}` : `Max score per item = ${respondents * 5}`}
+              </span>
             </div>
           )}
 
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopy}
-              className="px-3.5 py-1.5 rounded-lg bg-surface-3 hover:bg-surface-4 text-text border border-border font-medium flex items-center gap-1.5 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-surface-3 hover:bg-surface-4 text-text border border-border font-medium flex items-center gap-1.5 transition-colors"
             >
               <span>📋</span>
-              <span>{isId ? "Salin Laporan Bab 4" : "Copy Chapter 4 MD"}</span>
+              <span>{isId ? "Salin Laporan" : "Copy MD"}</span>
+            </button>
+            <button
+              onClick={handleDownloadExcel}
+              className="px-3 py-1.5 rounded-lg bg-surface-3 hover:bg-surface-4 text-text border border-border font-medium flex items-center gap-1.5 transition-colors"
+            >
+              <span>📊</span>
+              <span>{isId ? "Unduh Excel (.xls)" : "Excel (.xls)"}</span>
             </button>
             <button
               onClick={handleDownload}
-              className="px-3.5 py-1.5 rounded-lg bg-accent hover:bg-accent/90 text-white font-medium flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
+              className="px-3 py-1.5 rounded-lg bg-accent hover:bg-accent/90 text-white font-medium flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
             >
               <span>💾</span>
-              <span>{isId ? "Unduh Bab 4 .md" : "Download Bab 4 .md"}</span>
+              <span>{isId ? "Unduh .md" : "Download .md"}</span>
             </button>
           </div>
         </div>
@@ -246,7 +325,7 @@ export function TestCaseModal({ isOpen, onClose, diagram }: Props) {
                     <th className="p-3 w-64">Data Masukan (Test Data)</th>
                     <th className="p-3 w-28 text-center">Jenis Uji</th>
                     <th className="p-3">Hasil yang Diharapkan</th>
-                    <th className="p-3 w-48">Hasil Pengamatan</th>
+                    <th className="p-3 w-56">Hasil Pengamatan</th>
                     <th className="p-3 w-24 text-center">Kesimpulan</th>
                   </tr>
                 </thead>
@@ -276,13 +355,27 @@ export function TestCaseModal({ isOpen, onClose, diagram }: Props) {
                       <td className="p-3 align-top text-text leading-snug">
                         {bb.expectedResult}
                       </td>
-                      <td className="p-3 align-top text-text-muted leading-snug">
-                        {bb.actualResult}
+                      <td className="p-3 align-top">
+                        <input
+                          type="text"
+                          value={bb.actualResult}
+                          onChange={(e) => handleActualResultChange(bb.id, e.target.value)}
+                          className="w-full px-2 py-1 rounded bg-surface-3/80 border border-border text-xs text-text outline-none focus:border-accent"
+                        />
                       </td>
                       <td className="p-3 align-top text-center">
-                        <span className="inline-block px-2.5 py-0.5 text-[11px] rounded font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStatus(bb.id)}
+                          className={`inline-block px-2.5 py-0.5 text-[11px] rounded font-bold transition-all cursor-pointer ${
+                            bb.status === "Valid"
+                              ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20"
+                              : "bg-rose-500/10 text-rose-500 border border-rose-500/30 hover:bg-rose-500/20"
+                          }`}
+                          title={isId ? "Klik untuk ganti status" : "Click to toggle"}
+                        >
                           {bb.status}
-                        </span>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -301,7 +394,7 @@ export function TestCaseModal({ isOpen, onClose, diagram }: Props) {
                       <th className="p-3 w-64">Aspek Pengujian</th>
                       <th className="p-3">Indikator Pernyataan Kuesioner</th>
                       <th className="p-3 w-40">Target Responden</th>
-                      <th className="p-3 w-28 text-center">Rata-rata Skor</th>
+                      <th className="p-3 w-32 text-center">Rata-rata Skor (1-5)</th>
                       <th className="p-3 w-24 text-center">Kelayakan</th>
                       <th className="p-3 w-28 text-center">Kategori</th>
                     </tr>
@@ -321,14 +414,30 @@ export function TestCaseModal({ isOpen, onClose, diagram }: Props) {
                         <td className="p-3 align-top text-text-muted">
                           {u.targetRole}
                         </td>
-                        <td className="p-3 align-top text-center font-bold text-accent">
-                          {u.scoreAvg.toFixed(1)} / 5.0
+                        <td className="p-3 align-top text-center">
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="1.0"
+                            max="5.0"
+                            value={u.scoreAvg}
+                            onChange={(e) => handleScoreChange(u.id, parseFloat(e.target.value))}
+                            className="w-16 px-2 py-1 rounded bg-surface-3 border border-border text-xs text-center font-bold text-accent outline-none focus:border-accent"
+                          />
                         </td>
                         <td className="p-3 align-top text-center font-bold text-text">
                           {u.percentage}%
                         </td>
                         <td className="p-3 align-top text-center">
-                          <span className="inline-block px-2 py-0.5 text-[10px] rounded font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                          <span
+                            className={`inline-block px-2 py-0.5 text-[10px] rounded font-bold ${
+                              u.verdict === "Sangat Layak"
+                                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                : u.verdict === "Layak"
+                                ? "bg-blue-500/10 text-blue-500 border border-blue-500/20"
+                                : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                            }`}
+                          >
                             {u.verdict}
                           </span>
                         </td>
@@ -341,16 +450,24 @@ export function TestCaseModal({ isOpen, onClose, diagram }: Props) {
               <div className="p-4 bg-surface-2/50 border border-border rounded-xl flex items-center justify-between text-xs">
                 <div className="space-y-1">
                   <div className="font-semibold text-text">
-                    {isId ? "Hasil Perhitungan Akseptansi UAT:" : "Overall UAT Acceptance Score:"}
+                    {isId ? "Hasil Perhitungan Akseptansi UAT (Real-Time):" : "Real-Time UAT Acceptance Formula:"}
                   </div>
                   <div className="text-text-muted text-[11px]">
                     {isId
-                      ? "Rumus: (Total Skor Perolehan / Total Skor Maksimal) × 100% = 94.0% (Kategori: Sangat Layak)"
-                      : "Formula: (Obtained Score / Max Score) × 100% = 94.0% (Category: Highly Accepted)"}
+                      ? `Rumus: (Total Skor Rata-rata / Total Skor Maksimal) × 100% = ${avgUatPercentage}% (${overallVerdict})`
+                      : `Formula: (Total Average Score / Total Max Score) × 100% = ${avgUatPercentage}% (${overallVerdict})`}
                   </div>
                 </div>
-                <div className="px-3 py-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 font-bold rounded-lg text-sm">
-                  94.0% - Sangat Layak
+                <div
+                  className={`px-3 py-1.5 border font-bold rounded-lg text-sm ${
+                    overallVerdict === "Sangat Layak"
+                      ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-500"
+                      : overallVerdict === "Layak"
+                      ? "bg-blue-500/15 border-blue-500/30 text-blue-500"
+                      : "bg-amber-500/15 border-amber-500/30 text-amber-500"
+                  }`}
+                >
+                  {avgUatPercentage}% - {overallVerdict}
                 </div>
               </div>
             </div>

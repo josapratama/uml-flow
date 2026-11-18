@@ -116,36 +116,46 @@ export function SequenceRenderer(props: Props) {
         />
       ))}
 
-      {/* UML 2.5 Execution Specification (Activation Bars) */}
-      {messages.map((msg, i) => {
-        if (msg.type === "return") return null;
-        const toP = participants.find((p) => p.id === msg.to);
-        if (!toP) return null;
-        const y = startY + i * msgSpacing;
-        let actEndY = y + 36;
-        for (let k = i + 1; k < messages.length; k++) {
-          const nextMsg = messages[k];
-          if (nextMsg.from === toP.id && (nextMsg.type === "return" || nextMsg.to === msg.from)) {
-            actEndY = startY + k * msgSpacing + 6;
-            break;
+      {/* UML 2.5 Execution Specification (Activation Bars with Nested Offsets) */}
+      {(() => {
+        const participantBars = new Map<string, Array<{ startY: number; endY: number }>>();
+        return messages.map((msg, i) => {
+          if (msg.type === "return") return null;
+          const toP = participants.find((p) => p.id === msg.to);
+          if (!toP) return null;
+          const y = startY + i * msgSpacing;
+          let actEndY = y + 36;
+          for (let k = i + 1; k < messages.length; k++) {
+            const nextMsg = messages[k];
+            if (nextMsg.from === toP.id && (nextMsg.type === "return" || nextMsg.to === msg.from)) {
+              actEndY = startY + k * msgSpacing + 6;
+              break;
+            }
           }
-        }
-        const barH = Math.max(24, actEndY - y + 4);
-        return (
-          <rect
-            key={`act_${msg.id}`}
-            x={toP.position.x - 6}
-            y={y - 4}
-            width={12}
-            height={barH}
-            rx={2}
-            fill={isDark ? "#1e293b" : "#ffffff"}
-            stroke={isDark ? "#818cf8" : "#64748b"}
-            strokeWidth="1.5"
-            className="pointer-events-none shadow-sm"
-          />
-        );
-      })}
+
+          if (!participantBars.has(toP.id)) participantBars.set(toP.id, []);
+          const activeList = participantBars.get(toP.id)!;
+          const nesting = activeList.filter((b) => b.startY <= y && b.endY > y).length;
+          activeList.push({ startY: y, endY: actEndY });
+
+          const offsetX = toP.position.x - 6 + nesting * 6;
+          const barH = Math.max(24, actEndY - y + 4);
+          return (
+            <rect
+              key={`act_${msg.id}`}
+              x={offsetX}
+              y={y - 4}
+              width={12}
+              height={barH}
+              rx={2}
+              fill={isDark ? "#1e293b" : "#ffffff"}
+              stroke={isDark ? "#818cf8" : "#64748b"}
+              strokeWidth="1.5"
+              className="pointer-events-none shadow-sm"
+            />
+          );
+        });
+      })()}
 
       {/* Fragments */}
       {fragments.map((frag) => (

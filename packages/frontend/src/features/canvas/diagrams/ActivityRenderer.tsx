@@ -1,4 +1,4 @@
-import type { Diagram } from "@uml-editor/shared";
+import { computeSwimlaneMetrics, type Diagram } from "@uml-editor/shared";
 
 interface Props {
   diagram: Diagram;
@@ -7,38 +7,17 @@ interface Props {
 /**
  * Renders swimlane background columns for Activity Diagrams.
  * This is rendered BEHIND the generic nodes/edges so interactivity is preserved.
- * Supports dark & light mode styling and clear actor partition boundaries.
+ * Uses shared standardized metrics synchronized with Layout Engine and SVG Exporter.
  */
 export function ActivityRenderer({ diagram }: Props) {
   const swimlanes = diagram.swimlanes || [];
   if (swimlanes.length === 0) return null;
 
   const nodes = diagram.nodes;
-  const padding = 36;
-
-  // Calculate bounds from actual node positions
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  for (const n of nodes) {
-    minX = Math.min(minX, n.position.x);
-    minY = Math.min(minY, n.position.y);
-    maxX = Math.max(maxX, n.position.x + n.size.width);
-    maxY = Math.max(maxY, n.position.y + n.size.height);
-  }
-  if (!isFinite(minX)) {
-    minX = 0;
-    minY = 0;
-    maxX = 700;
-    maxY = 500;
-  }
-
-  const headerHeight = 40;
-  const totalHeight = Math.max(maxY - minY + padding * 2 + headerHeight, 400);
-  const laneWidth = Math.max((maxX - minX + padding * 2) / swimlanes.length, 220);
-  const startX = minX - padding;
-  const startY = minY - padding - headerHeight;
+  const { startX, startY, colWidth: laneWidth, totalHeight, headerHeight } = computeSwimlaneMetrics(
+    nodes,
+    swimlanes,
+  );
 
   return (
     <g className="swimlane-background pointer-events-none select-none">

@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import { computeFlowNodeSize } from "@uml-editor/shared";
+import { computeFlowNodeSize, computeSwimlaneMetrics } from "@uml-editor/shared";
 import { snapToGrid } from "../useSnapToGrid";
 import { getVisualSize } from "../../features/canvas/nodes/getVisualSize";
 import type { ActionDeps } from "./types";
@@ -21,24 +21,15 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
         for (const sub of (targetNode as any).substates) subIds.add(sub.id);
       }
 
-      // Detect swimlane in activity diagram based on drop column X
+      // Detect swimlane in activity diagram based on drop column X using shared metrics
       let detectedSwimlane = (targetNode as any).swimlane;
       const swimlanes = (diagram as any).swimlanes as string[] | undefined;
       if (diagram.type === "activity" && swimlanes && swimlanes.length > 0) {
-        let minX = Infinity, maxX = -Infinity;
-        for (const n of diagram.nodes) {
-          minX = Math.min(minX, n.position.x);
-          maxX = Math.max(maxX, n.position.x + n.size.width);
-        }
-        if (isFinite(minX) && isFinite(maxX)) {
-          const padding = 36;
-          const laneWidth = Math.max((maxX - minX + padding * 2) / swimlanes.length, 220);
-          const startX = minX - padding;
-          const nodeCenterX = targetX + targetNode.size.width / 2;
-          const laneIdx = Math.floor((nodeCenterX - startX) / laneWidth);
-          if (laneIdx >= 0 && laneIdx < swimlanes.length) {
-            detectedSwimlane = swimlanes[laneIdx];
-          }
+        const { startX, colWidth } = computeSwimlaneMetrics(diagram.nodes, swimlanes);
+        const nodeCenterX = targetX + targetNode.size.width / 2;
+        const laneIdx = Math.floor((nodeCenterX - startX) / colWidth);
+        if (laneIdx >= 0 && laneIdx < swimlanes.length) {
+          detectedSwimlane = swimlanes[laneIdx];
         }
       }
 

@@ -1362,5 +1362,44 @@ start --> "Pilih Kelas"
     expect(uat.length).toBe(5);
     expect(uat[0].targetRole).toBe("Pelanggan");
     expect(uat.every(u => u.percentage >= 80)).toBe(true);
+
+    const { exportTestCasesExcel, calculateUATVerdict } = await import("../test-case-generator");
+    expect(calculateUATVerdict(95)).toBe("Sangat Layak");
+    expect(calculateUATVerdict(75)).toBe("Layak");
+    expect(calculateUATVerdict(60)).toBe("Cukup");
+    expect(calculateUATVerdict(40)).toBe("Kurang Layak");
+
+    const xls = exportTestCasesExcel(diag, [], bbCases, uat);
+    expect(xls).toContain("urn:schemas-microsoft-com:office:excel");
+    expect(xls).toContain("Sistem Pembayaran");
+    expect(xls).toContain("Scan Barcode Produk");
+  });
+
+  it("handles duplicate use cases and creates extend relationships from alternative decision paths", async () => {
+    const { convertDiagram } = await import("../diagram-converter");
+    const actWithBranches: Diagram = {
+      id: "act-branch",
+      name: "Sistem Registrasi",
+      type: "activity",
+      swimlanes: ["Calon Mahasiswa"],
+      nodes: [
+        { id: "a1", name: "Isi Formulir", type: "action", position: { x: 0, y: 0 }, size: { width: 140, height: 40 } } as any,
+        { id: "a2", name: "Isi Formulir", type: "action", position: { x: 0, y: 0 }, size: { width: 140, height: 40 } } as any, // duplicate name
+        { id: "a3", name: "Perbaiki Berkas Registrasi", type: "action", position: { x: 0, y: 0 }, size: { width: 160, height: 40 } } as any,
+      ],
+      edges: [
+        { id: "e1", source: "a1", target: "a3", label: { text: "[Tidak Valid / Revisi]" } },
+      ],
+    };
+
+    const ucDiag = convertDiagram(actWithBranches, "usecase");
+    expect(ucDiag).not.toBeNull();
+    const usecases = ucDiag!.nodes.filter(n => n.type === "usecase");
+    // Duplicate "Isi Formulir" must be deduplicated
+    expect(usecases.length).toBe(2);
+    // Negative decision branch must generate an extend relationship
+    const extendEdge = ucDiag!.edges.find(e => e.type === "extend");
+    expect(extendEdge).toBeDefined();
+    expect(extendEdge!.label?.text).toBe("«extend»");
   });
 });

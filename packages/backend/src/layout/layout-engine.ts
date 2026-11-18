@@ -1,5 +1,6 @@
 import {
   computeFlowNodeSize,
+  computeSwimlaneMetrics,
   type Diagram,
   type LayoutOptions,
 } from "@uml-editor/shared";
@@ -181,16 +182,10 @@ export class LayoutEngine {
     const laneMap = new Map<string, number>();
     swimlanes.forEach((name, idx) => laneMap.set(name, idx));
 
-    // Determine column widths
-    const minColWidth = 260;
-    let maxNodeWidth = 140;
-    for (const n of diagram.nodes) {
-      if (n.size?.width && n.size.width > maxNodeWidth) {
-        maxNodeWidth = n.size.width;
-      }
-    }
-    const colWidth = Math.max(minColWidth, maxNodeWidth + 60);
-    const startX = 60;
+    // Standardized column widths and origin from shared metrics
+    const metrics = computeSwimlaneMetrics(diagram.nodes, swimlanes);
+    const colWidth = metrics.colWidth;
+    const startX = metrics.startX;
     const startY = 80;
     const rankSpacing = 95;
 

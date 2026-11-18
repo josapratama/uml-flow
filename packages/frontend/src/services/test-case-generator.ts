@@ -29,11 +29,19 @@ export interface UATItem {
   targetRole: string;
   scoreAvg: number;
   percentage: number;
-  verdict: "Sangat Layak" | "Layak" | "Cukup";
+  verdict: "Sangat Layak" | "Layak" | "Cukup" | "Kurang Layak";
+}
+
+export function calculateUATVerdict(percentage: number): "Sangat Layak" | "Layak" | "Cukup" | "Kurang Layak" {
+  if (percentage >= 85) return "Sangat Layak";
+  if (percentage >= 70) return "Layak";
+  if (percentage >= 55) return "Cukup";
+  return "Kurang Layak";
 }
 
 /**
  * Generates Black-Box Equivalence Partitioning Test Cases (Skripsi Bab IV)
+ * Analyzes concrete attributes, decision labels, and process names for realistic test data.
  */
 export function generateBlackBoxCases(diagram: Diagram): BlackBoxCase[] {
   if (!diagram) return [];
@@ -50,13 +58,39 @@ export function generateBlackBoxCases(diagram: Diagram): BlackBoxCase[] {
 
   for (const node of targets) {
     const name = node.name || "Fitur Proses";
+    const lowerName = name.toLowerCase();
+
+    let posInput = `Data input lengkap & valid untuk '${name}'`;
+    let negInput = `Data input kosong (NULL) pada '${name}'`;
+
+    if ("attributes" in node && Array.isArray((node as any).attributes) && (node as any).attributes.length > 0) {
+      const attrs = (node as any).attributes;
+      posInput = `Parameter valid: { ${attrs.slice(0, 3).map((a: any) => `${a.name}="valid_${a.name}"`).join(", ")} }`;
+      negInput = `Parameter tidak valid: { ${attrs[0]?.name || "id"}="", ${attrs[1]?.name || "val"}="!@#$%" (format salah) }`;
+    } else if (lowerName.includes("login") || lowerName.includes("masuk") || lowerName.includes("auth")) {
+      posInput = `username="mahasiswa01", password="ValidPass123!"`;
+      negInput = `username="mahasiswa01", password="wrong_pass" / username=""`;
+    } else if (lowerName.includes("krs") || lowerName.includes("mata kuliah") || lowerName.includes("daftar")) {
+      posInput = `kode_mk="IF301", sks=18 (<= batas 24 SKS), status_prasyarat="Lulus"`;
+      negInput = `sks=27 (> batas maksimal 24 SKS) atau kuota_kelas=0 (penuh)`;
+    } else if (lowerName.includes("bayar") || lowerName.includes("checkout") || lowerName.includes("tagihan")) {
+      posInput = `metode="Virtual Account", nominal=Rp 2.500.000, status_saldo=cukup`;
+      negInput = `nominal=Rp 0 / negatif, atau metode pembayaran kadaluarsa (expired)`;
+    } else if (lowerName.includes("cari") || lowerName.includes("search") || lowerName.includes("filter")) {
+      posInput = `keyword="Algoritma & Pemrograman", kategori="Teknik Informatika"`;
+      negInput = `keyword="<script>alert(1)</script>" (XSS injection payload)`;
+    } else if (lowerName.includes("review") || lowerName.includes("setuju") || lowerName.includes("validasi")) {
+      posInput = `status_kelayakan="Memenuhi Syarat", catatan="Disetujui"`;
+      negInput = `status_kelayakan="Tidak Memenuhi", dokumen_prasyarat=kosong`;
+    }
+
     // Positive case
     cases.push({
       id: pad(counter++),
       feature: name,
-      inputData: `Data input valid lengkap sesuai format & parameter '${name}'`,
+      inputData: posInput,
       type: "Positive",
-      expectedResult: `Sistem memproses '${name}' dengan sukses dan menampilkan status berhasil`,
+      expectedResult: `Sistem berhasil memproses '${name}' dan menampilkan notifikasi sukses`,
       actualResult: "Sistem merespon sukses sesuai spesifikasi",
       status: "Valid",
     });
@@ -65,9 +99,9 @@ export function generateBlackBoxCases(diagram: Diagram): BlackBoxCase[] {
     cases.push({
       id: pad(counter++),
       feature: name,
-      inputData: `Data input kosong (null) / karakter ilegal / format tidak sesuai pada '${name}'`,
+      inputData: negInput,
       type: "Negative",
-      expectedResult: `Sistem menampilkan pesan validasi peringatan error dan menolak transaksi tanpa crash`,
+      expectedResult: `Sistem menolak operasi, menampilkan pesan validasi error dan tidak merusak data`,
       actualResult: "Pesan validasi muncul dan sistem tetap stabil",
       status: "Valid",
     });
@@ -101,19 +135,17 @@ export function generateBlackBoxCases(diagram: Diagram): BlackBoxCase[] {
 /**
  * Generates User Acceptance Testing (UAT) Questionnaire & Results for Thesis Chapter 4
  */
-export function generateUATMatrix(diagram: Diagram): UATItem[] {
+export function generateUATMatrix(diagram: Diagram, respondentCount: number = 10): UATItem[] {
   const role = (diagram as any).swimlanes?.[0] || "Pengguna / User";
   const secondRole = (diagram as any).swimlanes?.[1] || "Administrator";
 
-  return [
+  const rawIndicators = [
     {
       id: "UAT-01",
       aspect: "Kesesuaian Fungsional (Functional Suitability)",
       indicator: `Fitur alur kerja '${diagram.name}' berjalan lengkap sesuai kebutuhan proses bisnis pengguna`,
       targetRole: role,
       scoreAvg: 4.8,
-      percentage: 96,
-      verdict: "Sangat Layak",
     },
     {
       id: "UAT-02",
@@ -121,8 +153,6 @@ export function generateUATMatrix(diagram: Diagram): UATItem[] {
       indicator: "Navigasi antarmuka dan interaksi langkah proses mudah dipahami oleh pengguna",
       targetRole: role,
       scoreAvg: 4.6,
-      percentage: 92,
-      verdict: "Sangat Layak",
     },
     {
       id: "UAT-03",
@@ -130,8 +160,6 @@ export function generateUATMatrix(diagram: Diagram): UATItem[] {
       indicator: "Sistem memberikan umpan balik dan notifikasi yang jelas saat terjadi kesalahan input",
       targetRole: role,
       scoreAvg: 4.7,
-      percentage: 94,
-      verdict: "Sangat Layak",
     },
     {
       id: "UAT-04",
@@ -139,8 +167,6 @@ export function generateUATMatrix(diagram: Diagram): UATItem[] {
       indicator: "Waktu eksekusi tiap tahapan proses sistem berlangsung cepat tanpa lag",
       targetRole: secondRole,
       scoreAvg: 4.5,
-      percentage: 90,
-      verdict: "Sangat Layak",
     },
     {
       id: "UAT-05",
@@ -148,10 +174,17 @@ export function generateUATMatrix(diagram: Diagram): UATItem[] {
       indicator: `Pembagian peran dan hak akses fungsional '${diagram.name}' terlindungi dengan benar`,
       targetRole: secondRole,
       scoreAvg: 4.9,
-      percentage: 98,
-      verdict: "Sangat Layak",
     },
   ];
+
+  return rawIndicators.map((item) => {
+    const percentage = Math.round((item.scoreAvg / 5) * 100);
+    return {
+      ...item,
+      percentage,
+      verdict: calculateUATVerdict(percentage),
+    };
+  });
 }
 
 /**
@@ -278,9 +311,14 @@ export function generateTestCases(diagram: Diagram): TestCase[] {
 /**
  * Export test cases as a formatted Markdown report table for thesis / QA documentation
  */
-export function exportTestCasesMarkdown(diagram: Diagram, testCases: TestCase[]): string {
-  const blackBoxCases = generateBlackBoxCases(diagram);
-  const uatItems = generateUATMatrix(diagram);
+export function exportTestCasesMarkdown(
+  diagram: Diagram,
+  testCases: TestCase[],
+  customBlackBox?: BlackBoxCase[],
+  customUAT?: UATItem[],
+): string {
+  const blackBoxCases = customBlackBox || generateBlackBoxCases(diagram);
+  const uatItems = customUAT || generateUATMatrix(diagram);
 
   let md = `# MATRIKS PENGUJIAN PERANGKAT LUNAK & EVALUASI UAT (BAB IV SKRIPSI)\n`;
   md += `## Diagram Target: ${diagram.name} (${diagram.type.toUpperCase()})\n`;
@@ -312,9 +350,10 @@ export function exportTestCasesMarkdown(diagram: Diagram, testCases: TestCase[])
     totalPercent += u.percentage;
     md += `| **${u.id}** | **${u.aspect}** | ${u.indicator} | ${u.targetRole} | ${u.scoreAvg.toFixed(1)} / 5.0 | ${u.percentage}% | **${u.verdict}** |\n`;
   }
-  const avgUat = (totalPercent / uatItems.length).toFixed(1);
+  const avgUat = (totalPercent / Math.max(1, uatItems.length)).toFixed(1);
+  const overallVerdict = calculateUATVerdict(Number(avgUat));
 
-  md += `\n**Rata-rata Kelayakan UAT Keseluruhan:** **${avgUat}% (Sangat Layak)**\n\n`;
+  md += `\n**Rata-rata Kelayakan UAT Keseluruhan:** **${avgUat}% (${overallVerdict})**\n\n`;
   md += `### 4.4 Ringkasan Pengujian\n`;
   md += `- **Total Skenario White-Box:** ${testCases.length} Kasus Uji\n`;
   md += `- **Total Skenario Black-Box:** ${blackBoxCases.length} Kasus Uji\n`;
@@ -322,4 +361,69 @@ export function exportTestCasesMarkdown(diagram: Diagram, testCases: TestCase[])
   md += `- **Kesiapan Naskah Skripsi:** Sesuai standar Bab IV Pengujian dan Evaluasi Perangkat Lunak.\n`;
 
   return md;
+}
+
+/**
+ * Exports all test cases, black-box scenarios, and UAT matrix as an Excel-ready HTML table document (.xls compatible)
+ */
+export function exportTestCasesExcel(
+  diagram: Diagram,
+  testCases: TestCase[],
+  blackBoxCases: BlackBoxCase[],
+  uatItems: UATItem[],
+): string {
+  let totalPercent = 0;
+  for (const u of uatItems) totalPercent += u.percentage;
+  const avgUat = (totalPercent / Math.max(1, uatItems.length)).toFixed(1);
+  const overallVerdict = calculateUATVerdict(Number(avgUat));
+
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Pengujian Bab IV</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+  <style>
+    th { background-color: #f1f5f9; color: #1e293b; font-weight: bold; border: 1px solid #cbd5e1; padding: 8px; text-align: center; }
+    td { border: 1px solid #cbd5e1; padding: 6px; }
+  </style>
+</head>
+<body>
+  <h2>Laporan Pengujian Sistem Bab IV: ${diagram.name}</h2>
+  
+  <h3>1. Pengujian White-Box (Basis Path Testing)</h3>
+  <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">
+    <tr style="background:#f1f5f9;font-weight:bold;">
+      <th>ID</th><th>Nama Uji</th><th>Skenario</th><th>Tipe Uji</th><th>Langkah Pengujian</th><th>Hasil Diharapkan</th><th>Status</th>
+    </tr>
+    ${testCases.map((tc) => `
+    <tr>
+      <td><b>${tc.id}</b></td><td>${tc.name}</td><td>${tc.scenario}</td><td>${tc.testType}</td><td>${tc.steps.join("<br>")}</td><td>${tc.expectedResult}</td><td style="color:green;font-weight:bold;">${tc.status}</td>
+    </tr>`).join("")}
+  </table>
+
+  <br><br>
+  <h3>2. Pengujian Black-Box (Equivalence Partitioning)</h3>
+  <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">
+    <tr style="background:#f1f5f9;font-weight:bold;">
+      <th>No</th><th>Fitur / Kasus Uji</th><th>Data Masukan (Input Data)</th><th>Jenis Uji</th><th>Hasil Diharapkan</th><th>Hasil Pengamatan</th><th>Kesimpulan</th>
+    </tr>
+    ${blackBoxCases.map((bb) => `
+    <tr>
+      <td><b>${bb.id}</b></td><td>${bb.feature}</td><td>${bb.inputData}</td><td>${bb.type}</td><td>${bb.expectedResult}</td><td>${bb.actualResult}</td><td style="color:green;font-weight:bold;">${bb.status}</td>
+    </tr>`).join("")}
+  </table>
+
+  <br><br>
+  <h3>3. User Acceptance Testing (UAT) Questionnaire & Rubrik</h3>
+  <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">
+    <tr style="background:#f1f5f9;font-weight:bold;">
+      <th>Kode</th><th>Aspek Pengujian</th><th>Indikator Pernyataan</th><th>Responden</th><th>Skor Rata-rata (1-5)</th><th>Kelayakan (%)</th><th>Kategori</th>
+    </tr>
+    ${uatItems.map((u) => `
+    <tr>
+      <td><b>${u.id}</b></td><td>${u.aspect}</td><td>${u.indicator}</td><td>${u.targetRole}</td><td>${u.scoreAvg.toFixed(1)} / 5.0</td><td>${u.percentage}%</td><td style="font-weight:bold;">${u.verdict}</td>
+    </tr>`).join("")}
+  </table>
+  <p><b>Rata-rata Kelayakan UAT Keseluruhan:</b> ${avgUat}% (${overallVerdict})</p>
+</body>
+</html>`;
 }

@@ -303,33 +303,33 @@ export class ActivityDiagramParser extends BaseDiagramParser {
       size: { width: w, height: h },
     } as any;
 
-    // Set swimlane if explicit or active
-    const lane = explicitLane || this.currentSwimlane;
-    if (lane) {
-      (node as any).swimlane = lane;
-      if (!this.swimlanes.includes(lane)) {
-        this.swimlanes.push(lane);
-        (this.diagram as any).swimlanes = this.swimlanes;
+      // Set swimlane if explicit or active
+      const lane = explicitLane || this.currentSwimlane;
+      if (lane) {
+        (node as any).swimlane = lane;
+        if (!this.swimlanes.includes(lane)) {
+          this.swimlanes.push(lane);
+          (this.diagram as any).swimlanes = this.swimlanes;
+        }
       }
-    }
 
-    // Auto-connect to previous node ONLY if there are no explicit edges in the diagram
-    if (!this.hasExplicitRelations() && this.diagram.nodes.length > 0) {
-      const prev = this.diagram.nodes[this.diagram.nodes.length - 1];
-      const edgeKey = `${prev.id}-->${id}`;
-      if (!this.explicitEdges.has(edgeKey)) {
-        this.diagram.edges.push({
-          id: `edge_auto_${prev.id}_${id}`,
-          source: prev.id,
-          target: id,
-          type: "flow",
-        });
+      // Auto-connect to previous node ONLY if there are no explicit edges in the diagram
+      if (!this.hasExplicitRelations() && this.diagram.nodes.length > 0) {
+        const prev = this.diagram.nodes[this.diagram.nodes.length - 1];
+        const edgeKey = `${prev.id}-->${id}`;
+        if (!this.explicitEdges.has(edgeKey)) {
+          this.diagram.edges.push({
+            id: `edge_auto_${prev.id}_${id}`,
+            source: prev.id,
+            target: id,
+            type: "flow",
+          });
+        }
       }
-    }
-    this.diagram.nodes.push(node);
+      this.diagram.nodes.push(node);
 
-    if (type === "decision") {
-      this.currentDecision = node;
+      if (type === "decision") {
+        this.currentDecision = node;
+      }
     }
   }
-}

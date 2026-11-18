@@ -594,6 +594,19 @@ function convertActivityOrFlowchartToUseCase(diagram: Diagram): Diagram {
     }
   }
 
+  // Deduplicate use cases by normalized name
+  const uniqueActions: typeof actionNodes = [];
+  const seenNames = new Set<string>();
+  const actionToUcIdMap = new Map<string, string>();
+
+  for (const act of actionNodes) {
+    const norm = act.name.trim().toLowerCase().replace(/^melakukan\s+/i, "");
+    if (!seenNames.has(norm)) {
+      seenNames.add(norm);
+      uniqueActions.push(act);
+    }
+  }
+
   // Create Actor nodes
   const actorNodes: DiagramNode[] = actorsList.map((name, idx) => ({
     id: `actor_${idx + 1}`,
@@ -606,11 +619,13 @@ function convertActivityOrFlowchartToUseCase(diagram: Diagram): Diagram {
     size: { width: 80, height: 90 },
   }));
 
-  // Create UseCase nodes
-  const useCaseNodes: DiagramNode[] = actionNodes.map((act, idx) => {
+  // Create unique UseCase nodes
+  const useCaseNodes: DiagramNode[] = uniqueActions.map((act, idx) => {
     const ucName = act.name.replace(/^Melakukan\s+/i, "");
+    const ucId = `uc_${act.id || idx + 1}`;
+    actionToUcIdMap.set(act.name.trim().toLowerCase().replace(/^melakukan\s+/i, ""), ucId);
     return {
-      id: `uc_${act.id || idx + 1}`,
+      id: ucId,
       name: ucName,
       type: "usecase" as const,
       position: {
@@ -621,13 +636,23 @@ function convertActivityOrFlowchartToUseCase(diagram: Diagram): Diagram {
     };
   });
 
-  // Create Edges (association between Actor and Use Case)
+  // Map each original action ID to its resolved use case ID
+  const originalNodeIdToUcId = new Map<string, string>();
+  for (const act of actionNodes) {
+    const norm = act.name.trim().toLowerCase().replace(/^melakukan\s+/i, "");
+    const ucId = actionToUcIdMap.get(norm);
+    if (ucId) originalNodeIdToUcId.set(act.id, ucId);
+  }
+
+  // Create Edges
   const edges: Edge[] = [];
   let edgeId = 1;
+  const addedAssoc = new Set<string>();
 
-  for (let i = 0; i < actionNodes.length; i++) {
-    const act = actionNodes[i];
-    const ucId = useCaseNodes[i].id;
+  // 1. Actor Associations
+  for (const act of uniqueActions) {
+    const ucId = originalNodeIdToUcId.get(act.id);
+    if (!ucId) continue;
     const laneName = (act as any).swimlane;
 
     let targetActorId = actorNodes[0].id;
@@ -636,12 +661,40 @@ function convertActivityOrFlowchartToUseCase(diagram: Diagram): Diagram {
       if (matchActor) targetActorId = matchActor.id;
     }
 
-    edges.push({
-      id: `edge_assoc_${edgeId++}`,
-      source: targetActorId,
-      target: ucId,
-      type: "association",
-    });
+    const key = `${targetActorId}-->${ucId}`;
+    if (!addedAssoc.has(key)) {
+      addedAssoc.add(key);
+      edges.push({
+        id: `edge_assoc_${edgeId++}`,
+        source: targetActorId,
+        target: ucId,
+        type: "association",
+      });
+    }
+  }
+
+  // 2. Identify <<extend>> and <<include>> relationships from decision branches or labeled edges
+  for (const edge of diagram.edges || []) {
+    const srcUc = originalNodeIdToUcId.get(edge.source);
+    const tgtUc = originalNodeIdToUcId.get(edge.target);
+    if (srcUc && tgtUc && srcUc !== tgtUc) {
+      const lbl = typeof edge.label === "string" ? edge.label : edge.label?.text || "";
+      const isNegative = /tidak|no|false|batal|revisi|gagal/i.test(lbl);
+      if (isNegative) {
+        // Alternative exception path -> <<extend>>
+        const key = `${tgtUc}--extend-->${srcUc}`;
+        if (!addedAssoc.has(key)) {
+          addedAssoc.add(key);
+          edges.push({
+            id: `edge_extend_${edgeId++}`,
+            source: tgtUc,
+            target: srcUc,
+            type: "extend",
+            label: { text: "«extend»" },
+          });
+        }
+      }
+    }
   }
 
   return {

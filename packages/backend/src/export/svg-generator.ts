@@ -1,6 +1,7 @@
 import {
   getInnerTextMaxWidth,
   wrapMultilineText,
+  computeSwimlaneMetrics,
   type Diagram,
   type ExportOptions,
 } from "@uml-editor/shared";
@@ -228,22 +229,10 @@ export function generateSVG(diagram: Diagram, options: ExportOptions): string {
     // Render UML 2.5 Activity Diagram Swimlane Columns & Header
     if (diagram.type === "activity" && (diagram as any).swimlanes?.length) {
       const swimlanes = (diagram as any).swimlanes as string[];
-      let sMinX = Infinity, sMinY = Infinity, sMaxX = -Infinity, sMaxY = -Infinity;
-      for (const n of diagramWithEdges.nodes) {
-        sMinX = Math.min(sMinX, n.position.x);
-        sMinY = Math.min(sMinY, n.position.y);
-        sMaxX = Math.max(sMaxX, n.position.x + n.size.width);
-        sMaxY = Math.max(sMaxY, n.position.y + n.size.height);
-      }
-      if (!isFinite(sMinX)) {
-        sMinX = 0; sMinY = 0; sMaxX = 700; sMaxY = 500;
-      }
-      const padding = 36;
-      const headerHeight = 40;
-      const totalHeight = Math.max(sMaxY - sMinY + padding * 2 + headerHeight, 400);
-      const laneWidth = Math.max((sMaxX - sMinX + padding * 2) / swimlanes.length, 220);
-      const startX = sMinX - padding;
-      const startY = sMinY - padding - headerHeight;
+      const { startX, startY, colWidth: laneWidth, totalHeight, headerHeight } = computeSwimlaneMetrics(
+        diagramWithEdges.nodes,
+        swimlanes,
+      );
 
       for (let i = 0; i < swimlanes.length; i++) {
         const lane = swimlanes[i];
@@ -624,7 +613,8 @@ function renderSequenceDiagram(diagram: any): string {
     svg += `<line x1="${p.position.x}" y1="${startY - 10}" x2="${p.position.x}" y2="${lifelineEnd}" stroke="#999" stroke-width="1" stroke-dasharray="4,4"/>`;
   }
 
-  // UML 2.5 Execution Specification (Activation Bars) on Lifelines
+  // UML 2.5 Execution Specification (Activation Bars with Nested Offsets) on Lifelines
+  const participantBars = new Map<string, Array<{ startY: number; endY: number }>>();
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
     if (msg.type === "return") continue;
@@ -639,7 +629,14 @@ function renderSequenceDiagram(diagram: any): string {
         break;
       }
     }
-    svg += `<rect x="${toP.position.x - 6}" y="${y - 4}" width="12" height="${Math.max(24, actEndY - y + 4)}" fill="#ffffff" stroke="#6366f1" stroke-width="1.5" rx="1"/>`;
+
+    if (!participantBars.has(toP.id)) participantBars.set(toP.id, []);
+    const activeList = participantBars.get(toP.id)!;
+    const nesting = activeList.filter((b) => b.startY <= y && b.endY > y).length;
+    activeList.push({ startY: y, endY: actEndY });
+
+    const offsetX = toP.position.x - 6 + nesting * 6;
+    svg += `<rect x="${offsetX}" y="${y - 4}" width="12" height="${Math.max(24, actEndY - y + 4)}" fill="#ffffff" stroke="#6366f1" stroke-width="1.5" rx="1"/>`;
   }
 
   // Messages with UML 2.5 chronological numbering

@@ -149,6 +149,9 @@ export class Parser {
       else pos = newPos;
     }
 
+    // Clean up internal parser state before returning
+    delete (diagram as any)._currentSwimlane;
+
     return {
       success: errors.filter((e) => e.severity === "error").length === 0,
       diagram,
