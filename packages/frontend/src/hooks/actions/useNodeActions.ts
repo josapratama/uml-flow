@@ -341,6 +341,30 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
     [diagram, history],
   );
 
+  const duplicateNodes = useCallback(
+    (nodeIds: string[]): string[] => {
+      if (!diagram || nodeIds.length === 0) return [];
+      const newNodes: typeof diagram.nodes = [];
+      const now = Date.now();
+      let idx = 0;
+      for (const id of nodeIds) {
+        const node = diagram.nodes.find((n) => n.id === id);
+        if (node) {
+          const dup = {
+            ...structuredClone(node),
+            id: `${node.id}_dup_${now}_${idx++}`,
+            position: { x: node.position.x + 35, y: node.position.y + 35 },
+          };
+          newNodes.push(dup);
+        }
+      }
+      if (newNodes.length === 0) return [];
+      history.set({ ...diagram, nodes: [...diagram.nodes, ...newNodes] });
+      return newNodes.map((n) => n.id);
+    },
+    [diagram, history],
+  );
+
   const addAttribute = useCallback(
     (nodeId: string, name: string, type: string, visibility: string) => {
       if (!diagram) return;
@@ -488,6 +512,7 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
     addNode,
     deleteNode,
     duplicateNode,
+    duplicateNodes,
     addAttribute,
     addMethod,
     deleteAttribute,

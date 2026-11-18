@@ -444,6 +444,14 @@ export function CommandPaletteModal({
         icon: "🧜‍♀️",
         category: "export",
         onSelect: () => onExport("mermaid"),
+      },
+      {
+        id: "export-plantuml",
+        title: "Export PlantUML Syntax (.puml)",
+        description: isId ? "Syntax standar PlantUML untuk GitLab / Confluence" : "Standard PlantUML syntax for GitLab / Confluence",
+        icon: "🌱",
+        category: "export",
+        onSelect: () => onExport("plantuml"),
       }
     );
 

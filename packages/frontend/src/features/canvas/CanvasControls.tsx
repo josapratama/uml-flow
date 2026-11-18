@@ -14,6 +14,9 @@ interface CanvasControlsProps {
   edgeRouting?: "straight" | "orthogonal";
   onEdgeRoutingToggle?: () => void;
   onCopyPNG?: () => void;
+  onCopySVG?: () => void;
+  onZoomToSelection?: () => void;
+  hasSelection?: boolean;
   showWatermark?: boolean;
   onToggleWatermark?: () => void;
   isAnnotating?: boolean;
@@ -32,6 +35,9 @@ export function CanvasControls({
   edgeRouting,
   onEdgeRoutingToggle,
   onCopyPNG,
+  onCopySVG,
+  onZoomToSelection,
+  hasSelection,
   showWatermark,
   onToggleWatermark,
   isAnnotating,
@@ -133,6 +139,16 @@ export function CanvasControls({
         ⊡
       </button>
 
+      {hasSelection && onZoomToSelection && (
+        <button
+          onClick={onZoomToSelection}
+          className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition-colors bg-accent/15 text-accent border border-accent/30`}
+          title={isId ? "Fokus ke Area Seleksi (Shift+F)" : "Focus to Selection (Shift+F)"}
+        >
+          ⤢
+        </button>
+      )}
+
       {onEdgeRoutingToggle && (
         <>
           <div className="w-px h-4 bg-border/60 mx-0.5" />
@@ -174,9 +190,24 @@ export function CanvasControls({
             title={isId ? "Salin Gambar PNG ke Clipboard (1-Klik)" : "Copy PNG to Clipboard (1-Click)"}
           >
             <span>📋</span>
-            <span className="text-[10px] hidden sm:inline">{isId ? "Salin" : "Copy"}</span>
+            <span className="text-[10px] hidden sm:inline">PNG</span>
           </button>
         </>
+      )}
+
+      {onCopySVG && (
+        <button
+          onClick={onCopySVG}
+          className={`h-7 px-2 flex items-center justify-center gap-1 rounded-lg text-xs font-medium transition-all ${
+            canvasTheme === "dark"
+              ? "hover:bg-surface-3 text-text"
+              : "hover:bg-slate-100 text-slate-700"
+          }`}
+          title={isId ? "Salin Vektor SVG ke Clipboard (1-Klik untuk Figma/Notion/GitHub)" : "Copy SVG Vector to Clipboard (1-Click)"}
+        >
+          <span>✨</span>
+          <span className="text-[10px] hidden sm:inline">SVG</span>
+        </button>
       )}
 
       {onToggleWatermark && (

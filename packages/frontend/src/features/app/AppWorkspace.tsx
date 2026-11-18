@@ -205,6 +205,7 @@ export function AppWorkspace(props: AppWorkspaceProps) {
               onDeleteNode={actions.deleteNode}
               onDeleteEdge={actions.deleteEdge}
               onDuplicateNode={actions.duplicateNode}
+              onDuplicateNodes={actions.duplicateNodes}
               onContextMenu={onCanvasContextMenu}
             />
           </div>

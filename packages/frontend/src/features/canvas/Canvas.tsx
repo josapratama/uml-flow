@@ -102,6 +102,7 @@ interface CanvasProps {
   onDeleteNode?: (nodeId: string) => void;
   onDeleteEdge?: (edgeId: string) => void;
   onDuplicateNode?: (nodeId: string) => string | null;
+  onDuplicateNodes?: (nodeIds: string[]) => string[];
   onContextMenu?: (
     e: React.MouseEvent,
     target: {
@@ -155,6 +156,7 @@ export function Canvas({
   onDeleteNode,
   onDeleteEdge,
   onDuplicateNode,
+  onDuplicateNodes,
   onContextMenu,
 }: CanvasProps) {
   // --- Watermark State ---
@@ -276,6 +278,32 @@ export function Canvas({
   // --- Clipboard for Canvas Nodes ---
   const nodeClipboardRef = useRef<string[]>([]);
 
+  // 1-Click Copy SVG Vector to Clipboard
+  const handleCopySVG = useCallback(async () => {
+    if (!svgRef.current) return;
+    try {
+      const { getFullDiagramSVG } = await import("../../services/export-png");
+      const svgString = getFullDiagramSVG(svgRef.current);
+      await navigator.clipboard.writeText(svgString);
+      showToast("Vektor SVG disalin ke clipboard! Siap di-paste ke Figma/Notion/GitHub", "success");
+    } catch {
+      showToast("Gagal menyalin SVG ke clipboard", "error");
+    }
+  }, [svgRef]);
+
+  // Focus / Zoom to Selection
+  const handleZoomToSelection = useCallback(() => {
+    const targetIds =
+      multiSelected.size > 0
+        ? Array.from(multiSelected)
+        : selectedNodeId
+        ? [selectedNodeId]
+        : [];
+    if (targetIds.length > 0) {
+      zoomToSelection(targetIds);
+    }
+  }, [multiSelected, selectedNodeId, zoomToSelection]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeEl = document.activeElement;
@@ -327,14 +355,60 @@ export function Canvas({
         }
       }
 
+      // Shift+F: Zoom to Selection
+      if (e.key.toLowerCase() === "f" && e.shiftKey) {
+        const targetIds =
+          multiSelected.size > 0
+            ? Array.from(multiSelected)
+            : selectedNodeId
+            ? [selectedNodeId]
+            : [];
+        if (targetIds.length > 0) {
+          e.preventDefault();
+          zoomToSelection(targetIds);
+          showToast("Fokus ke area seleksi (Shift+F)", "info");
+          return;
+        }
+      }
+
+      // Arrow keys: Nudge selected node(s) (1px default, 10px with Shift)
+      if (
+        (e.key === "ArrowUp" ||
+          e.key === "ArrowDown" ||
+          e.key === "ArrowLeft" ||
+          e.key === "ArrowRight")
+      ) {
+        const step = e.shiftKey ? 10 : 1;
+        let dx = 0;
+        let dy = 0;
+        if (e.key === "ArrowUp") dy = -step;
+        if (e.key === "ArrowDown") dy = step;
+        if (e.key === "ArrowLeft") dx = -step;
+        if (e.key === "ArrowRight") dx = step;
+
+        if (multiSelected.size > 0 && onMultiNodeMove) {
+          e.preventDefault();
+          onMultiNodeMove(Array.from(multiSelected), dx, dy);
+          return;
+        } else if (selectedNodeId && onMultiNodeMove) {
+          e.preventDefault();
+          onMultiNodeMove([selectedNodeId], dx, dy);
+          return;
+        }
+      }
+
       // Ctrl+V: Paste Copied Node(s)
       if (mod && e.key.toLowerCase() === "v") {
-        if (nodeClipboardRef.current.length > 0 && onDuplicateNode) {
+        if (nodeClipboardRef.current.length > 0 && (onDuplicateNodes || onDuplicateNode)) {
           e.preventDefault();
-          const newIds: string[] = [];
-          for (const id of nodeClipboardRef.current) {
-            const newId = onDuplicateNode(id);
-            if (newId) newIds.push(newId);
+          let newIds: string[] = [];
+          if (onDuplicateNodes && nodeClipboardRef.current.length > 1) {
+            newIds = onDuplicateNodes(nodeClipboardRef.current);
+          } else if (onDuplicateNode) {
+            for (const id of nodeClipboardRef.current) {
+              const newId = onDuplicateNode(id);
+              if (newId) newIds.push(newId);
+            }
           }
           if (newIds.length === 1) {
             onNodeSelect(newIds[0]);
@@ -361,12 +435,16 @@ export function Canvas({
         } else if (selectedNodeId) {
           toDup.push(selectedNodeId);
         }
-        if (toDup.length > 0 && onDuplicateNode) {
+        if (toDup.length > 0 && (onDuplicateNodes || onDuplicateNode)) {
           e.preventDefault();
-          const newIds: string[] = [];
-          for (const id of toDup) {
-            const newId = onDuplicateNode(id);
-            if (newId) newIds.push(newId);
+          let newIds: string[] = [];
+          if (onDuplicateNodes && toDup.length > 1) {
+            newIds = onDuplicateNodes(toDup);
+          } else if (onDuplicateNode) {
+            for (const id of toDup) {
+              const newId = onDuplicateNode(id);
+              if (newId) newIds.push(newId);
+            }
           }
           if (newIds.length === 1) {
             onNodeSelect(newIds[0]);
@@ -420,6 +498,9 @@ export function Canvas({
     onDeleteNode,
     onDeleteEdge,
     onDuplicateNode,
+    onDuplicateNodes,
+    onMultiNodeMove,
+    zoomToSelection,
     onNodeSelect,
     onEdgeSelect,
     setMultiSelected,
@@ -591,6 +672,9 @@ export function Canvas({
         edgeRouting={edgeRouting}
         onEdgeRoutingToggle={onEdgeRoutingToggle}
         onCopyPNG={onCopyPNG}
+        onCopySVG={handleCopySVG}
+        onZoomToSelection={handleZoomToSelection}
+        hasSelection={multiSelected.size > 0 || !!selectedNodeId}
         showWatermark={showWatermark}
         onToggleWatermark={handleToggleWatermark}
         isAnnotating={isAnnotating}

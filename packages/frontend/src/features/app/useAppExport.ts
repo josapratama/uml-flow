@@ -72,6 +72,18 @@ export function useAppExport({
             }
             break;
           }
+          case "plantuml": {
+            const { exportToPlantUML } = await import("../../services/plantuml-exporter");
+            const puml = exportToPlantUML(diagram);
+            downloadFile(puml, `${diagram.name}.puml`, "text/plain");
+            try {
+              await navigator.clipboard.writeText(puml);
+              showToast(isId ? "Syntax PlantUML (.puml) diunduh & disalin ke clipboard" : "PlantUML (.puml) downloaded & copied to clipboard", "success");
+            } catch {
+              showToast(isId ? "File PlantUML (.puml) berhasil diekspor" : "PlantUML (.puml) exported", "success");
+            }
+            break;
+          }
           case "png": {
             const el = document.querySelector(
               ".canvas-svg-element"

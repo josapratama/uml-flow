@@ -20,6 +20,8 @@ import { generateThesisAppendixBundle } from "../thesis-bundle";
 import { analyzeDependencies } from "../dependency-analyzer";
 import { exportWorkspaceBackup, restoreWorkspaceBackup } from "../workspace-backup";
 import { generateTikZ, escapeLaTeX } from "./tikz";
+import { exportToPlantUML } from "../plantuml-exporter";
+import { ENTERPRISE_ARCHITECTURE_TEMPLATES } from "../templates/presets/enterpriseArchitectureTemplates";
 
 const sampleClassDiagram: Diagram = {
   id: "diag-1",
@@ -719,5 +721,46 @@ describe("LaTeX TikZ Code Exporter", () => {
     expect(tikz).toContain("flowproc");
     expect(tikz).toContain("\\draw[baseedge]");
     expect(tikz).toContain("proceed");
+  });
+
+  it("exports class, sequence, and ERD diagrams to valid PlantUML syntax", () => {
+    const puml = exportToPlantUML(sampleClassDiagram);
+    expect(puml).toContain("@startuml");
+    expect(puml).toContain("@enduml");
+    expect(puml).toContain("class \"User\" as c1");
+    expect(puml).toContain("+login(password: string): bool");
+
+    const seqDiagram: Diagram = {
+      id: "seq-puml",
+      name: "SeqTest",
+      type: "sequence",
+      nodes: [],
+      edges: [],
+      participants: [
+        { id: "p1", name: "Client", position: { x: 50, y: 50 } },
+        { id: "p2", name: "Server", position: { x: 250, y: 50 } },
+      ],
+      messages: [
+        { id: "m1", from: "p1", to: "p2", text: "GET /api", type: "sync" },
+        { id: "m2", from: "p2", to: "p1", text: "200 OK", type: "return" },
+      ],
+    };
+
+    const seqPuml = exportToPlantUML(seqDiagram);
+    expect(seqPuml).toContain("participant \"Client\" as p1");
+    expect(seqPuml).toContain("p1 -> p2 : GET /api");
+    expect(seqPuml).toContain("p2 --> p1 : 200 OK");
+  });
+
+  it("verifies enterprise C4 architecture model templates are present and well-formed", () => {
+    const c4Context = ENTERPRISE_ARCHITECTURE_TEMPLATES.find((t) => t.id === "tmpl_c4_context");
+    expect(c4Context).toBeDefined();
+    expect(c4Context?.tag).toBe("C4 Model");
+    expect(c4Context?.diagram.nodes.length).toBeGreaterThanOrEqual(5);
+
+    const c4Container = ENTERPRISE_ARCHITECTURE_TEMPLATES.find((t) => t.id === "tmpl_c4_container");
+    expect(c4Container).toBeDefined();
+    expect(c4Container?.tag).toBe("C4 Model");
+    expect(c4Container?.diagram.nodes.some((n) => n.name.includes("API Gateway"))).toBe(true);
   });
 });
