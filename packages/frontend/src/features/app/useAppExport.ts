@@ -21,6 +21,8 @@ interface UseAppExportOptions {
   onOpenTestCases?: () => void;
   onOpenMockData?: () => void;
   onOpenSQLExport?: () => void;
+  onOpenUseCaseNarrative?: () => void;
+  onOpenDataDictionary?: () => void;
 }
 
 export function useAppExport({
@@ -30,6 +32,8 @@ export function useAppExport({
   onOpenTestCases,
   onOpenMockData,
   onOpenSQLExport,
+  onOpenUseCaseNarrative,
+  onOpenDataDictionary,
 }: UseAppExportOptions) {
   const { locale } = useI18n();
   const isId = locale === "id";
@@ -123,6 +127,18 @@ export function useAppExport({
           case "test-cases": {
             if (onOpenTestCases) {
               onOpenTestCases();
+            }
+            break;
+          }
+          case "usecase-narrative": {
+            if (onOpenUseCaseNarrative) {
+              onOpenUseCaseNarrative();
+            }
+            break;
+          }
+          case "data-dictionary": {
+            if (onOpenDataDictionary) {
+              onOpenDataDictionary();
             }
             break;
           }

@@ -142,6 +142,8 @@ export default function App(props: AppProps = {}) {
   const [showDependencyMatrix, setShowDependencyMatrix] = useState(false);
   const [showWorkspaceBackup, setShowWorkspaceBackup] = useState(false);
   const [showNodeHierarchy, setShowNodeHierarchy] = useState(false);
+  const [showUseCaseNarrative, setShowUseCaseNarrative] = useState(false);
+  const [showDataDictionary, setShowDataDictionary] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showMetrics, setShowMetrics] = useState(false);
@@ -623,6 +625,8 @@ export default function App(props: AppProps = {}) {
     onOpenTestCases: () => setShowTestCases(true),
     onOpenMockData: () => setShowMockData(true),
     onOpenSQLExport: () => setShowSQLExport(true),
+    onOpenUseCaseNarrative: () => setShowUseCaseNarrative(true),
+    onOpenDataDictionary: () => setShowDataDictionary(true),
   });
 
   const handleCopyPNG = useCallback(() => {
@@ -1152,6 +1156,8 @@ export default function App(props: AppProps = {}) {
         onOpenDependencyMatrix={() => setShowDependencyMatrix(true)}
         onOpenWorkspaceBackup={() => setShowWorkspaceBackup(true)}
         onOpenNodeHierarchy={() => setShowNodeHierarchy(true)}
+        onOpenUseCaseNarrative={() => setShowUseCaseNarrative(true)}
+        onOpenDataDictionary={() => setShowDataDictionary(true)}
         onOpenCommandPalette={() => setShowCommandPalette(true)}
         onSaveCurrent={handleSaveCurrent}
         onShareLink={handleShareLink}
@@ -1327,6 +1333,12 @@ export default function App(props: AppProps = {}) {
         showNodeHierarchy={showNodeHierarchy}
         onCloseNodeHierarchy={() => setShowNodeHierarchy(false)}
         onOpenNodeHierarchy={() => setShowNodeHierarchy(true)}
+        showUseCaseNarrative={showUseCaseNarrative}
+        onCloseUseCaseNarrative={() => setShowUseCaseNarrative(false)}
+        onOpenUseCaseNarrative={() => setShowUseCaseNarrative(true)}
+        showDataDictionary={showDataDictionary}
+        onCloseDataDictionary={() => setShowDataDictionary(false)}
+        onOpenDataDictionary={() => setShowDataDictionary(true)}
         showCommandPalette={showCommandPalette}
         onCloseCommandPalette={() => setShowCommandPalette(false)}
         onSelectNode={(id) => setSelectedNodeId(id)}

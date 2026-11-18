@@ -12,6 +12,8 @@ interface Props {
   onOpenTestCases?: () => void;
   onOpenMockData?: () => void;
   onOpenDependencyMatrix?: () => void;
+  onOpenUseCaseNarrative?: () => void;
+  onOpenDataDictionary?: () => void;
   onLayout?: (preset: string) => void;
 }
 
@@ -26,6 +28,8 @@ export function ToolsMenu({
   onOpenTestCases,
   onOpenMockData,
   onOpenDependencyMatrix,
+  onOpenUseCaseNarrative,
+  onOpenDataDictionary,
   onLayout,
 }: Props) {
   const { locale } = useI18n();
@@ -151,6 +155,40 @@ export function ToolsMenu({
             <div className="px-2 py-1 text-[10px] font-semibold text-text-muted uppercase tracking-wider">
               {isId ? "Akademik & Pengujian" : "Academic & Testing"}
             </div>
+
+            {onOpenUseCaseNarrative && (
+              <button
+                disabled={!hasDiagram}
+                onClick={() => {
+                  setOpen(false);
+                  onOpenUseCaseNarrative();
+                }}
+                className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left text-text hover:bg-surface-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed group"
+              >
+                <span>📋</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-text">{isId ? "Skenario Narasi Use Case" : "Use Case Scenarios"}</div>
+                  <div className="text-[10px] text-text-muted truncate">{isId ? "Tabel spesifikasi skenario Bab 3/4" : "SRS use case scenario tables"}</div>
+                </div>
+              </button>
+            )}
+
+            {onOpenDataDictionary && (
+              <button
+                disabled={!hasDiagram}
+                onClick={() => {
+                  setOpen(false);
+                  onOpenDataDictionary();
+                }}
+                className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left text-text hover:bg-surface-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed group"
+              >
+                <span>📚</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-text">{isId ? "Kamus Data ERD (Data Dict)" : "ERD Data Dictionary"}</div>
+                  <div className="text-[10px] text-text-muted truncate">{isId ? "Tabel kamus data teknis basis data" : "Technical data dictionary tables"}</div>
+                </div>
+              </button>
+            )}
 
             {onOpenThesisBundle && (
               <button

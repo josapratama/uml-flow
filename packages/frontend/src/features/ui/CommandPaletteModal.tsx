@@ -27,6 +27,8 @@ interface Props {
   onOpenTestCases?: () => void;
   onOpenMockData?: () => void;
   onOpenDependencyMatrix?: () => void;
+  onOpenUseCaseNarrative?: () => void;
+  onOpenDataDictionary?: () => void;
   onOpenWorkspaceBackup?: () => void;
   onOpenNodeHierarchy?: () => void;
   onRepairDiagram?: () => void;
@@ -60,6 +62,8 @@ export function CommandPaletteModal({
   onOpenTestCases = () => { },
   onOpenMockData = () => { },
   onOpenDependencyMatrix = () => { },
+  onOpenUseCaseNarrative = () => { },
+  onOpenDataDictionary = () => { },
   onOpenWorkspaceBackup = () => { },
   onOpenNodeHierarchy = () => { },
   onRepairDiagram = () => { },
@@ -211,6 +215,22 @@ export function CommandPaletteModal({
         icon: "🕸️",
         category: "modals",
         onSelect: onOpenDependencyMatrix,
+      },
+      {
+        id: "open-usecase-narrative",
+        title: isId ? "📋 Generator Spesifikasi Skenario Use Case" : "📋 Use Case Scenario Specification Generator",
+        description: isId ? "Generate tabel skenario usecase standar OMG UML 2.5 Bab 3/4 Skripsi & SRS" : "Auto-generate formal Use Case specifications and flow scenarios for thesis & SRS",
+        icon: "📋",
+        category: "modals",
+        onSelect: onOpenUseCaseNarrative,
+      },
+      {
+        id: "open-data-dictionary",
+        title: isId ? "📚 Kamus Data Basis Data (ERD Data Dictionary)" : "📚 ERD Data Dictionary Generator",
+        description: isId ? "Generate kamus data lengkap ERD (tabel, tipe data, kunci, nullable, deskripsi)" : "Generate complete academic data dictionary tables from ERD entities",
+        icon: "📚",
+        category: "modals",
+        onSelect: onOpenDataDictionary,
       },
       {
         id: "open-workspace-backup",

@@ -44,6 +44,20 @@ function getExportOptions(locale: Locale): ExportOption[] {
       category: "doc",
     },
     {
+      id: "usecase-narrative",
+      label: isId ? "Skenario Narasi Use Case (.md)" : "Use Case Scenario Spec (.md)",
+      icon: "📋",
+      description: isId ? "Tabel spesifikasi skenario Bab 3/4 Skripsi" : "OMG UML 2.5 scenario tables for SRS",
+      category: "doc",
+    },
+    {
+      id: "data-dictionary",
+      label: isId ? "Kamus Data Basis Data (.md)" : "ERD Data Dictionary (.md)",
+      icon: "📚",
+      description: isId ? "Tabel kamus data teknis perancangan DB" : "Technical database data dictionary tables",
+      category: "doc",
+    },
+    {
       id: "tikz",
       label: "LaTeX TikZ Vector (.tex)",
       icon: "📑",

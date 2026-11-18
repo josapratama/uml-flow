@@ -62,6 +62,8 @@ interface ToolbarProps {
   onOpenTestCases?: () => void;
   onOpenMockData?: () => void;
   onOpenDependencyMatrix?: () => void;
+  onOpenUseCaseNarrative?: () => void;
+  onOpenDataDictionary?: () => void;
   onOpenWorkspaceBackup?: () => void;
   onOpenNodeHierarchy?: () => void;
   onOpenCommandPalette?: () => void;
@@ -285,6 +287,8 @@ export function Toolbar(props: ToolbarProps) {
           onOpenTestCases={onOpenTestCases}
           onOpenMockData={onOpenMockData}
           onOpenDependencyMatrix={onOpenDependencyMatrix}
+          onOpenUseCaseNarrative={props.onOpenUseCaseNarrative}
+          onOpenDataDictionary={props.onOpenDataDictionary}
           onLayout={onLayout}
         />
 

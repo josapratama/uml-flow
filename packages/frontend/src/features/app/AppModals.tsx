@@ -24,6 +24,8 @@ const MockDataModal = lazy(() => import("../ui/MockDataModal").then(m => ({ defa
 const DependencyMatrixModal = lazy(() => import("../ui/DependencyMatrixModal").then(m => ({ default: m.DependencyMatrixModal })));
 const WorkspaceBackupModal = lazy(() => import("../ui/WorkspaceBackupModal").then(m => ({ default: m.WorkspaceBackupModal })));
 const NodeHierarchyModal = lazy(() => import("../ui/NodeHierarchyModal").then(m => ({ default: m.NodeHierarchyModal })));
+const UseCaseNarrativeModal = lazy(() => import("../ui/UseCaseNarrativeModal").then(m => ({ default: m.UseCaseNarrativeModal })));
+const DataDictionaryModal = lazy(() => import("../ui/DataDictionaryModal").then(m => ({ default: m.DataDictionaryModal })));
 
 interface AppModalsProps {
   showShortcuts: boolean;
@@ -85,6 +87,12 @@ interface AppModalsProps {
   showNodeHierarchy?: boolean;
   onCloseNodeHierarchy?: () => void;
   onOpenNodeHierarchy?: () => void;
+  showUseCaseNarrative?: boolean;
+  onCloseUseCaseNarrative?: () => void;
+  onOpenUseCaseNarrative?: () => void;
+  showDataDictionary?: boolean;
+  onCloseDataDictionary?: () => void;
+  onOpenDataDictionary?: () => void;
   showCommandPalette?: boolean;
   onCloseCommandPalette?: () => void;
   onSelectNode?: (nodeId: string) => void;
@@ -173,6 +181,12 @@ export function AppModals({
   showNodeHierarchy = false,
   onCloseNodeHierarchy,
   onOpenNodeHierarchy = () => { },
+  showUseCaseNarrative = false,
+  onCloseUseCaseNarrative,
+  onOpenUseCaseNarrative = () => { },
+  showDataDictionary = false,
+  onCloseDataDictionary,
+  onOpenDataDictionary = () => { },
   showCommandPalette = false,
   onCloseCommandPalette,
   onSelectNode = () => { },
@@ -369,6 +383,22 @@ export function AppModals({
           />
         )}
 
+        {showUseCaseNarrative && (
+          <UseCaseNarrativeModal
+            isOpen={showUseCaseNarrative}
+            onClose={onCloseUseCaseNarrative || (() => { })}
+            diagram={diagram}
+          />
+        )}
+
+        {showDataDictionary && (
+          <DataDictionaryModal
+            isOpen={showDataDictionary}
+            onClose={onCloseDataDictionary || (() => { })}
+            diagram={diagram}
+          />
+        )}
+
         {showCommandPalette && (
           <CommandPaletteModal
             isOpen={showCommandPalette}
@@ -385,6 +415,8 @@ export function AppModals({
             onOpenTestCases={onOpenTestCases}
             onOpenMockData={onOpenMockData}
             onOpenDependencyMatrix={onOpenDependencyMatrix}
+            onOpenUseCaseNarrative={onOpenUseCaseNarrative}
+            onOpenDataDictionary={onOpenDataDictionary}
             onOpenWorkspaceBackup={onOpenWorkspaceBackup}
             onOpenNodeHierarchy={onOpenNodeHierarchy}
             onOpenAI={onOpenAI}

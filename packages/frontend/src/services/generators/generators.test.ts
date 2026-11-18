@@ -790,4 +790,107 @@ describe("LaTeX TikZ Code Exporter", () => {
     // Should warn on dead process
     expect(warnings.some((w) => w.nodeId === "proc" && w.message.includes("berhenti tanpa mencapai node End"))).toBe(true);
   });
+
+  it("generates structured Use Case Narrative specifications and scenarios", async () => {
+    const { extractUseCaseScenarios, generateUseCaseNarrativeMarkdown } = await import("../use-case-narrative");
+    const usecaseDiagram: Diagram = {
+      id: "uc-diag",
+      name: "SIAKAD Use Case",
+      type: "usecase",
+      nodes: [
+        { id: "a1", name: "Mahasiswa", type: "actor", position: { x: 50, y: 100 }, size: { width: 80, height: 90 } },
+        { id: "u1", name: "Login Akun", type: "usecase", position: { x: 250, y: 50 }, size: { width: 140, height: 50 } },
+        { id: "u2", name: "Pengisian KRS", type: "usecase", position: { x: 250, y: 150 }, size: { width: 150, height: 50 } },
+      ],
+      edges: [
+        { id: "e1", source: "a1", target: "u1" },
+        { id: "e2", source: "a1", target: "u2" },
+        { id: "e3", source: "u2", target: "u1", type: "include" },
+      ],
+    };
+
+    const scenarios = extractUseCaseScenarios(usecaseDiagram);
+    expect(scenarios.length).toBe(2);
+    expect(scenarios[0].name).toBe("Login Akun");
+    expect(scenarios[0].actors).toContain("Mahasiswa");
+    expect(scenarios[0].mainFlow.length).toBeGreaterThan(2);
+
+    expect(scenarios[1].name).toBe("Pengisian KRS");
+    expect(scenarios[1].includes).toContain("Login Akun");
+
+    const md = generateUseCaseNarrativeMarkdown(usecaseDiagram);
+    expect(md).toContain("# Dokumen Spesifikasi Skenario Use Case");
+    expect(md).toContain("SIAKAD Use Case");
+    expect(md).toContain("UC-01");
+    expect(md).toContain("«include»");
+  });
+
+  it("extracts and formats ERD Data Dictionary with tables and column constraints", async () => {
+    const { extractDataDictionary, generateDataDictionaryMarkdown, generateDataDictionaryCSV } = await import("../erd-dictionary");
+    const erdDiagram: Diagram = {
+      id: "erd-diag",
+      name: "Sistem Akademik DB",
+      type: "erd",
+      nodes: [
+        {
+          id: "tbl-mhs",
+          name: "mahasiswa",
+          type: "entity",
+          position: { x: 50, y: 50 },
+          size: { width: 180, height: 120 },
+          attributes: [
+            { name: "nim", type: "VARCHAR(12)", isPrimaryKey: true },
+            { name: "nama", type: "VARCHAR(100)", isNullable: false },
+            { name: "prodi_id", type: "INT", isForeignKey: true },
+          ],
+        } as any,
+      ],
+      edges: [],
+    };
+
+    const tables = extractDataDictionary(erdDiagram);
+    expect(tables.length).toBe(1);
+    expect(tables[0].name).toBe("mahasiswa");
+    expect(tables[0].fields.length).toBe(3);
+    expect(tables[0].fields[0].isPrimaryKey).toBe(true);
+    expect(tables[0].fields[2].isForeignKey).toBe(true);
+
+    const md = generateDataDictionaryMarkdown(erdDiagram);
+    expect(md).toContain("# Kamus Data Sistem (Data Dictionary)");
+    expect(md).toContain("`mahasiswa`");
+    expect(md).toContain("`nim`");
+    expect(md).toContain("**PK**");
+
+    const csv = generateDataDictionaryCSV(erdDiagram);
+    expect(csv).toContain('"mahasiswa","1","nim","VARCHAR(12)","YES"');
+  });
+
+  it("calculates exact Ray-to-Ellipse and Ray-to-Diamond connection points on curved boundaries", async () => {
+    const { getConnectionPoint } = await import("../../features/canvas/edges/edge-geometry");
+    
+    // Ellipse usecase at x=100, y=100, w=200, h=100 (cx=200, cy=150, rx=100, ry=50)
+    const ellipseNode: any = {
+      id: "uc-1",
+      type: "usecase",
+      name: "Testing Node",
+      position: { x: 100, y: 100 },
+      size: { width: 200, height: 100 },
+    };
+
+    // Target directly to the right
+    const ptRight = getConnectionPoint(ellipseNode, { x: 400, y: 150 });
+    expect(ptRight.x).toBeCloseTo(300, 0); // cx + rx
+    expect(ptRight.y).toBeCloseTo(150, 0);
+
+    // Target directly below
+    const ptBottom = getConnectionPoint(ellipseNode, { x: 200, y: 300 });
+    expect(ptBottom.x).toBeCloseTo(200, 0);
+    expect(ptBottom.y).toBeCloseTo(200, 0); // cy + ry
+
+    // Diagonal target at 45 degrees: should satisfy (x-cx)^2/rx^2 + (y-cy)^2/ry^2 = 1
+    const ptDiag = getConnectionPoint(ellipseNode, { x: 300, y: 250 });
+    const cx = 200, cy = 150, rx = 100, ry = 50;
+    const ellipseEq = ((ptDiag.x - cx) / rx) ** 2 + ((ptDiag.y - cy) / ry) ** 2;
+    expect(ellipseEq).toBeCloseTo(1, 2); // Exact mathematical hit on ellipse perimeter!
+  });
 });

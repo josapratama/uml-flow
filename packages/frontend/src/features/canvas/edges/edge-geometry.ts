@@ -253,7 +253,11 @@ export function getPathPointAndNormal(
 
 /**
  * Calculate the connection point on a node's border facing toward a target position.
- * Uses ray-box intersection to find where a line from center to target crosses the border.
+ * Uses ray-shape intersection based on the node's actual geometric geometry:
+ * - Ellipse (usecase, database): exact ray-ellipse intersection
+ * - Circle (initial, final, start, end): exact ray-circle intersection
+ * - Diamond (decision): exact ray-rhombus intersection
+ * - Box (all rectangular nodes): ray-box intersection
  */
 export function getConnectionPoint(
   node: DiagramNode,
@@ -274,14 +278,49 @@ export function getConnectionPoint(
   const absDy = Math.abs(dy);
   // Guard against near-zero values that could cause extreme coordinates
   if (absDx < 0.01 && absDy < 0.01) return { x: cx, y: cy };
-  let x: number, y: number;
 
-  if (absDx * h > absDy * w) {
-    x = dx > 0 ? cx + w : cx - w;
-    y = cy + (dy / absDx) * w;
-  } else {
-    y = dy > 0 ? cy + h : cy - h;
-    x = cx + (dx / absDy) * h;
+  let x: number;
+  let y: number;
+
+  const nodeType = (node.type as string) || "";
+
+  // 1. Circle shapes (activity/state circles)
+  if (
+    nodeType === "initial" ||
+    nodeType === "final" ||
+    ((nodeType === "start" || nodeType === "end") && size.width <= 40)
+  ) {
+    const r = Math.min(w, h);
+    const dist = Math.hypot(dx, dy);
+    x = cx + (dx / dist) * r;
+    y = cy + (dy / dist) * r;
+  }
+  // 2. Ellipse shapes (usecase, database)
+  else if (nodeType === "usecase" || nodeType === "database") {
+    // Ellipse equation: (x/w)^2 + (y/h)^2 = 1 -> ray: x = cx + t*dx, y = cy + t*dy
+    // t = 1 / sqrt((dx/w)^2 + (dy/h)^2)
+    const scaleX = dx / Math.max(1, w);
+    const scaleY = dy / Math.max(1, h);
+    const t = 1 / Math.sqrt(scaleX * scaleX + scaleY * scaleY);
+    x = cx + t * dx;
+    y = cy + t * dy;
+  }
+  // 3. Diamond (rhombus) shapes (decision)
+  else if (nodeType === "decision") {
+    // Diamond equation: |x/w| + |y/h| = 1 -> t = 1 / (|dx/w| + |dy/h|)
+    const t = 1 / (absDx / Math.max(1, w) + absDy / Math.max(1, h));
+    x = cx + t * dx;
+    y = cy + t * dy;
+  }
+  // 4. Standard Rectangular Box (classes, components, states, activities, etc.)
+  else {
+    if (absDx * h > absDy * w) {
+      x = dx > 0 ? cx + w : cx - w;
+      y = cy + (dy / absDx) * w;
+    } else {
+      y = dy > 0 ? cy + h : cy - h;
+      x = cx + (dx / absDy) * h;
+    }
   }
 
   if (offset !== 0) {
