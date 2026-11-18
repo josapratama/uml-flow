@@ -61,6 +61,7 @@ export default function App(props: AppProps = {}) {
   const [isCompiling, setIsCompiling] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAcademicA4, setShowAcademicA4] = useState(false);
+  const [showConverter, setShowConverter] = useState(false);
   const [canvasSketchMode, setCanvasSketchMode] = useState(false);
   const [showSQLExport, setShowSQLExport] = useState(false);
   const [showStylePanel, setShowStylePanel] = useState<
@@ -373,6 +374,41 @@ export default function App(props: AppProps = {}) {
       showToast(isId ? "Tab ditutup (tersimpan di Library)" : "Tab closed (saved in Library)", "info");
     },
     [diagram, code, isId, handleOpenTab, switchActiveTab, diagramHistory]
+  );
+
+  const handleApplyConvertedDiagram = useCallback(
+    async (newDiagram: Diagram, inNewTab: boolean) => {
+      let dsl = "";
+      try {
+        dsl = await api.exportDiagram(newDiagram, { format: "dsl" });
+      } catch {
+        dsl = `@diagram "${newDiagram.name}" ${newDiagram.type}\n`;
+      }
+
+      if (inNewTab) {
+        const newId = `converted_${Date.now()}`;
+        const newEntry: SavedDiagram = {
+          id: newId,
+          name: newDiagram.name,
+          code: dsl,
+          diagram: newDiagram,
+          updatedAt: new Date().toISOString(),
+        };
+        storage.save(newEntry);
+        storage.openTab(newId);
+        refreshTabs();
+        switchActiveTab(newId);
+        setCode(dsl);
+        lastCompiledCode.current = dsl;
+        diagramHistory.reset(newDiagram);
+        setErrors([]);
+      } else {
+        diagramHistory.set(newDiagram);
+        setCode(dsl);
+        lastCompiledCode.current = dsl;
+      }
+    },
+    [diagramHistory, refreshTabs, switchActiveTab]
   );
 
   const handleRenameTab = useCallback(
@@ -1153,6 +1189,8 @@ export default function App(props: AppProps = {}) {
         onShowMetrics={() => setShowMetrics(true)}
         onOpenSimulator={() => setShowSimulator(true)}
         onOpenAcademicMetadata={() => setShowAcademicMetadata(true)}
+        onOpenAcademicA4={() => setShowAcademicA4(true)}
+        onOpenConverter={() => setShowConverter(true)}
         onOpenThesisBundle={() => setShowThesisBundle(true)}
         onOpenTestCases={() => setShowTestCases(true)}
         onOpenMockData={() => setShowMockData(true)}
@@ -1161,7 +1199,6 @@ export default function App(props: AppProps = {}) {
         onOpenNodeHierarchy={() => setShowNodeHierarchy(true)}
         onOpenUseCaseNarrative={() => setShowUseCaseNarrative(true)}
         onOpenDataDictionary={() => setShowDataDictionary(true)}
-        onOpenAcademicA4={() => setShowAcademicA4(true)}
         onOpenCommandPalette={() => setShowCommandPalette(true)}
         onSaveCurrent={handleSaveCurrent}
         onShareLink={handleShareLink}
@@ -1257,6 +1294,9 @@ export default function App(props: AppProps = {}) {
         onCloseShortcuts={() => setShowShortcuts(false)}
         showAcademicA4={showAcademicA4}
         onCloseAcademicA4={() => setShowAcademicA4(false)}
+        showConverter={showConverter}
+        onCloseConverter={() => setShowConverter(false)}
+        onApplyConvertedDiagram={handleApplyConvertedDiagram}
         contextMenu={contextMenu}
         onCloseContextMenu={() => setContextMenu(null)}
         showLibrary={showLibrary}
@@ -1357,6 +1397,8 @@ export default function App(props: AppProps = {}) {
         onOpenMetrics={() => setShowMetrics(true)}
         onOpenSimulator={() => setShowSimulator(true)}
         onOpenAcademicMetadata={() => setShowAcademicMetadata(true)}
+        onOpenAcademicA4={() => setShowAcademicA4(true)}
+        onOpenConverter={() => setShowConverter(true)}
         onOpenThesisBundle={() => setShowThesisBundle(true)}
         onOpenTestCases={() => setShowTestCases(true)}
         onOpenMockData={() => setShowMockData(true)}

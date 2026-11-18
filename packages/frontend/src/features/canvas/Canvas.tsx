@@ -264,6 +264,70 @@ export function Canvas({
       activeEdgeTool,
     });
 
+  // --- Touch Gesture State (Pinch-to-zoom & Touch-pan) ---
+  const touchStateRef = useRef<{
+    lastDist: number;
+    lastCenter: { x: number; y: number };
+  } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<SVGSVGElement>) => {
+    if (e.touches.length === 2) {
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      const center = {
+        x: (t1.clientX + t2.clientX) / 2,
+        y: (t1.clientY + t2.clientY) / 2,
+      };
+      touchStateRef.current = { lastDist: dist, lastCenter: center };
+    } else {
+      touchStateRef.current = null;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent<SVGSVGElement>) => {
+      if (e.touches.length === 2 && touchStateRef.current) {
+        if (e.cancelable) e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        const center = {
+          x: (t1.clientX + t2.clientX) / 2,
+          y: (t1.clientY + t2.clientY) / 2,
+        };
+
+        const scaleFactor = dist / (touchStateRef.current.lastDist || dist);
+        const dx = center.x - touchStateRef.current.lastCenter.x;
+        const dy = center.y - touchStateRef.current.lastCenter.y;
+
+        const svgEl = svgRef.current;
+        if (svgEl) {
+          const rect = svgEl.getBoundingClientRect();
+          const cursorX = center.x - rect.left;
+          const cursorY = center.y - rect.top;
+
+          setView((prev) => {
+            const nextScale = Math.min(3, Math.max(0.2, prev.scale * scaleFactor));
+            const actualFactor = nextScale / prev.scale;
+            return {
+              scale: nextScale,
+              offsetX: cursorX - (cursorX - prev.offsetX) * actualFactor + dx,
+              offsetY: cursorY - (cursorY - prev.offsetY) * actualFactor + dy,
+            };
+          });
+        }
+
+        touchStateRef.current = { lastDist: dist, lastCenter: center };
+      }
+    },
+    [svgRef, setView]
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    touchStateRef.current = null;
+  }, []);
+
   // --- Zoom ---
   const { zoomIn, zoomOut, zoomReset, zoomToFit, zoomToSelection } = useCanvasZoom(
     svgRef,
@@ -801,6 +865,10 @@ export function Canvas({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         onContextMenu={(e) => {
           e.preventDefault();
           const pt = screenToWorld(e.clientX, e.clientY);
@@ -848,26 +916,6 @@ export function Canvas({
           </filter>
         </defs>
 
-        {/* Marquee */}
-        {marquee && Math.abs(marquee.endX - marquee.startX) > 2 && (
-          <rect
-            x={
-              Math.min(marquee.startX, marquee.endX) * view.scale + view.offsetX
-            }
-            y={
-              Math.min(marquee.startY, marquee.endY) * view.scale + view.offsetY
-            }
-            width={Math.abs(marquee.endX - marquee.startX) * view.scale}
-            height={Math.abs(marquee.endY - marquee.startY) * view.scale}
-            fill="rgba(99, 102, 241, 0.08)"
-            stroke="#6366f1"
-            strokeWidth="1"
-            strokeDasharray="4,3"
-            rx="2"
-            pointerEvents="none"
-          />
-        )}
-
         <g
           transform={`translate(${view.offsetX},${view.offsetY}) scale(${view.scale})`}
           filter={canvasSketchMode ? "url(#sketch-filter)" : undefined}
@@ -882,6 +930,22 @@ export function Canvas({
             fill="url(#canvas-grid)"
             pointerEvents="none"
           />
+
+          {/* Marquee Selection Rectangle in World Coordinates */}
+          {marquee && Math.abs(marquee.endX - marquee.startX) > 2 && (
+            <rect
+              x={Math.min(marquee.startX, marquee.endX)}
+              y={Math.min(marquee.startY, marquee.endY)}
+              width={Math.abs(marquee.endX - marquee.startX)}
+              height={Math.abs(marquee.endY - marquee.startY)}
+              fill="rgba(99, 102, 241, 0.08)"
+              stroke="#6366f1"
+              strokeWidth={1 / view.scale}
+              strokeDasharray={`${4 / view.scale},${3 / view.scale}`}
+              rx={2 / view.scale}
+              pointerEvents="none"
+            />
+          )}
 
           {/* Magnetic Snap Guidelines during Node Drag */}
           {snapEnabled && _drag && _drag.type === "node" && (() => {

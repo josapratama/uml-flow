@@ -65,6 +65,7 @@ interface ToolbarProps {
   onOpenUseCaseNarrative?: () => void;
   onOpenDataDictionary?: () => void;
   onOpenAcademicA4?: () => void;
+  onOpenConverter?: () => void;
   onOpenWorkspaceBackup?: () => void;
   onOpenNodeHierarchy?: () => void;
   onOpenCommandPalette?: () => void;
@@ -284,6 +285,7 @@ export function Toolbar(props: ToolbarProps) {
           onOpenUseCaseNarrative={props.onOpenUseCaseNarrative}
           onOpenDataDictionary={props.onOpenDataDictionary}
           onOpenAcademicA4={props.onOpenAcademicA4}
+          onOpenConverter={props.onOpenConverter}
           onOpenShortcuts={onShowShortcuts}
         />
 

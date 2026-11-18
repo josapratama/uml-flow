@@ -15,6 +15,7 @@ interface Props {
   onOpenUseCaseNarrative?: () => void;
   onOpenDataDictionary?: () => void;
   onOpenAcademicA4?: () => void;
+  onOpenConverter?: () => void;
   onOpenShortcuts?: () => void;
 }
 
@@ -31,6 +32,7 @@ export function ToolsMenu({
   onOpenUseCaseNarrative,
   onOpenDataDictionary,
   onOpenAcademicA4,
+  onOpenConverter,
   onOpenShortcuts,
 }: Props) {
   const { locale } = useI18n();
@@ -186,6 +188,23 @@ export function ToolsMenu({
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-text">{isId ? "Lembar Lampiran Skripsi A4" : "Academic A4 Thesis Sheet"}</div>
                   <div className="text-[10px] text-text-muted truncate">{isId ? "Cetak PDF bingkai formal & Kop Diagram" : "Print-ready PDF with border & title block"}</div>
+                </div>
+              </button>
+            )}
+
+            {onOpenConverter && (
+              <button
+                disabled={!hasDiagram}
+                onClick={() => {
+                  setOpen(false);
+                  onOpenConverter();
+                }}
+                className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left text-text hover:bg-surface-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed group"
+              >
+                <span>🔄</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-text">{isId ? "Konversi Tipe Diagram" : "Convert Diagram Type"}</div>
+                  <div className="text-[10px] text-text-muted truncate">{isId ? "ERD ↔ Class, Flowchart ↔ Activity" : "Cross-diagram model transformation"}</div>
                 </div>
               </button>
             )}

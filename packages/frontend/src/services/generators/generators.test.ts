@@ -925,4 +925,80 @@ describe("LaTeX TikZ Code Exporter", () => {
     expect(tmpl.diagram.nodes.some(n => (n as any).swimlane === "Portal SIAKAD")).toBe(true);
     expect(tmpl.dsl).toContain("swimlane \"Mahasiswa\"");
   });
+
+  it("converts ERD diagram to Class diagram and vice versa cleanly", async () => {
+    const { convertErdToClass, convertClassToErd } = await import("../diagram-converter");
+    const erdDiag: Diagram = {
+      id: "erd-1",
+      name: "Ecommerce",
+      type: "erd",
+      nodes: [
+        {
+          id: "e1",
+          name: "User",
+          type: "entity",
+          position: { x: 50, y: 50 },
+          size: { width: 140, height: 100 },
+          attributes: [
+            { name: "id", type: "int", isPrimaryKey: true },
+            { name: "email", type: "varchar", isUnique: true },
+            { name: "name", type: "text", isNullable: true },
+          ],
+        } as any,
+      ],
+      edges: [],
+    };
+
+    const classResult = convertErdToClass(erdDiag);
+    expect(classResult.type).toBe("class");
+    expect(classResult.name).toContain("Ecommerce");
+    const classNode = classResult.nodes[0] as any;
+    expect(classNode.name).toBe("User");
+    expect(classNode.attributes.some((a: any) => a.name === "id" && a.type === "number")).toBe(true);
+    expect(classNode.attributes.some((a: any) => a.name === "email" && a.type === "string")).toBe(true);
+
+    const erdBack = convertClassToErd(classResult);
+    expect(erdBack.type).toBe("erd");
+    const erdNode = erdBack.nodes[0] as any;
+    expect(erdNode.name).toBe("User");
+    expect(erdNode.attributes.some((a: any) => a.name === "id" && a.isPrimaryKey === true)).toBe(true);
+  });
+
+  it("converts Flowchart to Activity diagram and vice versa cleanly", async () => {
+    const { convertFlowchartToActivity, convertActivityToFlowchart } = await import("../diagram-converter");
+    const flowDiag: Diagram = {
+      id: "flow-1",
+      name: "Checkout",
+      type: "flowchart",
+      nodes: [
+        {
+          id: "f1",
+          name: "Mulai",
+          type: "start",
+          position: { x: 100, y: 50 },
+          size: { width: 40, height: 40 },
+        },
+        {
+          id: "f2",
+          name: "Bayar Tagihan",
+          type: "process",
+          position: { x: 100, y: 150 },
+          size: { width: 120, height: 50 },
+        },
+      ],
+      edges: [
+        { id: "e1", source: "f1", target: "f2", type: "flow" },
+      ],
+    };
+
+    const actResult = convertFlowchartToActivity(flowDiag);
+    expect(actResult.type).toBe("activity");
+    expect(actResult.nodes[0].type).toBe("start");
+    expect(actResult.nodes[1].type).toBe("action");
+
+    const flowBack = convertActivityToFlowchart(actResult);
+    expect(flowBack.type).toBe("flowchart");
+    expect(flowBack.nodes[0].type).toBe("start");
+    expect(flowBack.nodes[1].type).toBe("process");
+  });
 });

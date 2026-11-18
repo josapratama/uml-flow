@@ -49,7 +49,7 @@ export function EdgePropertyPanel({
   const types = EDGE_TYPES.includes(edge.type) ? EDGE_TYPES : [edge.type, ...EDGE_TYPES];
 
   return (
-    <div className="absolute z-20 bg-surface-2 shadow-xl overflow-y-auto right-0 left-0 bottom-0 max-h-[55vh] border-t border-border rounded-t-xl md:left-auto md:top-0 md:max-h-none md:w-72 md:rounded-none md:border-t-0 md:border-l">
+    <div className="absolute z-20 bg-surface-2 shadow-xl overflow-y-auto right-0 left-0 bottom-0 max-h-[55vh] border-t border-border rounded-t-xl md:static md:flex-shrink-0 md:w-72 md:h-full md:max-h-none md:rounded-none md:border-t-0 md:border-l">
       <div className="flex justify-between items-center px-4 py-3 border-b border-border">
         <h3 className="text-sm font-semibold text-text">
           {isId ? "Properti Relasi" : "Edge Properties"}

@@ -54,17 +54,28 @@ export function useCanvasZoom(
       maxY = Math.max(maxY, 120 + (msgCount + 2) * 50);
     }
 
-    const pad = 60;
-    const worldW = Math.max(100, maxX - minX + pad * 2);
-    const worldH = Math.max(100, maxY - minY + pad * 2);
-    const newScale = Math.min(rect.width / worldW, rect.height / worldH, 1.15);
-    const cx = (minX + maxX) / 2,
-      cy = (minY + maxY) / 2;
+    const topPadScreen = 68; // Reserve space for CanvasControls floating bar at top
+    const bottomPadScreen = 40;
+    const horizontalPadScreen = 48;
+
+    const availableW = Math.max(100, rect.width - horizontalPadScreen * 2);
+    const availableH = Math.max(100, rect.height - topPadScreen - bottomPadScreen);
+
+    const worldW = Math.max(100, maxX - minX);
+    const worldH = Math.max(100, maxY - minY);
+    const newScale = Math.min(availableW / worldW, availableH / worldH, 1.15);
+    const safeScale = Math.max(0.35, newScale);
+
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+
+    const targetCenterX = horizontalPadScreen + availableW / 2;
+    const targetCenterY = topPadScreen + availableH / 2;
 
     setView({
-      scale: Math.max(0.35, newScale),
-      offsetX: rect.width / 2 - cx * newScale,
-      offsetY: rect.height / 2 - cy * newScale,
+      scale: safeScale,
+      offsetX: targetCenterX - cx * safeScale,
+      offsetY: targetCenterY - cy * safeScale,
     });
   }, [diagram, svgRef, setView]);
 
@@ -86,16 +97,28 @@ export function useCanvasZoom(
         maxX = Math.max(maxX, n.position.x + n.size.width);
         maxY = Math.max(maxY, n.position.y + n.size.height);
       }
-      const pad = 80;
-      const worldW = maxX - minX + pad * 2;
-      const worldH = maxY - minY + pad * 2;
-      const newScale = Math.min(rect.width / worldW, rect.height / worldH, 1.5);
-      const cx = (minX + maxX) / 2,
-        cy = (minY + maxY) / 2;
+      const topPadScreen = 68;
+      const bottomPadScreen = 40;
+      const horizontalPadScreen = 48;
+
+      const availableW = Math.max(100, rect.width - horizontalPadScreen * 2);
+      const availableH = Math.max(100, rect.height - topPadScreen - bottomPadScreen);
+
+      const worldW = Math.max(100, maxX - minX);
+      const worldH = Math.max(100, maxY - minY);
+      const newScale = Math.min(availableW / worldW, availableH / worldH, 1.5);
+      const safeScale = Math.max(0.35, newScale);
+
+      const cx = (minX + maxX) / 2;
+      const cy = (minY + maxY) / 2;
+
+      const targetCenterX = horizontalPadScreen + availableW / 2;
+      const targetCenterY = topPadScreen + availableH / 2;
+
       setView({
-        scale: newScale,
-        offsetX: rect.width / 2 - cx * newScale,
-        offsetY: rect.height / 2 - cy * newScale,
+        scale: safeScale,
+        offsetX: targetCenterX - cx * safeScale,
+        offsetY: targetCenterY - cy * safeScale,
       });
     },
     [diagram, svgRef, setView],

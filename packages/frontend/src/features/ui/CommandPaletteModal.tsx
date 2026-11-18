@@ -29,6 +29,8 @@ interface Props {
   onOpenDependencyMatrix?: () => void;
   onOpenUseCaseNarrative?: () => void;
   onOpenDataDictionary?: () => void;
+  onOpenAcademicA4?: () => void;
+  onOpenConverter?: () => void;
   onOpenWorkspaceBackup?: () => void;
   onOpenNodeHierarchy?: () => void;
   onRepairDiagram?: () => void;
@@ -64,6 +66,8 @@ export function CommandPaletteModal({
   onOpenDependencyMatrix = () => { },
   onOpenUseCaseNarrative = () => { },
   onOpenDataDictionary = () => { },
+  onOpenAcademicA4 = () => { },
+  onOpenConverter = () => { },
   onOpenWorkspaceBackup = () => { },
   onOpenNodeHierarchy = () => { },
   onRepairDiagram = () => { },
@@ -231,6 +235,22 @@ export function CommandPaletteModal({
         icon: "📚",
         category: "modals",
         onSelect: onOpenDataDictionary,
+      },
+      {
+        id: "open-converter",
+        title: isId ? "🔄 Konversi Tipe Diagram Otomatis (1-Klik)" : "🔄 1-Click Cross-Diagram Converter",
+        description: isId ? "Konversi instan antar ERD ↔ Class Diagram dan Flowchart ↔ Activity Diagram" : "Instantly convert between ERD ↔ Class Diagram or Flowchart ↔ Activity Diagram",
+        icon: "🔄",
+        category: "modals",
+        onSelect: onOpenConverter,
+      },
+      {
+        id: "open-academic-a4",
+        title: isId ? "📄 Lembar Cetak Akademik A4 Standar Skripsi" : "📄 Academic A4 Thesis Print Sheet",
+        description: isId ? "Pratinjau & cetak diagram presisi dalam format kertas A4 lengkap dengan judul bab dan caption" : "A4 paper preview with border, chapter title & formal caption ready for thesis printing",
+        icon: "📄",
+        category: "modals",
+        onSelect: onOpenAcademicA4,
       },
       {
         id: "open-workspace-backup",

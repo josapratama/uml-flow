@@ -89,9 +89,16 @@ function getExportOptions(locale: Locale): ExportOption[] {
     },
     {
       id: "png",
-      label: "PNG Image (2x)",
+      label: isId ? "PNG Latar Putih (2x)" : "PNG Image (White bg)",
       icon: "🖼️",
-      description: isId ? "Raster resolusi tinggi (retina)" : "High-resolution retina image",
+      description: isId ? "Format standar dokumen skripsi / laporan" : "Standard white background for documents",
+      category: "image",
+    },
+    {
+      id: "png-transparent",
+      label: isId ? "PNG Transparan (Alpha)" : "PNG Transparent (Alpha)",
+      icon: "✨",
+      description: isId ? "Tanpa latar belakang, siap untuk slide/presentasi" : "Alpha channel transparent for presentation slides",
       category: "image",
     },
     {

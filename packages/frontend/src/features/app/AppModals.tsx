@@ -27,6 +27,7 @@ const NodeHierarchyModal = lazy(() => import("../ui/NodeHierarchyModal").then(m 
 const UseCaseNarrativeModal = lazy(() => import("../ui/UseCaseNarrativeModal").then(m => ({ default: m.UseCaseNarrativeModal })));
 const DataDictionaryModal = lazy(() => import("../ui/DataDictionaryModal").then(m => ({ default: m.DataDictionaryModal })));
 const AcademicA4Modal = lazy(() => import("../ui/AcademicA4Modal").then(m => ({ default: m.AcademicA4Modal })));
+const DiagramConverterModal = lazy(() => import("../ui/DiagramConverterModal").then(m => ({ default: m.DiagramConverterModal })));
 
 interface AppModalsProps {
   showShortcuts: boolean;
@@ -96,6 +97,11 @@ interface AppModalsProps {
   onOpenDataDictionary?: () => void;
   showAcademicA4?: boolean;
   onCloseAcademicA4?: () => void;
+  onOpenAcademicA4?: () => void;
+  showConverter?: boolean;
+  onCloseConverter?: () => void;
+  onOpenConverter?: () => void;
+  onApplyConvertedDiagram?: (newDiagram: Diagram, inNewTab: boolean) => void;
   showCommandPalette?: boolean;
   onCloseCommandPalette?: () => void;
   onSelectNode?: (nodeId: string) => void;
@@ -192,6 +198,11 @@ export function AppModals({
   onOpenDataDictionary = () => { },
   showAcademicA4 = false,
   onCloseAcademicA4,
+  onOpenAcademicA4,
+  showConverter = false,
+  onCloseConverter,
+  onOpenConverter,
+  onApplyConvertedDiagram,
   showCommandPalette = false,
   onCloseCommandPalette,
   onSelectNode = () => { },
@@ -412,6 +423,15 @@ export function AppModals({
           />
         )}
 
+        {showConverter && (
+          <DiagramConverterModal
+            isOpen={showConverter}
+            onClose={onCloseConverter || (() => { })}
+            diagram={diagram}
+            onApplyConvertedDiagram={onApplyConvertedDiagram || (() => { })}
+          />
+        )}
+
         {showCommandPalette && (
           <CommandPaletteModal
             isOpen={showCommandPalette}
@@ -430,6 +450,8 @@ export function AppModals({
             onOpenDependencyMatrix={onOpenDependencyMatrix}
             onOpenUseCaseNarrative={onOpenUseCaseNarrative}
             onOpenDataDictionary={onOpenDataDictionary}
+            onOpenAcademicA4={onOpenAcademicA4}
+            onOpenConverter={onOpenConverter}
             onOpenWorkspaceBackup={onOpenWorkspaceBackup}
             onOpenNodeHierarchy={onOpenNodeHierarchy}
             onOpenAI={onOpenAI}

@@ -44,6 +44,20 @@ export function ResizeHandles({ node, visible, onResizeStart }: Props) {
 
   return (
     <g className="resize-handles">
+      {/* Bounding box outline around selected node */}
+      <rect
+        x={x}
+        y={y}
+        width={w}
+        height={h}
+        fill="none"
+        stroke="#6366f1"
+        strokeWidth="1"
+        strokeDasharray="3,3"
+        opacity="0.6"
+        pointerEvents="none"
+        rx="2"
+      />
       {handles.map((handle) => (
         <rect
           key={handle.id}

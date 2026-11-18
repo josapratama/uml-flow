@@ -96,8 +96,21 @@ export function useAppExport({
             ) as SVGSVGElement | null;
             if (el) {
               const { exportAsPNG } = await import("../../services/export-png");
-              await exportAsPNG(el, `${diagram.name}.png`);
-              showToast(isId ? "PNG berhasil diekspor" : "PNG exported", "success");
+              await exportAsPNG(el, `${diagram.name}.png`, { background: "white" });
+              showToast(isId ? "PNG (Latar Putih) berhasil diekspor" : "PNG (White bg) exported", "success");
+            } else {
+              showToast(isId ? "Tidak ada diagram untuk diekspor" : "No diagram to export", "error");
+            }
+            break;
+          }
+          case "png-transparent": {
+            const el = document.querySelector(
+              ".canvas-svg-element"
+            ) as SVGSVGElement | null;
+            if (el) {
+              const { exportAsPNG } = await import("../../services/export-png");
+              await exportAsPNG(el, `${diagram.name}_transparent.png`, { background: "transparent" });
+              showToast(isId ? "PNG Transparan (Alpha) berhasil diekspor" : "Transparent PNG exported", "success");
             } else {
               showToast(isId ? "Tidak ada diagram untuk diekspor" : "No diagram to export", "error");
             }

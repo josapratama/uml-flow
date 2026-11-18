@@ -71,8 +71,11 @@ function calculateContentBBox(
 export async function exportAsPNG(
   svgElement: SVGSVGElement,
   filename: string,
-  scale: number = 2,
+  scaleOrOptions: number | { scale?: number; background?: "white" | "transparent" | "dark" } = 2,
 ): Promise<void> {
+  const scale = typeof scaleOrOptions === "number" ? scaleOrOptions : scaleOrOptions.scale || 2;
+  const background = typeof scaleOrOptions === "object" ? scaleOrOptions.background || "white" : "white";
+
   // Clone the SVG
   const clone = svgElement.cloneNode(true) as SVGSVGElement;
 
@@ -129,19 +132,26 @@ export async function exportAsPNG(
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
 
-  // Set white background
+  // Background handling
   const bgRect = clone.querySelector("rect[width='100%']");
   if (bgRect) {
-    bgRect.setAttribute("fill", "#ffffff");
-    bgRect.setAttribute("width", String(totalW));
-    bgRect.setAttribute("height", String(totalH));
+    if (background === "transparent") {
+      bgRect.remove();
+    } else {
+      bgRect.setAttribute("fill", background === "dark" ? "#0f172a" : "#ffffff");
+      bgRect.setAttribute("width", String(totalW));
+      bgRect.setAttribute("height", String(totalH));
+    }
   }
 
   // Remove grid pattern (not needed in export)
   const gridPattern = clone.querySelector("#grid");
   if (gridPattern) {
     const gridRect = clone.querySelector("rect[fill='url(#grid)']");
-    if (gridRect) gridRect.setAttribute("fill", "#ffffff");
+    if (gridRect) {
+      if (background === "transparent") gridRect.remove();
+      else gridRect.setAttribute("fill", background === "dark" ? "#0f172a" : "#ffffff");
+    }
   }
 
   const svgData = new XMLSerializer().serializeToString(clone);
@@ -156,9 +166,13 @@ export async function exportAsPNG(
       canvas.height = totalH * scale;
       const ctx = canvas.getContext("2d")!;
 
-      // White background
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Background fill
+      if (background !== "transparent") {
+        ctx.fillStyle = background === "dark" ? "#0f172a" : "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
       ctx.scale(scale, scale);
       ctx.drawImage(img, 0, 0);
 

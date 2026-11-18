@@ -158,7 +158,7 @@ export function CanvasNodeItem({
 
         <NodeAnchors
           node={node}
-          visible={isSelected || isHovered || isMultiSelected}
+          visible={(isHovered && !isSelected) || isMultiSelected || isConnecting || isReconnecting}
           onAnchorMouseDown={onAnchorMouseDown}
         />
 
@@ -179,8 +179,16 @@ export function CanvasNodeItem({
                 e.stopPropagation();
                 onQuickAddNode(node.id, "right");
               }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                onAnchorMouseDown(
+                  { x: node.position.x + visualSize.width, y: node.position.y + visualSize.height / 2 },
+                  "right",
+                  e
+                );
+              }}
             >
-              <title>Tambah node ke kanan (→)</title>
+              <title>Tambah node ke kanan (→) / Tarik untuk sambung garis</title>
               <line x1={-16} y1={0} x2={-4} y2={0} stroke="#6366f1" strokeWidth="1.5" strokeDasharray="2,2" />
               <circle r={9.5} fill="#6366f1" className="hover:fill-indigo-500 transition-colors shadow-sm" />
               <text textAnchor="middle" dominantBaseline="central" fill="#ffffff" fontSize="12" fontWeight="bold" className="select-none pointer-events-none">
@@ -196,8 +204,16 @@ export function CanvasNodeItem({
                 e.stopPropagation();
                 onQuickAddNode(node.id, "bottom");
               }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                onAnchorMouseDown(
+                  { x: node.position.x + visualSize.width / 2, y: node.position.y + visualSize.height },
+                  "bottom",
+                  e
+                );
+              }}
             >
-              <title>Tambah node ke bawah (↓)</title>
+              <title>Tambah node ke bawah (↓) / Tarik untuk sambung garis</title>
               <line x1={0} y1={-16} x2={0} y2={-4} stroke="#6366f1" strokeWidth="1.5" strokeDasharray="2,2" />
               <circle r={9.5} fill="#6366f1" className="hover:fill-indigo-500 transition-colors shadow-sm" />
               <text textAnchor="middle" dominantBaseline="central" fill="#ffffff" fontSize="12" fontWeight="bold" className="select-none pointer-events-none">
@@ -213,8 +229,16 @@ export function CanvasNodeItem({
                 e.stopPropagation();
                 onQuickAddNode(node.id, "left");
               }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                onAnchorMouseDown(
+                  { x: node.position.x, y: node.position.y + visualSize.height / 2 },
+                  "left",
+                  e
+                );
+              }}
             >
-              <title>Tambah node ke kiri (←)</title>
+              <title>Tambah node ke kiri (←) / Tarik untuk sambung garis</title>
               <line x1={16} y1={0} x2={4} y2={0} stroke="#818cf8" strokeWidth="1.5" strokeDasharray="2,2" />
               <circle r={9.5} fill="#818cf8" className="hover:fill-indigo-400 transition-colors shadow-sm" />
               <text textAnchor="middle" dominantBaseline="central" fill="#ffffff" fontSize="12" fontWeight="bold" className="select-none pointer-events-none">
@@ -230,8 +254,16 @@ export function CanvasNodeItem({
                 e.stopPropagation();
                 onQuickAddNode(node.id, "top");
               }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                onAnchorMouseDown(
+                  { x: node.position.x + visualSize.width / 2, y: node.position.y },
+                  "top",
+                  e
+                );
+              }}
             >
-              <title>Tambah node ke atas (↑)</title>
+              <title>Tambah node ke atas (↑) / Tarik untuk sambung garis</title>
               <line x1={0} y1={16} x2={0} y2={4} stroke="#818cf8" strokeWidth="1.5" strokeDasharray="2,2" />
               <circle r={9.5} fill="#818cf8" className="hover:fill-indigo-400 transition-colors shadow-sm" />
               <text textAnchor="middle" dominantBaseline="central" fill="#ffffff" fontSize="12" fontWeight="bold" className="select-none pointer-events-none">
