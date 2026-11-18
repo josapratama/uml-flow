@@ -14,6 +14,18 @@ export default defineConfig({
       "@uml-editor/shared": path.resolve(__dirname, "../shared/src"),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+            return "react-vendor";
+          }
+        },
+      },
+    },
+  },
   server: {
     host: "0.0.0.0",
     port: 5173,

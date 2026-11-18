@@ -52,18 +52,20 @@ export function useAppKeyboardShortcuts({
 }: UseAppKeyboardShortcutsProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const isMod = e.ctrlKey || e.metaKey;
+
       // Global app-level keys (always active unless typing in inputs)
-      if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+      if (isMod && (e.key === "k" || e.key === "K")) {
         e.preventDefault();
         onToggleCommandPalette?.();
         return;
       }
-      if (e.ctrlKey && e.key === "n") {
+      if (isMod && (e.key === "n" || e.key === "N")) {
         e.preventDefault();
         onNewTab();
         return;
       }
-      if (e.ctrlKey && e.key === "s") {
+      if (isMod && (e.key === "s" || e.key === "S")) {
         e.preventDefault();
         onSaveCurrent();
         return;
@@ -82,16 +84,19 @@ export function useAppKeyboardShortcuts({
 
       if (isInput) return;
 
-      if (e.ctrlKey && e.key === "z" && !e.shiftKey) {
+      if (isMod && (e.key === "z" || e.key === "Z") && !e.shiftKey) {
         e.preventDefault();
         onUndo();
+        return;
       }
-      if (e.ctrlKey && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+      if (isMod && ((e.key === "y" || e.key === "Y") || ((e.key === "z" || e.key === "Z") && e.shiftKey))) {
         e.preventDefault();
         onRedo();
+        return;
       }
-      if (e.key === "?" && !e.ctrlKey) {
+      if (e.key === "?" && !isMod) {
         onToggleShortcuts();
+        return;
       }
       if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
@@ -127,19 +132,19 @@ export function useAppKeyboardShortcuts({
         if (e.key === "ArrowRight") dx = step;
         onNudgeNode?.(selectedNodeId, dx, dy);
       }
-      if (e.ctrlKey && e.key === "c" && diagram && selectedNodeId) {
+      if (isMod && (e.key === "c" || e.key === "C") && diagram && selectedNodeId) {
         onCopy(
           diagram.nodes.filter((n) => n.id === selectedNodeId),
           diagram.edges
         );
       }
-      if (e.ctrlKey && e.key === "v" && diagram) {
+      if (isMod && (e.key === "v" || e.key === "V") && diagram) {
         const pasted = onPaste();
         if (pasted && pasted.nodes[0]) {
           setSelectedNodeId(pasted.nodes[0].id);
         }
       }
-      if (e.ctrlKey && e.key === "d" && selectedNodeId) {
+      if (isMod && (e.key === "d" || e.key === "D") && selectedNodeId) {
         e.preventDefault();
         const newId = onDuplicateNode(selectedNodeId);
         if (newId) setSelectedNodeId(newId);

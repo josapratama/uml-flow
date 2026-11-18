@@ -1,28 +1,29 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import type { Diagram } from "@uml-editor/shared";
 import type { SavedDiagram } from "../../services/storage";
 import type { DiagramTemplate } from "../../services/templates";
-import { ShortcutsPanel } from "../toolbar/ShortcutsPanel";
 import { ContextMenu, type ContextMenuItem } from "../canvas/ContextMenu";
-import { DiagramLibrary } from "../ui/DiagramLibrary";
-import { TemplatesPanel } from "../ui/TemplatesPanel";
-import { AIAssistant } from "../ui/AIAssistant";
-import { PresentationMode } from "../ui/PresentationMode";
-import { DiagramDiffPanel } from "../ui/DiagramDiffPanel";
-import { AcademicCaptionModal } from "../ui/AcademicCaptionModal";
-import { SQLExportModal } from "../ui/SQLExportModal";
-import { ImportModal } from "../ui/ImportModal";
-import { ShareModal } from "../ui/ShareModal";
-import { DiagramMetricsModal } from "../ui/DiagramMetricsModal";
-import { CommandPaletteModal } from "../ui/CommandPaletteModal";
-import { FlowSimulatorModal } from "../ui/FlowSimulatorModal";
-import { AcademicMetadataModal } from "../ui/AcademicMetadataModal";
-import { ThesisBundleModal } from "../ui/ThesisBundleModal";
-import { TestCaseModal } from "../ui/TestCaseModal";
-import { MockDataModal } from "../ui/MockDataModal";
-import { DependencyMatrixModal } from "../ui/DependencyMatrixModal";
-import { WorkspaceBackupModal } from "../ui/WorkspaceBackupModal";
-import { NodeHierarchyModal } from "../ui/NodeHierarchyModal";
+
+const ShortcutsPanel = lazy(() => import("../toolbar/ShortcutsPanel").then(m => ({ default: m.ShortcutsPanel })));
+const DiagramLibrary = lazy(() => import("../ui/DiagramLibrary").then(m => ({ default: m.DiagramLibrary })));
+const TemplatesPanel = lazy(() => import("../ui/TemplatesPanel").then(m => ({ default: m.TemplatesPanel })));
+const AIAssistant = lazy(() => import("../ui/AIAssistant").then(m => ({ default: m.AIAssistant })));
+const PresentationMode = lazy(() => import("../ui/PresentationMode").then(m => ({ default: m.PresentationMode })));
+const DiagramDiffPanel = lazy(() => import("../ui/DiagramDiffPanel").then(m => ({ default: m.DiagramDiffPanel })));
+const AcademicCaptionModal = lazy(() => import("../ui/AcademicCaptionModal").then(m => ({ default: m.AcademicCaptionModal })));
+const SQLExportModal = lazy(() => import("../ui/SQLExportModal").then(m => ({ default: m.SQLExportModal })));
+const ImportModal = lazy(() => import("../ui/ImportModal").then(m => ({ default: m.ImportModal })));
+const ShareModal = lazy(() => import("../ui/ShareModal").then(m => ({ default: m.ShareModal })));
+const DiagramMetricsModal = lazy(() => import("../ui/DiagramMetricsModal").then(m => ({ default: m.DiagramMetricsModal })));
+const CommandPaletteModal = lazy(() => import("../ui/CommandPaletteModal").then(m => ({ default: m.CommandPaletteModal })));
+const FlowSimulatorModal = lazy(() => import("../ui/FlowSimulatorModal").then(m => ({ default: m.FlowSimulatorModal })));
+const AcademicMetadataModal = lazy(() => import("../ui/AcademicMetadataModal").then(m => ({ default: m.AcademicMetadataModal })));
+const ThesisBundleModal = lazy(() => import("../ui/ThesisBundleModal").then(m => ({ default: m.ThesisBundleModal })));
+const TestCaseModal = lazy(() => import("../ui/TestCaseModal").then(m => ({ default: m.TestCaseModal })));
+const MockDataModal = lazy(() => import("../ui/MockDataModal").then(m => ({ default: m.MockDataModal })));
+const DependencyMatrixModal = lazy(() => import("../ui/DependencyMatrixModal").then(m => ({ default: m.DependencyMatrixModal })));
+const WorkspaceBackupModal = lazy(() => import("../ui/WorkspaceBackupModal").then(m => ({ default: m.WorkspaceBackupModal })));
+const NodeHierarchyModal = lazy(() => import("../ui/NodeHierarchyModal").then(m => ({ default: m.NodeHierarchyModal })));
 
 interface AppModalsProps {
   showShortcuts: boolean;
@@ -201,8 +202,6 @@ export function AppModals({
 }: AppModalsProps) {
   return (
     <>
-      <ShortcutsPanel isOpen={showShortcuts} onClose={onCloseShortcuts} />
-
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
@@ -212,157 +211,199 @@ export function AppModals({
         />
       )}
 
-      <DiagramLibrary
-        isOpen={showLibrary}
-        onClose={onCloseLibrary}
-        diagrams={libraryDiagrams || tabs || []}
-        activeId={activeTabId}
-        onOpen={onOpenTab}
-        onDelete={onDeleteSavedDiagram}
-        onSaveCurrent={onSaveCurrent}
-      />
+      <Suspense fallback={null}>
+        {showShortcuts && (
+          <ShortcutsPanel isOpen={showShortcuts} onClose={onCloseShortcuts} />
+        )}
 
-      <TemplatesPanel
-        isOpen={showTemplates}
-        onClose={onCloseTemplates}
-        templates={templates}
-        onLoad={onLoadTemplate}
-        onDelete={onDeleteTemplate}
-        onSave={onSaveTemplate}
-      />
+        {showLibrary && (
+          <DiagramLibrary
+            isOpen={showLibrary}
+            onClose={onCloseLibrary}
+            diagrams={libraryDiagrams || tabs || []}
+            activeId={activeTabId}
+            onOpen={onOpenTab}
+            onDelete={onDeleteSavedDiagram}
+            onSaveCurrent={onSaveCurrent}
+          />
+        )}
 
-      <AIAssistant
-        isOpen={showAI}
-        onClose={onCloseAI}
-        onGenerate={onAIGenerate}
-      />
+        {showTemplates && (
+          <TemplatesPanel
+            isOpen={showTemplates}
+            onClose={onCloseTemplates}
+            templates={templates}
+            onLoad={onLoadTemplate}
+            onDelete={onDeleteTemplate}
+            onSave={onSaveTemplate}
+          />
+        )}
 
-      {showPresentation && (
-        <PresentationMode onExit={onExitPresentation} diagram={diagram} />
-      )}
+        {showAI && (
+          <AIAssistant
+            isOpen={showAI}
+            onClose={onCloseAI}
+            onGenerate={onAIGenerate}
+          />
+        )}
 
-      <DiagramDiffPanel
-        isOpen={showDiff}
-        onClose={onCloseDiff}
-        currentDiagram={diagram}
-        savedDiagrams={libraryDiagrams || tabs || []}
-        onLoadVersion={onLoadDiffVersion}
-      />
+        {showPresentation && (
+          <PresentationMode onExit={onExitPresentation} diagram={diagram} />
+        )}
 
-      <AcademicCaptionModal
-        isOpen={showAcademicCaption}
-        onClose={onCloseAcademicCaption}
-        diagram={diagram}
-      />
+        {showDiff && (
+          <DiagramDiffPanel
+            isOpen={showDiff}
+            onClose={onCloseDiff}
+            currentDiagram={diagram}
+            savedDiagrams={libraryDiagrams || tabs || []}
+            onLoadVersion={onLoadDiffVersion}
+          />
+        )}
 
-      <SQLExportModal
-        isOpen={showSQLExport}
-        onClose={onCloseSQLExport || (() => { })}
-        diagram={diagram}
-      />
+        {showAcademicCaption && (
+          <AcademicCaptionModal
+            isOpen={showAcademicCaption}
+            onClose={onCloseAcademicCaption}
+            diagram={diagram}
+          />
+        )}
 
-      <ImportModal
-        isOpen={showImportModal}
-        onClose={onCloseImportModal}
-        onImportDSL={onImportDSL}
-      />
+        {showSQLExport && (
+          <SQLExportModal
+            isOpen={showSQLExport}
+            onClose={onCloseSQLExport || (() => { })}
+            diagram={diagram}
+          />
+        )}
 
-      <ShareModal
-        isOpen={showShareModal}
-        onClose={onCloseShareModal || (() => { })}
-        shareUrl={shareUrl}
-        diagram={diagram}
-      />
+        {showImportModal && (
+          <ImportModal
+            isOpen={showImportModal}
+            onClose={onCloseImportModal}
+            onImportDSL={onImportDSL}
+          />
+        )}
 
-      <DiagramMetricsModal
-        isOpen={showMetrics}
-        onClose={onCloseMetrics || (() => { })}
-        diagram={diagram}
-      />
+        {showShareModal && (
+          <ShareModal
+            isOpen={showShareModal}
+            onClose={onCloseShareModal || (() => { })}
+            shareUrl={shareUrl}
+            diagram={diagram}
+          />
+        )}
 
-      <FlowSimulatorModal
-        isOpen={showSimulator}
-        onClose={onCloseSimulator || (() => { })}
-        diagram={diagram}
-        onSelectNode={onSelectNode}
-        onFocusNode={onFocusNode}
-      />
+        {showMetrics && (
+          <DiagramMetricsModal
+            isOpen={showMetrics}
+            onClose={onCloseMetrics || (() => { })}
+            diagram={diagram}
+          />
+        )}
 
-      <AcademicMetadataModal
-        isOpen={showAcademicMetadata}
-        onClose={onCloseAcademicMetadata || (() => { })}
-      />
+        {showSimulator && (
+          <FlowSimulatorModal
+            isOpen={showSimulator}
+            onClose={onCloseSimulator || (() => { })}
+            diagram={diagram}
+            onSelectNode={onSelectNode}
+            onFocusNode={onFocusNode}
+          />
+        )}
 
-      <ThesisBundleModal
-        isOpen={showThesisBundle}
-        onClose={onCloseThesisBundle || (() => { })}
-        diagram={diagram}
-      />
+        {showAcademicMetadata && (
+          <AcademicMetadataModal
+            isOpen={showAcademicMetadata}
+            onClose={onCloseAcademicMetadata || (() => { })}
+          />
+        )}
 
-      <TestCaseModal
-        isOpen={showTestCases}
-        onClose={onCloseTestCases || (() => { })}
-        diagram={diagram}
-      />
+        {showThesisBundle && (
+          <ThesisBundleModal
+            isOpen={showThesisBundle}
+            onClose={onCloseThesisBundle || (() => { })}
+            diagram={diagram}
+          />
+        )}
 
-      <MockDataModal
-        isOpen={showMockData}
-        onClose={onCloseMockData || (() => { })}
-        diagram={diagram}
-      />
+        {showTestCases && (
+          <TestCaseModal
+            isOpen={showTestCases}
+            onClose={onCloseTestCases || (() => { })}
+            diagram={diagram}
+          />
+        )}
 
-      <DependencyMatrixModal
-        isOpen={showDependencyMatrix}
-        onClose={onCloseDependencyMatrix || (() => { })}
-        diagram={diagram}
-      />
+        {showMockData && (
+          <MockDataModal
+            isOpen={showMockData}
+            onClose={onCloseMockData || (() => { })}
+            diagram={diagram}
+          />
+        )}
 
-      <WorkspaceBackupModal
-        isOpen={showWorkspaceBackup}
-        onClose={onCloseWorkspaceBackup || (() => { })}
-        onRestoreSuccess={onRestoreSuccess}
-      />
+        {showDependencyMatrix && (
+          <DependencyMatrixModal
+            isOpen={showDependencyMatrix}
+            onClose={onCloseDependencyMatrix || (() => { })}
+            diagram={diagram}
+          />
+        )}
 
-      <NodeHierarchyModal
-        isOpen={showNodeHierarchy}
-        onClose={onCloseNodeHierarchy || (() => { })}
-        diagram={diagram}
-        onSelectNode={onSelectNode}
-        onFocusNode={onFocusNode}
-      />
+        {showWorkspaceBackup && (
+          <WorkspaceBackupModal
+            isOpen={showWorkspaceBackup}
+            onClose={onCloseWorkspaceBackup || (() => { })}
+            onRestoreSuccess={onRestoreSuccess}
+          />
+        )}
 
-      <CommandPaletteModal
-        isOpen={showCommandPalette}
-        onClose={onCloseCommandPalette || (() => { })}
-        diagram={diagram}
-        onSelectNode={onSelectNode}
-        onFocusNode={onFocusNode}
-        onLayout={onLayout}
-        onExport={onExport}
-        onOpenMetrics={onOpenMetrics}
-        onOpenSimulator={onOpenSimulator}
-        onOpenAcademicMetadata={onOpenAcademicMetadata}
-        onOpenThesisBundle={onOpenThesisBundle}
-        onOpenTestCases={onOpenTestCases}
-        onOpenMockData={onOpenMockData}
-        onOpenDependencyMatrix={onOpenDependencyMatrix}
-        onOpenWorkspaceBackup={onOpenWorkspaceBackup}
-        onOpenNodeHierarchy={onOpenNodeHierarchy}
-        onOpenAI={onOpenAI}
-        onOpenTemplates={onOpenTemplates}
-        onOpenLibrary={onOpenLibrary}
-        onOpenAcademicCaption={onOpenAcademicCaption}
-        onRepairDiagram={onRepairDiagram}
-        onOpenDiff={onOpenDiff}
-        onOpenShortcuts={onOpenShortcuts}
-        onOpenImport={onOpenImport}
-        onToggleTheme={onToggleTheme}
-        onUndo={onUndo}
-        onRedo={onRedo}
-        onNewDiagram={onNewDiagram}
-        canUndo={canUndo}
-        canRedo={canRedo}
-      />
+        {showNodeHierarchy && (
+          <NodeHierarchyModal
+            isOpen={showNodeHierarchy}
+            onClose={onCloseNodeHierarchy || (() => { })}
+            diagram={diagram}
+            onSelectNode={onSelectNode}
+            onFocusNode={onFocusNode}
+          />
+        )}
+
+        {showCommandPalette && (
+          <CommandPaletteModal
+            isOpen={showCommandPalette}
+            onClose={onCloseCommandPalette || (() => { })}
+            diagram={diagram}
+            onSelectNode={onSelectNode}
+            onFocusNode={onFocusNode}
+            onLayout={onLayout}
+            onExport={onExport}
+            onOpenMetrics={onOpenMetrics}
+            onOpenSimulator={onOpenSimulator}
+            onOpenAcademicMetadata={onOpenAcademicMetadata}
+            onOpenThesisBundle={onOpenThesisBundle}
+            onOpenTestCases={onOpenTestCases}
+            onOpenMockData={onOpenMockData}
+            onOpenDependencyMatrix={onOpenDependencyMatrix}
+            onOpenWorkspaceBackup={onOpenWorkspaceBackup}
+            onOpenNodeHierarchy={onOpenNodeHierarchy}
+            onOpenAI={onOpenAI}
+            onOpenTemplates={onOpenTemplates}
+            onOpenLibrary={onOpenLibrary}
+            onOpenAcademicCaption={onOpenAcademicCaption}
+            onRepairDiagram={onRepairDiagram}
+            onOpenDiff={onOpenDiff}
+            onOpenShortcuts={onOpenShortcuts}
+            onOpenImport={onOpenImport}
+            onToggleTheme={onToggleTheme}
+            onUndo={onUndo}
+            onRedo={onRedo}
+            onNewDiagram={onNewDiagram}
+            canUndo={canUndo}
+            canRedo={canRedo}
+          />
+        )}
+      </Suspense>
     </>
   );
 }

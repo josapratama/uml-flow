@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import type { Diagram } from "@uml-editor/shared";
+import { api } from "../services/api";
 import {
   parseTypeScriptToClassDiagram,
   isMermaidCode,
@@ -47,7 +48,6 @@ export function useFileImport({
         const dsl = parseMermaidToDSL(text, diagramName);
         onCodeImport(dsl);
         try {
-          const { api } = await import("../services/api");
           const res = await api.compile(dsl);
           if (res.success && res.diagram) {
             onDiagramImport(res.diagram);
@@ -72,7 +72,6 @@ export function useFileImport({
         if (diagram.nodes.length > 0) {
           onDiagramImport(diagram);
           try {
-            const { api } = await import("../services/api");
             const dsl = await api.exportDiagram(diagram, { format: "dsl" });
             if (dsl) onCodeImport(dsl);
           } catch {
