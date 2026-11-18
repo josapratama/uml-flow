@@ -93,59 +93,55 @@ export function getVisualSize(node: DiagramNode): Size {
     return { width: totalW, height: totalH };
   }
 
-  // For flowchart, activity, and general text-based nodes:
+  // For nodes with explicit size (Flowchart, UseCase, Activity, State, etc.):
   // Respect node.size.width as the wrapping container, and ensure height fits all wrapped lines
-  if (node.name && node.size) {
-    if (node.type === "actor") {
-      const s = resolveStyle((node as any).style);
-      return computeFlowNodeSize("actor", node.name, s.fontSize || 13, undefined, node.size);
-    }
-    if (node.type === "usecase") {
-      const s = resolveStyle((node as any).style);
-      return computeFlowNodeSize("usecase", node.name, s.fontSize || 13, undefined, node.size);
-    }
-
-    // Skip tiny circle symbols (Activity start/end/initial/final/merge/fork/join)
+  if (node.size) {
+    // Fixed / icon-only / container symbols that directly match node.size
     if (
-      (node.type === "start" || node.type === "end") &&
-      node.size.width <= 36 &&
-      node.size.height <= 36
-    ) {
-      return node.size;
-    }
-    if (
+      ((node.type === "start" || node.type === "end") &&
+        node.size.width <= 36 &&
+        node.size.height <= 36) ||
       node.type === "initial" ||
       node.type === "final" ||
       node.type === "fork" ||
       node.type === "join" ||
-      node.type === "merge"
+      node.type === "merge" ||
+      node.type === "actor" ||
+      (node.type as string) === "system" ||
+      (node.type as string) === "boundary"
     ) {
       return node.size;
     }
 
-    const s = resolveStyle((node as any).style);
-    const fs = s.fontSize || 13;
-    const charW = fs * 0.58;
-    const lineHeight = fs + 4;
+    // Text-based shapes: ALWAYS respect node.size.width (preserving layout & user resize),
+    // and expand height if multiline text requires it.
+    if (node.name) {
+      const s = resolveStyle((node as any).style);
+      const fs = s.fontSize || 13;
+      const charW = fs * 0.58;
+      const lineHeight = fs + 4;
 
-    const innerW = getInnerTextMaxWidth(node.type, node.size.width);
-    const maxChars = Math.max(12, Math.floor((innerW - 16) / charW));
-    const { lines } = wrapMultilineText(node.name, maxChars);
+      const innerW = getInnerTextMaxWidth(node.type, node.size.width);
+      const maxChars = Math.max(10, Math.floor((innerW - 16) / charW));
+      const { lines } = wrapMultilineText(node.name, maxChars);
 
-    if (lines.length > 0) {
-      const vPad =
-        node.type === "decision"
-          ? 36
-          : node.type === "database" || node.type === "document"
-            ? 32
-            : 24;
-      const rawNeededH =
-        node.type === "decision"
-          ? Math.ceil((lines.length * lineHeight + vPad) / 0.68)
-          : lines.length * lineHeight + vPad;
-      const neededH = Math.max(node.size.height, Math.round(rawNeededH));
-      return { width: node.size.width, height: neededH };
+      if (lines.length > 0) {
+        const vPad =
+          node.type === "decision"
+            ? 36
+            : node.type === "database" || node.type === "document"
+              ? 32
+              : 24;
+        const rawNeededH =
+          node.type === "decision"
+            ? Math.ceil((lines.length * lineHeight + vPad) / 0.68)
+            : lines.length * lineHeight + vPad;
+        const neededH = Math.max(node.size.height, Math.round(rawNeededH));
+        return { width: node.size.width, height: neededH };
+      }
     }
+
+    return node.size;
   }
 
   return node.size;

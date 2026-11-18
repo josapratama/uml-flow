@@ -2,6 +2,7 @@ import React from "react";
 import type { StateNode } from "@uml-editor/shared";
 import { resolveStyle, getStroke, getStrokeWidth, isDarkCanvas, getContrastTextColor } from "./useNodeStyle";
 import { SvgMultilineText } from "./SvgMultilineText";
+import { getVisualSize } from "./getVisualSize";
 
 interface Props {
   node: StateNode;
@@ -12,7 +13,8 @@ interface Props {
 }
 
 export function StateNodeRenderer({ node, isSelected, onDragStart, canvasTheme, hideText }: Props) {
-  const { position, size, name: rawName, type } = node;
+  const { position, name: rawName, type } = node;
+  const size = getVisualSize(node);
   const name = hideText ? "" : rawName;
   const isDark = isDarkCanvas(canvasTheme);
   const s = resolveStyle((node as any).style, canvasTheme);

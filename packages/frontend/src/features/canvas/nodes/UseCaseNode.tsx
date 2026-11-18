@@ -2,6 +2,7 @@ import React from "react";
 import type { UseCaseNode } from "@uml-editor/shared";
 import { resolveStyle, getStroke, getStrokeWidth } from "./useNodeStyle";
 import { SvgMultilineText } from "./SvgMultilineText";
+import { getVisualSize } from "./getVisualSize";
 
 interface Props {
   node: UseCaseNode;
@@ -11,7 +12,8 @@ interface Props {
 }
 
 export function UseCaseNodeRenderer({ node, isSelected, onDragStart, hideText }: Props) {
-  const { position, size, name, type } = node;
+  const { position, name, type } = node;
+  const size = getVisualSize(node);
   const s = resolveStyle((node as any).style);
   const stroke = getStroke(s, isSelected);
   const sw = getStrokeWidth(s, isSelected);
@@ -83,8 +85,8 @@ export function UseCaseNodeRenderer({ node, isSelected, onDragStart, hideText }:
             <ellipse
               cx={cx}
               cy={cy}
-              rx={cx - 4}
-              ry={cy - 4}
+              rx={Math.max(10, cx - 2)}
+              ry={Math.max(10, cy - 2)}
               fill={s.backgroundColor}
               stroke={stroke}
               strokeWidth={sw}
@@ -98,7 +100,7 @@ export function UseCaseNodeRenderer({ node, isSelected, onDragStart, hideText }:
               fill={s.fontColor}
               fontWeight={s.fontWeight}
               fontStyle={s.fontStyle}
-              maxWidth={size.width - 24}
+              maxWidth={Math.max(20, size.width - 24)}
             />
           </g>
         );

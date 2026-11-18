@@ -1,6 +1,7 @@
 import React from "react";
 import type { DiagramNode } from "@uml-editor/shared";
 import { isDarkCanvas } from "./useNodeStyle";
+import { getVisualSize } from "./getVisualSize";
 
 interface Props {
   node: DiagramNode;
@@ -21,7 +22,8 @@ export function NoteNodeRenderer({
   onDragStart,
   canvasTheme,
 }: Props) {
-  const { position, size, name } = node;
+  const { position, name } = node;
+  const size = getVisualSize(node);
   const isDark = isDarkCanvas(canvasTheme);
   const fold = 14;
   const stroke = isSelected ? "#818cf8" : isDark ? "#ca8a04" : "#d4a017";

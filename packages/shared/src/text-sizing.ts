@@ -90,6 +90,9 @@ export function computeFlowNodeSize(
 
   // UseCase Diagram nodes
   if (type === "actor") {
+    if (currentSize && currentSize.width > 0 && currentSize.height > 0) {
+      return currentSize;
+    }
     const approxCharWidth = fontSize * 0.58;
     const labelLines = cleanName.split("\n");
     let maxLen = 0;
@@ -103,6 +106,9 @@ export function computeFlowNodeSize(
   }
 
   if (type === "usecase") {
+    if (currentSize && currentSize.width > 0 && currentSize.height > 0) {
+      return currentSize;
+    }
     const approxCharWidth = fontSize * 0.60;
     const lineHeight = fontSize + 4;
     // Auto-expand ellipse width and height proportionally

@@ -1,6 +1,7 @@
 import React from "react";
 import { resolveStyle, getStroke, getStrokeWidth } from "./useNodeStyle";
 import { SvgMultilineText } from "./SvgMultilineText";
+import { getVisualSize } from "./getVisualSize";
 
 interface Props {
   node: any;
@@ -15,7 +16,8 @@ export function DeploymentNodeRenderer({
   onDragStart,
   hideText,
 }: Props) {
-  const { position, size, name, type } = node;
+  const { position, name, type } = node;
+  const size = getVisualSize(node);
   const s = resolveStyle(node.style);
   const stroke = getStroke(s, isSelected);
   const sw = getStrokeWidth(s, isSelected);
