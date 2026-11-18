@@ -1402,4 +1402,105 @@ start --> "Pilih Kelas"
     expect(extendEdge).toBeDefined();
     expect(extendEdge!.label?.text).toBe("«extend»");
   });
+
+  it("verifies UML 2.5 Sequence destruction occurrence and return arrow rendering", async () => {
+    const { Parser } = await import("../../../../backend/src/parser/parser");
+    const { generateSVG } = await import("../../../../backend/src/export/svg-generator");
+
+    const dsl = `@diagram sequence
+participant User
+participant Server
+User -> Server : requestData()
+Server -->> User : sendData()
+destroy Server`;
+
+    const result = new Parser().parse(dsl);
+    expect(result.success).toBe(true);
+    const diagram = result.diagram!;
+
+    expect(diagram.participants?.length).toBe(2);
+    expect(diagram.messages?.length).toBe(3);
+    const returnMsg = diagram.messages?.find((m) => m.label.includes("sendData"));
+    expect(returnMsg?.type).toBe("return");
+    const destroyMsg = diagram.messages?.find((m) => m.type === "destroy");
+    expect(destroyMsg).toBeDefined();
+
+    const svg = generateSVG(diagram, { format: "svg" });
+    expect(svg).toContain('marker-end="url(#arrow-open)"');
+    expect(svg).toContain('stroke="#ef4444"'); // destruction cross ✕
+  });
+
+  it("verifies ERD Martin Crow's Foot markers in SVG export", async () => {
+    const { generateSVG } = await import("../../../../backend/src/export/svg-generator");
+    const erdDiagram: Diagram = {
+      id: "erd-cf-test",
+      name: "ERD Crow Foot Test",
+      type: "erd",
+      nodes: [
+        {
+          id: "node_1",
+          type: "entity",
+          name: "Customer",
+          position: { x: 50, y: 50 },
+          size: { width: 140, height: 70 },
+          attributes: [{ name: "id", type: "int", isPrimaryKey: true, isForeignKey: false, isNullable: false, isUnique: true }],
+        } as any,
+        {
+          id: "node_2",
+          type: "entity",
+          name: "Order",
+          position: { x: 300, y: 50 },
+          size: { width: 140, height: 70 },
+          attributes: [{ name: "id", type: "int", isPrimaryKey: true, isForeignKey: false, isNullable: false, isUnique: true }],
+        } as any,
+      ],
+      edges: [
+        {
+          id: "edge_1",
+          source: "node_1",
+          target: "node_2",
+          type: "one-to-many",
+          points: [{ x: 190, y: 85 }, { x: 300, y: 85 }],
+        },
+      ],
+    };
+
+    const svg = generateSVG(erdDiagram, { format: "svg" });
+    expect(svg).toContain('id="arrow-one-to-one"');
+    expect(svg).toContain('id="arrow-one-to-many"');
+    expect(svg).toContain('marker-end="url(#arrow-one-to-many)"');
+    expect(svg).toContain('marker-start="url(#arrow-one-to-one)"');
+  });
+
+  it("verifies UML 2.5 State Machine pseudostates and action compartments", async () => {
+    const { Parser } = await import("../../../../backend/src/parser/parser");
+    const { generateSVG } = await import("../../../../backend/src/export/svg-generator");
+
+    const dsl = `@diagram state
+[initial] --> Active
+[H] --> Active
+Active : entry / logEntry()
+Active : do / processQueue()
+Active : exit / cleanUp()
+Active --> [final]`;
+
+    const result = new Parser().parse(dsl);
+    expect(result.success).toBe(true);
+    const diagram = result.diagram!;
+
+    const historyNode = diagram.nodes.find((n) => n.type === "history");
+    expect(historyNode).toBeDefined();
+    expect(historyNode?.name).toBe("H");
+
+    const activeNode = diagram.nodes.find((n) => n.name === "Active") as any;
+    expect(activeNode).toBeDefined();
+    expect(activeNode?.entry).toContain("logEntry");
+    expect(activeNode?.do).toContain("processQueue");
+    expect(activeNode?.exit).toContain("cleanUp");
+
+    const svg = generateSVG(diagram, { format: "svg" });
+    expect(svg).toContain(">H</text>");
+    expect(svg).toContain("entry /");
+    expect(svg).toContain("logEntry");
+  });
 });

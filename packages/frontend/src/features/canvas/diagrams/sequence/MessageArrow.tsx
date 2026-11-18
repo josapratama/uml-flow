@@ -43,7 +43,10 @@ export function MessageArrow({
 }) {
   const isDark = theme === "dark";
   const isSelf = message.type === "self" || fromX === toX;
-  const isReturn = message.type === "return" || message.type === "async";
+  const isReturn = message.type === "return";
+  const isAsync = message.type === "async";
+  const isDashed = isReturn || isAsync;
+  const markerId = isReturn ? "url(#arrow-sequence-return)" : isAsync ? "url(#arrow-sequence-return)" : "url(#arrow-flow)";
   const defaultColor = isDark ? "#cbd5e1" : "#555";
   const hoverColor = isDark ? "#a5b4fc" : "#818cf8";
   const selectColor = isDark ? "#818cf8" : "#6366f1";
@@ -74,11 +77,12 @@ export function MessageArrow({
           onContextMenu={onContextMenu}
         />
         <path
-          d={`M ${fromX} ${y} H ${fromX + loopW} V ${y + 20} H ${fromX}`}
+          d={`M ${fromX + 6} ${y} H ${fromX + loopW} V ${y + 20} H ${fromX + 14}`}
           fill="none"
           stroke={color}
           strokeWidth={sw}
-          markerEnd="url(#arrow-flow)"
+          strokeDasharray={isDashed ? "5,3" : undefined}
+          markerEnd={markerId}
         />
         {isEditing ? (
           <SvgInlineInput
@@ -109,7 +113,10 @@ export function MessageArrow({
   }
 
   const dir = toX > fromX ? 1 : -1;
-  const dashArray = isReturn ? "5,3" : undefined;
+  const dashArray = isDashed ? "5,3" : undefined;
+  // Offset start and end points to land precisely on the outer border of activation boxes (width 12px, half-width 6px)
+  const lineStartX = fromX + dir * 6;
+  const lineEndX = toX - dir * 14;
 
   return (
     <g
@@ -118,7 +125,7 @@ export function MessageArrow({
       style={{ cursor: "pointer" }}
     >
       <line
-        x1={fromX}
+        x1={lineStartX}
         y1={y}
         x2={toX}
         y2={y}
@@ -129,14 +136,14 @@ export function MessageArrow({
         onContextMenu={onContextMenu}
       />
       <line
-        x1={fromX}
+        x1={lineStartX}
         y1={y}
-        x2={toX - dir * 8}
+        x2={lineEndX}
         y2={y}
         stroke={color}
         strokeWidth={sw}
         strokeDasharray={dashArray}
-        markerEnd="url(#arrow-flow)"
+        markerEnd={markerId}
       />
       {isEditing ? (
         <SvgInlineInput
@@ -166,7 +173,7 @@ export function MessageArrow({
       {isSelected && (
         <>
           <circle
-            cx={fromX}
+            cx={lineStartX}
             cy={y}
             r={4}
             fill="#6366f1"
@@ -174,7 +181,7 @@ export function MessageArrow({
             strokeWidth="1.5"
           />
           <circle
-            cx={toX - dir * 8}
+            cx={lineEndX}
             cy={y}
             r={4}
             fill="#6366f1"

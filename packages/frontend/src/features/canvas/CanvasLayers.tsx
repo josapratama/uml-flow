@@ -78,6 +78,9 @@ interface CanvasLayersProps {
   onNodeLiveRename?: (nodeId: string, newName: string) => void;
   onParticipantMove?: (id: string, x: number) => void;
   onParticipantRename?: (id: string, name: string) => void;
+  onSwimlaneRename?: (index: number, newName: string) => void;
+  onSwimlaneAdd?: (name?: string) => void;
+  onSwimlaneDelete?: (index: number) => void;
   onMessageEdit?: (id: string, label: string) => void;
   onMessageDelete?: (id: string) => void;
   onMessageReorder?: (id: string, newOrder: number) => void;
@@ -143,6 +146,9 @@ export function CanvasLayers(props: CanvasLayersProps) {
     onNodeLiveRename,
     onParticipantMove,
     onParticipantRename,
+    onSwimlaneRename,
+    onSwimlaneAdd,
+    onSwimlaneDelete,
     onMessageEdit,
     onMessageDelete,
     onMessageReorder,
@@ -280,9 +286,14 @@ export function CanvasLayers(props: CanvasLayersProps) {
 
   return (
     <>
-      {/* Swimlane background for activity diagrams */}
+      {/* Swimlane background & interactive headers for activity diagrams */}
       {diagram.type === "activity" && diagram.swimlanes?.length && (
-        <ActivityRenderer diagram={diagram} />
+        <ActivityRenderer
+          diagram={diagram}
+          onSwimlaneRename={onSwimlaneRename}
+          onSwimlaneAdd={onSwimlaneAdd}
+          onSwimlaneDelete={onSwimlaneDelete}
+        />
       )}
 
       {/* Automatic UML 2.5 System Boundary Frame for Use Case Diagrams */}

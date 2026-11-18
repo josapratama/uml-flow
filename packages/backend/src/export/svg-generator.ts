@@ -191,6 +191,22 @@ export function generateSVG(diagram: Diagram, options: ExportOptions): string {
     <marker id="diamond-filled" markerWidth="12" markerHeight="8" refX="12" refY="4" orient="auto">
       <polygon points="0,4 6,0 12,4 6,8" fill="#666"/>
     </marker>
+    <marker id="arrow-open" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M 2 2 L 10 6 L 2 10" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <!-- ERD Crow's Foot markers (Martin Notation) -->
+    <marker id="arrow-one-to-one" markerWidth="18" markerHeight="16" refX="16" refY="8" orient="auto-start-reverse">
+      <line x1="6" y1="3" x2="6" y2="13" stroke="#666" stroke-width="2" stroke-linecap="round"/>
+      <line x1="12" y1="3" x2="12" y2="13" stroke="#666" stroke-width="2" stroke-linecap="round"/>
+    </marker>
+    <marker id="arrow-one-to-many" markerWidth="20" markerHeight="16" refX="18" refY="8" orient="auto">
+      <line x1="5" y1="3" x2="5" y2="13" stroke="#666" stroke-width="2" stroke-linecap="round"/>
+      <path d="M 18 8 L 6 2 M 18 8 L 6 14 M 18 8 L 5 8" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round"/>
+    </marker>
+    <marker id="arrow-many-to-many" markerWidth="22" markerHeight="16" refX="20" refY="8" orient="auto">
+      <circle cx="5" cy="8" r="3.5" fill="white" stroke="#666" stroke-width="1.5"/>
+      <path d="M 20 8 L 10 2 M 20 8 L 10 14 M 20 8 L 9 8" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round"/>
+    </marker>
   </defs>`;
 
   // Render with offset transform to normalize coordinates
@@ -378,21 +394,61 @@ function renderNode(node: any): string {
   } else if (
     node.type === "state" ||
     node.type === "initial" ||
-    node.type === "final"
+    node.type === "final" ||
+    node.type === "history" ||
+    node.type === "deepHistory" ||
+    node.type === "choice" ||
+    node.type === "composite"
   ) {
-    // State diagram nodes
+    // UML 2.5 State diagram nodes & pseudostates
+    const cx = position.x + size.width / 2,
+      cy = position.y + size.height / 2;
     if (node.type === "initial") {
-      const cx = position.x + size.width / 2,
-        cy = position.y + size.height / 2;
       svg += `<circle cx="${cx}" cy="${cy}" r="12" fill="#333"/>`;
     } else if (node.type === "final") {
-      const cx = position.x + size.width / 2,
-        cy = position.y + size.height / 2;
       svg += `<circle cx="${cx}" cy="${cy}" r="14" fill="none" stroke="#333" stroke-width="2"/>`;
       svg += `<circle cx="${cx}" cy="${cy}" r="9" fill="#333"/>`;
+    } else if (node.type === "history") {
+      svg += `<circle cx="${cx}" cy="${cy}" r="14" fill="#EEF2FF" stroke="#4f46e5" stroke-width="1.75"/>`;
+      svg += `<text x="${cx}" y="${cy + 4.5}" text-anchor="middle" font-size="13" font-weight="bold" font-family="sans-serif" fill="#4f46e5">H</text>`;
+    } else if (node.type === "deepHistory") {
+      svg += `<circle cx="${cx}" cy="${cy}" r="14" fill="#EEF2FF" stroke="#4f46e5" stroke-width="1.75"/>`;
+      svg += `<text x="${cx}" y="${cy + 4.5}" text-anchor="middle" font-size="12" font-weight="bold" font-family="sans-serif" fill="#4f46e5">H*</text>`;
+    } else if (node.type === "choice") {
+      svg += `<polygon points="${cx},${position.y} ${position.x + size.width},${cy} ${cx},${position.y + size.height} ${position.x},${cy}" fill="#FFF9C4" stroke="#ca8a04" stroke-width="1.5"/>`;
+      svg += `<text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="11" font-weight="500" fill="#713f12">${escapeXml(name)}</text>`;
+    } else if (node.type === "composite") {
+      const headerH = 28;
+      svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${size.height}" rx="12" fill="#F8FAFC" stroke="#64748b" stroke-width="1.5"/>`;
+      svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${headerH}" rx="12" fill="#E2E8F0"/>`;
+      svg += `<rect x="${position.x}" y="${position.y + 16}" width="${size.width}" height="${headerH - 16}" fill="#E2E8F0"/>`;
+      svg += `<line x1="${position.x}" y1="${position.y + headerH}" x2="${position.x + size.width}" y2="${position.y + headerH}" stroke="#94a3b8" stroke-width="1"/>`;
+      svg += `<text x="${cx}" y="${position.y + 19}" text-anchor="middle" font-size="12" font-weight="bold" fill="#1e293b">${escapeXml(name)}</text>`;
     } else {
-      svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${size.height}" fill="#E8EAF6" stroke="#333" stroke-width="1.5" rx="10"/>`;
-      svg += `<text x="${position.x + size.width / 2}" y="${position.y + size.height / 2 + 4}" text-anchor="middle" font-size="12" fill="#333">${escapeXml(name)}</text>`;
+      const hasActions = node.entry || node.do || node.exit;
+      if (hasActions) {
+        const headerH = 26;
+        svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${size.height}" rx="10" fill="#ffffff" stroke="#6366f1" stroke-width="1.5"/>`;
+        svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${headerH}" rx="10" fill="#EEF2FF"/>`;
+        svg += `<rect x="${position.x}" y="${position.y + 14}" width="${size.width}" height="${headerH - 14}" fill="#EEF2FF"/>`;
+        svg += `<line x1="${position.x}" y1="${position.y + headerH}" x2="${position.x + size.width}" y2="${position.y + headerH}" stroke="#c7d2fe" stroke-width="1"/>`;
+        svg += `<text x="${cx}" y="${position.y + 17}" text-anchor="middle" font-size="12" font-weight="bold" fill="#1e1b4b">${escapeXml(name)}</text>`;
+        let ay = position.y + headerH + 16;
+        if (node.entry) {
+          svg += `<text x="${position.x + 8}" y="${ay}" font-size="10.5" font-family="monospace" fill="#4338ca"><tspan font-weight="bold">entry /</tspan> ${escapeXml(node.entry)}</text>`;
+          ay += 15;
+        }
+        if (node.do) {
+          svg += `<text x="${position.x + 8}" y="${ay}" font-size="10.5" font-family="monospace" fill="#4338ca"><tspan font-weight="bold">do /</tspan> ${escapeXml(node.do)}</text>`;
+          ay += 15;
+        }
+        if (node.exit) {
+          svg += `<text x="${position.x + 8}" y="${ay}" font-size="10.5" font-family="monospace" fill="#4338ca"><tspan font-weight="bold">exit /</tspan> ${escapeXml(node.exit)}</text>`;
+        }
+      } else {
+        svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${size.height}" fill="#E8EAF6" stroke="#333" stroke-width="1.5" rx="10"/>`;
+        svg += `<text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="12" fill="#333">${escapeXml(name)}</text>`;
+      }
     }
   } else if (
     node.type === "component" ||
@@ -498,6 +554,15 @@ function renderEdge(edge: any): string {
   } else if (edge.type === "aggregation") {
     markerEnd = "url(#arrow)";
     markerStart = "url(#diamond-hollow)";
+  } else if (edge.type === "one-to-one") {
+    markerEnd = "url(#arrow-one-to-one)";
+    markerStart = "url(#arrow-one-to-one)";
+  } else if (edge.type === "one-to-many") {
+    markerEnd = "url(#arrow-one-to-many)";
+    markerStart = "url(#arrow-one-to-one)";
+  } else if (edge.type === "many-to-many") {
+    markerEnd = "url(#arrow-many-to-many)";
+    markerStart = "url(#arrow-one-to-many)";
   }
 
   let svg = `<path d="${d}" fill="none" stroke="#666" stroke-width="1.5"${dash} marker-end="${markerEnd}"${markerStart ? ` marker-start="${markerStart}"` : ""}/>`;
@@ -593,6 +658,20 @@ function renderSequenceDiagram(diagram: any): string {
   const lifelineEnd = startY + (messages.length + 2) * msgSpacing + 40;
   let svg = "";
 
+  // Check destroyed participants and their destruction Y coordinates (UML 2.5 Destruction Occurrence)
+  const destructionMap = new Map<string, number>();
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    if (msg.type === "destroy" || (msg.label && msg.label.toLowerCase().includes("destroy"))) {
+      const targetP = participants.find(
+        (p: any) => p.id === msg.to || p.name === String(msg.to).replace(/^participant_/, ""),
+      );
+      if (targetP && !destructionMap.has(targetP.id)) {
+        destructionMap.set(targetP.id, startY + i * msgSpacing);
+      }
+    }
+  }
+
   // Participants (top)
   for (const p of participants) {
     const boxW = Math.max(80, p.name.length * 8 + 20);
@@ -609,8 +688,14 @@ function renderSequenceDiagram(diagram: any): string {
       svg += `<rect x="${p.position.x - boxW / 2}" y="${(p.position.y || 60) - 15}" width="${boxW}" height="30" rx="3" fill="#E3F2FD" stroke="#444" stroke-width="1.5"/>`;
       svg += `<text x="${p.position.x}" y="${(p.position.y || 60) + 4}" text-anchor="middle" font-size="12" fill="#333">${escapeXml(p.name)}</text>`;
     }
-    // Lifeline
-    svg += `<line x1="${p.position.x}" y1="${startY - 10}" x2="${p.position.x}" y2="${lifelineEnd}" stroke="#999" stroke-width="1" stroke-dasharray="4,4"/>`;
+    // Lifeline & Destruction Cross
+    const destY = destructionMap.get(p.id);
+    const endY = destY !== undefined ? destY : lifelineEnd;
+    svg += `<line x1="${p.position.x}" y1="${startY - 10}" x2="${p.position.x}" y2="${endY}" stroke="#999" stroke-width="1" stroke-dasharray="4,4"/>`;
+    if (destY !== undefined) {
+      svg += `<line x1="${p.position.x - 9}" y1="${destY - 9}" x2="${p.position.x + 9}" y2="${destY + 9}" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>`;
+      svg += `<line x1="${p.position.x + 9}" y1="${destY - 9}" x2="${p.position.x - 9}" y2="${destY + 9}" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>`;
+    }
   }
 
   // UML 2.5 Execution Specification (Activation Bars with Nested Offsets) on Lifelines
@@ -639,7 +724,7 @@ function renderSequenceDiagram(diagram: any): string {
     svg += `<rect x="${offsetX}" y="${y - 4}" width="12" height="${Math.max(24, actEndY - y + 4)}" fill="#ffffff" stroke="#6366f1" stroke-width="1.5" rx="1"/>`;
   }
 
-  // Messages with UML 2.5 chronological numbering
+  // Messages with UML 2.5 chronological numbering & open return arrows
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
     const fromP = participants.find((p: any) => p.id === msg.from);
@@ -648,15 +733,38 @@ function renderSequenceDiagram(diagram: any): string {
     const y = startY + i * msgSpacing;
     const x1 = fromP.position.x,
       x2 = toP.position.x;
+    const dir = x2 > x1 ? 1 : -1;
     const midX = (x1 + x2) / 2;
-    const dash =
-      msg.type === "return" || msg.type === "async"
-        ? ' stroke-dasharray="5,3"'
-        : "";
+    const isReturn = msg.type === "return";
+    const isAsync = msg.type === "async";
+    const dash = isReturn || isAsync ? ' stroke-dasharray="5,3"' : "";
+    const marker = isReturn || isAsync ? "url(#arrow-open)" : "url(#arrow-filled)";
     const rawLabel = msg.label || "";
     const labelText = /^\d+[\.:\s]/.test(rawLabel) ? rawLabel : `${i + 1}. ${rawLabel}`;
-    svg += `<line x1="${x1}" y1="${y}" x2="${x2 - (x2 > x1 ? 8 : -8)}" y2="${y}" stroke="#555" stroke-width="1.5"${dash} marker-end="url(#arrow)"/>`;
+    // Arrow lands on outer boundary of activation box
+    const startLineX = x1 + dir * 6;
+    const endLineX = x2 - dir * 14;
+    svg += `<line x1="${startLineX}" y1="${y}" x2="${endLineX}" y2="${y}" stroke="#475569" stroke-width="1.5"${dash} marker-end="${marker}"/>`;
     svg += `<text x="${midX}" y="${y - 8}" text-anchor="middle" font-size="11" font-weight="500" fill="#334155">${escapeXml(labelText)}</text>`;
+  }
+
+  // Participants (bottom) - only for participants that are NOT destroyed
+  for (const p of participants) {
+    if (destructionMap.has(p.id)) continue;
+    const boxW = Math.max(80, p.name.length * 8 + 20);
+    if (p.type === "actor") {
+      const cx = p.position.x,
+        cy = lifelineEnd;
+      svg += `<circle cx="${cx}" cy="${cy - 15}" r="10" fill="none" stroke="#444" stroke-width="1.5"/>`;
+      svg += `<line x1="${cx}" y1="${cy - 5}" x2="${cx}" y2="${cy + 15}" stroke="#444" stroke-width="1.5"/>`;
+      svg += `<line x1="${cx - 12}" y1="${cy + 3}" x2="${cx + 12}" y2="${cy + 3}" stroke="#444" stroke-width="1.5"/>`;
+      svg += `<line x1="${cx}" y1="${cy + 15}" x2="${cx - 8}" y2="${cy + 27}" stroke="#444" stroke-width="1.5"/>`;
+      svg += `<line x1="${cx}" y1="${cy + 15}" x2="${cx + 8}" y2="${cy + 27}" stroke="#444" stroke-width="1.5"/>`;
+      svg += `<text x="${cx}" y="${cy + 42}" text-anchor="middle" font-size="11" fill="#333">${escapeXml(p.name)}</text>`;
+    } else {
+      svg += `<rect x="${p.position.x - boxW / 2}" y="${lifelineEnd - 15}" width="${boxW}" height="30" rx="3" fill="#E3F2FD" stroke="#444" stroke-width="1.5"/>`;
+      svg += `<text x="${p.position.x}" y="${lifelineEnd + 4}" text-anchor="middle" font-size="12" fill="#333">${escapeXml(p.name)}</text>`;
+    }
   }
 
   return svg;

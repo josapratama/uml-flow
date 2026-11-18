@@ -58,6 +58,19 @@ export function SequenceRenderer(props: Props) {
   const startY = 100;
   const lifelineEnd = startY + (messages.length + 2) * msgSpacing + 40;
 
+  // Check destroyed participants and their destruction Y coordinates (UML 2.5 Destruction Occurrence)
+  const destructionMap = new Map<string, number>();
+  messages.forEach((msg, idx) => {
+    if (msg.type === "destroy" || msg.label?.toLowerCase() === "destroy") {
+      const targetP = participants.find(
+        (p) => p.id === msg.to || p.name === msg.to.replace(/^participant_/, "")
+      );
+      if (targetP && !destructionMap.has(targetP.id)) {
+        destructionMap.set(targetP.id, startY + idx * msgSpacing);
+      }
+    }
+  });
+
   const startEdit = (
     id: string,
     value: string,
@@ -101,20 +114,47 @@ export function SequenceRenderer(props: Props) {
         />
       ))}
 
-      {/* Lifelines */}
-      {participants.map((p) => (
-        <line
-          key={`ll_${p.id}`}
-          x1={p.position.x}
-          y1={startY - 10}
-          x2={p.position.x}
-          y2={lifelineEnd}
-          stroke={isDark ? "#6366f1" : "#94a3b8"}
-          strokeWidth="1.5"
-          strokeDasharray="4,4"
-          opacity={isDark ? "0.75" : "0.9"}
-        />
-      ))}
+      {/* Lifelines & UML 2.5 Destruction Occurrences */}
+      {participants.map((p) => {
+        const destY = destructionMap.get(p.id);
+        const endY = destY !== undefined ? destY : lifelineEnd;
+        return (
+          <React.Fragment key={`ll_${p.id}`}>
+            <line
+              x1={p.position.x}
+              y1={startY - 10}
+              x2={p.position.x}
+              y2={endY}
+              stroke={isDark ? "#6366f1" : "#94a3b8"}
+              strokeWidth="1.5"
+              strokeDasharray="4,4"
+              opacity={isDark ? "0.75" : "0.9"}
+            />
+            {destY !== undefined && (
+              <g className="destruction-occurrence">
+                <line
+                  x1={p.position.x - 9}
+                  y1={destY - 9}
+                  x2={p.position.x + 9}
+                  y2={destY + 9}
+                  stroke={isDark ? "#f87171" : "#ef4444"}
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1={p.position.x + 9}
+                  y1={destY - 9}
+                  x2={p.position.x - 9}
+                  y2={destY + 9}
+                  stroke={isDark ? "#f87171" : "#ef4444"}
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                />
+              </g>
+            )}
+          </React.Fragment>
+        );
+      })}
 
       {/* UML 2.5 Execution Specification (Activation Bars with Nested Offsets) */}
       {(() => {
@@ -212,20 +252,22 @@ export function SequenceRenderer(props: Props) {
         );
       })}
 
-      {/* Bottom participant boxes */}
-      {participants.map((p) => (
-        <ParticipantBox
-          key={`bottom_${p.id}`}
-          participant={{ ...p, position: { ...p.position, y: lifelineEnd } }}
-          theme={theme}
-          isSelected={false}
-          isEditing={false}
-          editValue=""
-          onEditChange={() => {}}
-          onEditCommit={() => {}}
-          onEditCancel={() => {}}
-        />
-      ))}
+      {/* Bottom participant boxes (omitted for destroyed participants) */}
+      {participants
+        .filter((p) => !destructionMap.has(p.id))
+        .map((p) => (
+          <ParticipantBox
+            key={`bottom_${p.id}`}
+            participant={{ ...p, position: { ...p.position, y: lifelineEnd } }}
+            theme={theme}
+            isSelected={false}
+            isEditing={false}
+            editValue=""
+            onEditChange={() => {}}
+            onEditCommit={() => {}}
+            onEditCancel={() => {}}
+          />
+        ))}
     </g>
   );
 }

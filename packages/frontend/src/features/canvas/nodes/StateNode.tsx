@@ -50,7 +50,145 @@ export function StateNodeRenderer({ node, isSelected, onDragStart, canvasTheme, 
             <circle cx={cx} cy={cy} r={8} fill={isDark ? "#818cf8" : s.borderColor} />
           </g>
         );
-      case "state":
+      case "history":
+        return (
+          <g>
+            <circle
+              cx={cx}
+              cy={cy}
+              r={14}
+              fill={isDark ? "#1e1b4b" : "#EEF2FF"}
+              stroke={isDark ? "#818cf8" : "#4f46e5"}
+              strokeWidth={sw}
+            />
+            <text
+              x={cx}
+              y={cy + 4.5}
+              textAnchor="middle"
+              fontSize="13"
+              fontWeight="bold"
+              fontFamily="sans-serif"
+              fill={isDark ? "#a5b4fc" : "#4f46e5"}
+            >
+              H
+            </text>
+          </g>
+        );
+      case "deepHistory":
+        return (
+          <g>
+            <circle
+              cx={cx}
+              cy={cy}
+              r={14}
+              fill={isDark ? "#1e1b4b" : "#EEF2FF"}
+              stroke={isDark ? "#818cf8" : "#4f46e5"}
+              strokeWidth={sw}
+            />
+            <text
+              x={cx}
+              y={cy + 4.5}
+              textAnchor="middle"
+              fontSize="12"
+              fontWeight="bold"
+              fontFamily="sans-serif"
+              fill={isDark ? "#a5b4fc" : "#4f46e5"}
+            >
+              H*
+            </text>
+          </g>
+        );
+      case "state": {
+        const hasActions = node.entry || node.do || node.exit;
+        if (hasActions) {
+          const headerH = 28;
+          let ay = headerH + 16;
+          return (
+            <g>
+              <rect
+                x="0"
+                y="0"
+                width={size.width}
+                height={size.height}
+                rx="14"
+                fill={s.backgroundColor}
+                stroke={stroke}
+                strokeWidth={sw}
+              />
+              <rect
+                x="0"
+                y="0"
+                width={size.width}
+                height={headerH}
+                rx="14"
+                fill={isDark ? "rgba(99, 102, 241, 0.15)" : "rgba(99, 102, 241, 0.08)"}
+              />
+              <rect
+                x="0"
+                y="14"
+                width={size.width}
+                height={headerH - 14}
+                fill={isDark ? "rgba(99, 102, 241, 0.15)" : "rgba(99, 102, 241, 0.08)"}
+              />
+              <line
+                x1="0"
+                y1={headerH}
+                x2={size.width}
+                y2={headerH}
+                stroke={stroke}
+                strokeWidth="1"
+                opacity="0.4"
+              />
+              <text
+                x={cx}
+                y={headerH / 2 + 4.5}
+                textAnchor="middle"
+                fontSize={s.fontSize}
+                fontFamily={s.fontFamily}
+                fontWeight="600"
+                fill={s.fontColor}
+              >
+                {name}
+              </text>
+              {node.entry && (
+                <text
+                  x="10"
+                  y={ay}
+                  fontSize="10.5"
+                  fontFamily="monospace"
+                  fill={isDark ? "#cbd5e1" : "#475569"}
+                >
+                  <tspan fontWeight="bold" fill={isDark ? "#818cf8" : "#4f46e5"}>entry / </tspan>
+                  {node.entry}
+                </text>
+              )}
+              {node.do && (
+                <text
+                  x="10"
+                  y={(ay += node.entry ? 16 : 0)}
+                  fontSize="10.5"
+                  fontFamily="monospace"
+                  fill={isDark ? "#cbd5e1" : "#475569"}
+                >
+                  <tspan fontWeight="bold" fill={isDark ? "#818cf8" : "#4f46e5"}>do / </tspan>
+                  {node.do}
+                </text>
+              )}
+              {node.exit && (
+                <text
+                  x="10"
+                  y={(ay += (node.entry || node.do) ? 16 : 0)}
+                  fontSize="10.5"
+                  fontFamily="monospace"
+                  fill={isDark ? "#cbd5e1" : "#475569"}
+                >
+                  <tspan fontWeight="bold" fill={isDark ? "#818cf8" : "#4f46e5"}>exit / </tspan>
+                  {node.exit}
+                </text>
+              )}
+            </g>
+          );
+        }
         return (
           <g>
             <rect
@@ -76,6 +214,7 @@ export function StateNodeRenderer({ node, isSelected, onDragStart, canvasTheme, 
             />
           </g>
         );
+      }
       case "choice": {
         const choiceBg = (node as any).style?.backgroundColor || (isDark ? "#262014" : "#FFF9C4");
         const choiceBorder = isSelected ? "#818cf8" : (node as any).style?.borderColor || (isDark ? "#eab308" : "#facc15");

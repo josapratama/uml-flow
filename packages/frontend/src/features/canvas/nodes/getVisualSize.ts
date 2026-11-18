@@ -103,6 +103,8 @@ export function getVisualSize(node: DiagramNode): Size {
         node.size.height <= 36) ||
       node.type === "initial" ||
       node.type === "final" ||
+      node.type === "history" ||
+      node.type === "deepHistory" ||
       node.type === "fork" ||
       node.type === "join" ||
       node.type === "merge" ||

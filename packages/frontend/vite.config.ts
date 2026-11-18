@@ -15,12 +15,21 @@ export default defineConfig({
     },
   },
   build: {
-    chunkSizeWarningLimit: 800,
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
-            return "react-vendor";
+            return "vendor-react";
+          }
+          if (id.includes("/src/services/generators/") || id.includes("/src/services/templates/")) {
+            return "diagram-templates";
+          }
+          if (id.includes("/src/i18n/locales/")) {
+            return "app-i18n";
+          }
+          if (id.includes("/src/services/test-case-generator") || id.includes("/src/services/diagram-converter")) {
+            return "diagram-converters";
           }
         },
       },

@@ -66,6 +66,9 @@ interface CanvasProps {
   onNodeLiveRename?: (nodeId: string, newName: string) => void;
   onParticipantMove?: (id: string, x: number) => void;
   onParticipantRename?: (id: string, name: string) => void;
+  onSwimlaneRename?: (index: number, newName: string) => void;
+  onSwimlaneAdd?: (name?: string) => void;
+  onSwimlaneDelete?: (index: number) => void;
   onMessageEdit?: (id: string, label: string) => void;
   onMessageDelete?: (id: string) => void;
   onMessageReorder?: (id: string, newOrder: number) => void;
@@ -136,6 +139,9 @@ export function Canvas({
   onNodeLiveRename,
   onParticipantMove,
   onParticipantRename,
+  onSwimlaneRename,
+  onSwimlaneAdd,
+  onSwimlaneDelete,
   onMessageEdit,
   onMessageDelete,
   onMessageReorder,
@@ -1038,6 +1044,9 @@ export function Canvas({
             onNodeLiveRename={onNodeLiveRename}
             onParticipantMove={onParticipantMove}
             onParticipantRename={onParticipantRename}
+            onSwimlaneRename={onSwimlaneRename}
+            onSwimlaneAdd={onSwimlaneAdd}
+            onSwimlaneDelete={onSwimlaneDelete}
             onMessageEdit={onMessageEdit}
             onMessageDelete={onMessageDelete}
             onMessageReorder={onMessageReorder}

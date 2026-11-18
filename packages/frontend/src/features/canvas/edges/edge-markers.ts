@@ -11,9 +11,13 @@ export function getMarkerLength(type: string): number {
     case "dependency":
     case "include":
     case "extend":
-    case "one-to-many":
-    case "many-to-many":
       return 12;
+    case "one-to-one":
+      return 16;
+    case "one-to-many":
+      return 18;
+    case "many-to-many":
+      return 20;
     case "aggregation":
     case "composition":
       return 17;
@@ -30,17 +34,27 @@ export function isDashedEdge(type: string): boolean {
   return ["dependency", "realization", "include", "extend"].includes(type);
 }
 
-/** Check if edge type has marker at start (diamond shapes). */
+/** Check if edge type has marker at start (aggregation, composition, and ERD relations). */
 export function hasStartMarker(type: string): boolean {
-  return ["aggregation", "composition"].includes(type);
+  return ["aggregation", "composition", "one-to-one", "one-to-many", "many-to-many"].includes(type);
 }
 
 /** Get the marker URL for an edge type. */
 export function getMarkerEnd(type: string): string | undefined {
-  return hasStartMarker(type) ? undefined : `url(#arrow-${type})`;
+  if (type === "aggregation" || type === "composition") return undefined;
+  return `url(#arrow-${type})`;
 }
 
 /** Get the marker-start URL for an edge type. */
 export function getMarkerStart(type: string): string | undefined {
-  return hasStartMarker(type) ? `url(#arrow-${type})` : undefined;
+  if (type === "aggregation" || type === "composition") {
+    return `url(#arrow-${type})`;
+  }
+  if (type === "one-to-one" || type === "one-to-many") {
+    return `url(#arrow-one-to-one)`;
+  }
+  if (type === "many-to-many") {
+    return `url(#arrow-one-to-many)`;
+  }
+  return undefined;
 }

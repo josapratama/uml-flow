@@ -523,6 +523,58 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
     [diagram, history],
   );
 
+  const swimlaneRename = useCallback(
+    (index: number, newName: string) => {
+      if (!diagram || !newName.trim()) return;
+      const current = (diagram as any).swimlanes as string[] | undefined;
+      if (!current || index < 0 || index >= current.length) return;
+      const oldName = current[index];
+      const trimmed = newName.trim();
+      if (oldName === trimmed) return;
+      const nextLanes = [...current];
+      nextLanes[index] = trimmed;
+      history.set({
+        ...diagram,
+        swimlanes: nextLanes,
+        nodes: diagram.nodes.map((n) =>
+          (n as any).swimlane === oldName ? { ...n, swimlane: trimmed } : n,
+        ),
+      });
+    },
+    [diagram, history],
+  );
+
+  const swimlaneAdd = useCallback(
+    (name?: string) => {
+      if (!diagram) return;
+      const current = ((diagram as any).swimlanes as string[]) || [];
+      const newLane = (name && name.trim()) || `Lane ${current.length + 1}`;
+      history.set({
+        ...diagram,
+        swimlanes: [...current, newLane],
+      });
+    },
+    [diagram, history],
+  );
+
+  const swimlaneDelete = useCallback(
+    (index: number) => {
+      if (!diagram) return;
+      const current = (diagram as any).swimlanes as string[] | undefined;
+      if (!current || index < 0 || index >= current.length) return;
+      const targetLane = current[index];
+      const nextLanes = current.filter((_, i) => i !== index);
+      history.set({
+        ...diagram,
+        swimlanes: nextLanes,
+        nodes: diagram.nodes.map((n) =>
+          (n as any).swimlane === targetLane ? { ...n, swimlane: undefined } : n,
+        ),
+      });
+    },
+    [diagram, history],
+  );
+
   return {
     nodeMove,
     nodeResize,
@@ -544,5 +596,8 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
     deleteMethod,
     addERDColumn,
     deleteERDColumn,
+    swimlaneRename,
+    swimlaneAdd,
+    swimlaneDelete,
   };
 }

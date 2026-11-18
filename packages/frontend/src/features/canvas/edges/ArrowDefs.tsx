@@ -176,47 +176,112 @@ export function ArrowDefs({ theme = "dark" }: { theme?: "light" | "dark" }) {
         />
       </marker>
 
-      {/* ERD markers */}
+      {/* Sequence Return - open chevron arrow (UML 2.5 standard) */}
       <marker
-        id="arrow-one-to-one"
-        markerWidth="1"
-        markerHeight="1"
-        refX="0"
-        refY="0"
-        orient="auto"
-      >
-        <path d="" />
-      </marker>
-      <marker
-        id="arrow-one-to-many"
-        markerWidth="14"
-        markerHeight="14"
+        id="arrow-sequence-return"
+        markerWidth="12"
+        markerHeight="12"
         refX="2"
-        refY="7"
+        refY="6"
         orient="auto"
         markerUnits="userSpaceOnUse"
       >
         <path
-          d="M 6 2 L 12 7 L 6 12"
+          d="M 2 2 L 10 6 L 2 10"
           fill="none"
           stroke={markerStroke}
-          strokeWidth="2"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
       </marker>
+
+      {/* ERD Crow's Foot markers (Martin / Information Engineering Standard) */}
+      {/* Exactly One (||) */}
       <marker
-        id="arrow-many-to-many"
-        markerWidth="14"
-        markerHeight="14"
-        refX="2"
-        refY="7"
+        id="arrow-one-to-one"
+        markerWidth="18"
+        markerHeight="16"
+        refX="16"
+        refY="8"
+        orient="auto-start-reverse"
+        markerUnits="userSpaceOnUse"
+      >
+        <line x1="6" y1="3" x2="6" y2="13" stroke={markerStroke} strokeWidth="2" strokeLinecap="round" />
+        <line x1="12" y1="3" x2="12" y2="13" stroke={markerStroke} strokeWidth="2" strokeLinecap="round" />
+      </marker>
+
+      {/* One or Many (>|) */}
+      <marker
+        id="arrow-one-to-many"
+        markerWidth="20"
+        markerHeight="16"
+        refX="18"
+        refY="8"
         orient="auto"
         markerUnits="userSpaceOnUse"
       >
+        <line x1="5" y1="3" x2="5" y2="13" stroke={markerStroke} strokeWidth="2" strokeLinecap="round" />
         <path
-          d="M 6 2 L 12 7 L 6 12"
+          d="M 18 8 L 6 2 M 18 8 L 6 14 M 18 8 L 5 8"
           fill="none"
           stroke={markerStroke}
-          strokeWidth="2"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </marker>
+
+      {/* Zero or Many (>o) */}
+      <marker
+        id="arrow-zero-to-many"
+        markerWidth="22"
+        markerHeight="16"
+        refX="20"
+        refY="8"
+        orient="auto"
+        markerUnits="userSpaceOnUse"
+      >
+        <circle cx="5" cy="8" r="3.5" fill={hollowFill} stroke={markerStroke} strokeWidth="1.5" />
+        <path
+          d="M 20 8 L 10 2 M 20 8 L 10 14 M 20 8 L 9 8"
+          fill="none"
+          stroke={markerStroke}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </marker>
+
+      {/* Zero or One (|o) */}
+      <marker
+        id="arrow-zero-to-one"
+        markerWidth="20"
+        markerHeight="16"
+        refX="18"
+        refY="8"
+        orient="auto-start-reverse"
+        markerUnits="userSpaceOnUse"
+      >
+        <circle cx="6" cy="8" r="3.5" fill={hollowFill} stroke={markerStroke} strokeWidth="1.5" />
+        <line x1="14" y1="3" x2="14" y2="13" stroke={markerStroke} strokeWidth="2" strokeLinecap="round" />
+      </marker>
+
+      {/* Many-to-many (Crow's foot) */}
+      <marker
+        id="arrow-many-to-many"
+        markerWidth="22"
+        markerHeight="16"
+        refX="20"
+        refY="8"
+        orient="auto"
+        markerUnits="userSpaceOnUse"
+      >
+        <circle cx="5" cy="8" r="3.5" fill={hollowFill} stroke={markerStroke} strokeWidth="1.5" />
+        <path
+          d="M 20 8 L 10 2 M 20 8 L 10 14 M 20 8 L 9 8"
+          fill="none"
+          stroke={markerStroke}
+          strokeWidth="1.5"
+          strokeLinecap="round"
         />
       </marker>
     </>

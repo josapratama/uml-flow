@@ -41,6 +41,32 @@ export class StateDiagramParser extends BaseDiagramParser {
         }
         return;
       }
+      if (val === "h" || val === "history") {
+        this.advance();
+        if (!this.diagram.nodes.find((n) => n.id === "node_history")) {
+          this.diagram.nodes.push({
+            id: "node_history",
+            type: "history",
+            name: "H",
+            position: { x: 0, y: 0 },
+            size: { width: 28, height: 28 },
+          } as StateNode);
+        }
+        return;
+      }
+      if (val === "h*" || val === "deephistory") {
+        this.advance();
+        if (!this.diagram.nodes.find((n) => n.id === "node_deep_history")) {
+          this.diagram.nodes.push({
+            id: "node_deep_history",
+            type: "deepHistory",
+            name: "H*",
+            position: { x: 0, y: 0 },
+            size: { width: 28, height: 28 },
+          } as StateNode);
+        }
+        return;
+      }
       this.advance();
       return;
     }
@@ -71,7 +97,15 @@ export class StateDiagramParser extends BaseDiagramParser {
             break;
           }
 
-          if (cur.type === "keyword" && cur.value === "state") {
+          if (cur.type === "keyword" && (cur.value === "entry" || cur.value === "do" || cur.value === "exit")) {
+            const actType = cur.value as "entry" | "do" | "exit";
+            this.advance();
+            if (this.currentToken()?.value === "/") this.advance();
+            const actVal = this.readToEndOfLine().trim();
+            if (substates.length > 0) {
+              substates[substates.length - 1][actType] = actVal;
+            }
+          } else if (cur.type === "keyword" && cur.value === "state") {
             // nested state declaration
             this.advance();
             this.skipNewlines();
@@ -209,11 +243,49 @@ export class StateDiagramParser extends BaseDiagramParser {
         position: { x: 0, y: 0 },
         size: { width: Math.max(100, name.length * 9 + 30), height: 50 },
       };
+      if (this.currentToken()?.value === ":") {
+        this.advance();
+        this.skipNewlines();
+        const actTok = this.currentToken();
+        if (actTok && (actTok.value === "entry" || actTok.value === "do" || actTok.value === "exit")) {
+          const actType = actTok.value as "entry" | "do" | "exit";
+          this.advance();
+          if (this.currentToken()?.value === "/") this.advance();
+          const actText = this.readToEndOfLine().trim();
+          node[actType] = actText;
+          node.size.height = 68;
+          node.size.width = Math.max(node.size.width, actText.length * 7 + 40);
+        }
+      }
       this.diagram.nodes.push(node);
       return;
     }
 
     if (token.type === "identifier" || token.type === "string") {
+      const next1 = this.peekNextNonNewline();
+      if (next1?.value === ":") {
+        const savedPos = this.pos;
+        const sName = token.value;
+        this.advance(); // identifier
+        this.advance(); // ':'
+        this.skipNewlines();
+        const actTok = this.currentToken();
+        if (actTok && (actTok.value === "entry" || actTok.value === "do" || actTok.value === "exit")) {
+          const actType = actTok.value as "entry" | "do" | "exit";
+          this.advance();
+          if (this.currentToken()?.value === "/") this.advance();
+          const actText = this.readToEndOfLine().trim().replace(/\s*\(\s*/g, "(").replace(/\s*\)/g, ")");
+          const targetId = this.resolveOrCreateNode(sName);
+          const foundNode = this.diagram.nodes.find((n) => n.id === targetId) as StateNode | undefined;
+          if (foundNode) {
+            foundNode[actType] = actText;
+            foundNode.size.height = Math.max(foundNode.size.height, 56 + (foundNode.entry ? 16 : 0) + (foundNode.do ? 16 : 0) + (foundNode.exit ? 16 : 0));
+            foundNode.size.width = Math.max(foundNode.size.width, actText.length * 7 + 40);
+          }
+          return;
+        }
+        this.pos = savedPos;
+      }
       this.parseRelation();
       return;
     }
@@ -247,6 +319,30 @@ export class StateDiagramParser extends BaseDiagramParser {
       }
       return "node_initial";
     }
+    if (clean === "H" || lower === "h" || lower === "history") {
+      if (!this.diagram.nodes.find((n) => n.id === "node_history")) {
+        this.diagram.nodes.push({
+          id: "node_history",
+          type: "history",
+          name: "H",
+          position: { x: 0, y: 0 },
+          size: { width: 28, height: 28 },
+        } as StateNode);
+      }
+      return "node_history";
+    }
+    if (clean === "H*" || lower === "h*" || lower === "deephistory") {
+      if (!this.diagram.nodes.find((n) => n.id === "node_deep_history")) {
+        this.diagram.nodes.push({
+          id: "node_deep_history",
+          type: "deepHistory",
+          name: "H*",
+          position: { x: 0, y: 0 },
+          size: { width: 28, height: 28 },
+        } as StateNode);
+      }
+      return "node_deep_history";
+    }
     return super.findNodeId(name);
   }
 
@@ -278,7 +374,11 @@ export class StateDiagramParser extends BaseDiagramParser {
         ? this.findNodeId("initial")
         : sourceName.toLowerCase() === "final"
           ? this.findNodeId("final")
-          : this.findNodeId(sourceName);
+          : sourceName.toLowerCase() === "h" || sourceName.toLowerCase() === "history"
+            ? this.findNodeId("history")
+            : sourceName.toLowerCase() === "h*" || sourceName.toLowerCase() === "deephistory"
+              ? this.findNodeId("deepHistory")
+              : this.findNodeId(sourceName);
 
     const edge: Edge = {
       id: `edge_${sourceName}_${targetName}_${this.diagram.edges.length}`,

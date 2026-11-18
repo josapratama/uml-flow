@@ -13,6 +13,10 @@ export class SequenceDiagramParser extends BaseDiagramParser {
       this.parseParticipant();
       return;
     }
+    if (token.type === "keyword" && token.value === "destroy") {
+      this.parseDestroy();
+      return;
+    }
     if (token.type === "bracket") {
       this.parseFragment();
       return;
@@ -108,13 +112,46 @@ export class SequenceDiagramParser extends BaseDiagramParser {
     }
 
     if (!this.diagram.messages) this.diagram.messages = [];
-    const type = fromName === toName ? "self" : msgType;
+    const isDestroy = label.toLowerCase().includes("destroy");
+    const type = isDestroy ? "destroy" : fromName === toName ? "self" : msgType;
     this.diagram.messages.push({
       id: `msg_${this.diagram.messages.length}`,
       from: `participant_${fromName}`,
       to: `participant_${toName}`,
       label,
       type: type as any,
+      order: this.diagram.messages.length,
+    });
+  }
+
+  private parseDestroy(): void {
+    this.advance();
+    this.skipNewlines();
+    const targetToken = this.currentToken();
+    if (!targetToken) return;
+    const targetName = targetToken.value;
+    this.advance();
+
+    if (!this.diagram.participants) this.diagram.participants = [];
+    if (!this.diagram.participants.some((p) => p.name === targetName || p.id === `participant_${targetName}`)) {
+      this.diagram.participants.push({
+        id: `participant_${targetName}`,
+        name: targetName,
+        type: "object",
+        position: { x: this.diagram.participants.length * 180 + 80, y: 60 },
+      });
+    }
+
+    if (!this.diagram.messages) this.diagram.messages = [];
+    const prevMsg = this.diagram.messages[this.diagram.messages.length - 1];
+    const fromId = prevMsg ? prevMsg.from : `participant_${targetName}`;
+
+    this.diagram.messages.push({
+      id: `msg_${this.diagram.messages.length}`,
+      from: fromId,
+      to: `participant_${targetName}`,
+      label: "destroy",
+      type: "destroy",
       order: this.diagram.messages.length,
     });
   }

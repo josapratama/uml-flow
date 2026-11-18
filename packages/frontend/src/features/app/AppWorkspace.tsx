@@ -183,6 +183,9 @@ export function AppWorkspace(props: AppWorkspaceProps) {
               onNodeLiveRename={actions.nodeLiveRename}
               onParticipantMove={actions.participantMove}
               onParticipantRename={actions.participantRename}
+              onSwimlaneRename={actions.swimlaneRename}
+              onSwimlaneAdd={actions.swimlaneAdd}
+              onSwimlaneDelete={actions.swimlaneDelete}
               onMessageEdit={actions.messageEdit}
               onMessageDelete={actions.messageDelete}
               onMessageReorder={actions.messageReorder}
