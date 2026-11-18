@@ -60,6 +60,8 @@ export default function App(props: AppProps = {}) {
   const [errors, setErrors] = useState<any[]>([]);
   const [isCompiling, setIsCompiling] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showAcademicA4, setShowAcademicA4] = useState(false);
+  const [canvasSketchMode, setCanvasSketchMode] = useState(false);
   const [showSQLExport, setShowSQLExport] = useState(false);
   const [showStylePanel, setShowStylePanel] = useState<
     "node" | "global" | "edge" | null
@@ -621,6 +623,7 @@ export default function App(props: AppProps = {}) {
   const { handleExport } = useAppExport({
     diagram,
     onOpenAcademicCaption: () => setShowAcademicCaption(true),
+    onOpenAcademicA4: () => setShowAcademicA4(true),
     onOpenThesisBundle: () => setShowThesisBundle(true),
     onOpenTestCases: () => setShowTestCases(true),
     onOpenMockData: () => setShowMockData(true),
@@ -1158,6 +1161,7 @@ export default function App(props: AppProps = {}) {
         onOpenNodeHierarchy={() => setShowNodeHierarchy(true)}
         onOpenUseCaseNarrative={() => setShowUseCaseNarrative(true)}
         onOpenDataDictionary={() => setShowDataDictionary(true)}
+        onOpenAcademicA4={() => setShowAcademicA4(true)}
         onOpenCommandPalette={() => setShowCommandPalette(true)}
         onSaveCurrent={handleSaveCurrent}
         onShareLink={handleShareLink}
@@ -1234,6 +1238,9 @@ export default function App(props: AppProps = {}) {
         onGlobalStyleChange={handleGlobalStyleChange}
         onCopyPNG={handleCopyPNG}
         onAutoRepair={handleRepairDiagram}
+        canvasSketchMode={canvasSketchMode}
+        onToggleSketchMode={() => setCanvasSketchMode((v) => !v)}
+        onOpenShortcuts={() => setShowShortcuts(true)}
       />
 
       <StatusBar
@@ -1248,6 +1255,8 @@ export default function App(props: AppProps = {}) {
       <AppModals
         showShortcuts={showShortcuts}
         onCloseShortcuts={() => setShowShortcuts(false)}
+        showAcademicA4={showAcademicA4}
+        onCloseAcademicA4={() => setShowAcademicA4(false)}
         contextMenu={contextMenu}
         onCloseContextMenu={() => setContextMenu(null)}
         showLibrary={showLibrary}

@@ -17,6 +17,7 @@ export function downloadFile(content: string, filename: string, mime: string) {
 interface UseAppExportOptions {
   diagram: Diagram | null;
   onOpenAcademicCaption: () => void;
+  onOpenAcademicA4?: () => void;
   onOpenThesisBundle?: () => void;
   onOpenTestCases?: () => void;
   onOpenMockData?: () => void;
@@ -28,6 +29,7 @@ interface UseAppExportOptions {
 export function useAppExport({
   diagram,
   onOpenAcademicCaption,
+  onOpenAcademicA4,
   onOpenThesisBundle,
   onOpenTestCases,
   onOpenMockData,
@@ -116,6 +118,28 @@ export function useAppExport({
           }
           case "academic-caption": {
             onOpenAcademicCaption();
+            break;
+          }
+          case "academic-a4": {
+            if (onOpenAcademicA4) {
+              onOpenAcademicA4();
+            }
+            break;
+          }
+          case "html": {
+            const el = document.querySelector(
+              ".canvas-svg-element"
+            ) as SVGSVGElement | null;
+            if (el) {
+              const { exportToStandaloneHTML } = await import(
+                "../../services/standalone-html-exporter"
+              );
+              const html = exportToStandaloneHTML(el, diagram);
+              downloadFile(html, `${diagram.name}.html`, "text/html");
+              showToast(isId ? "File Web Interaktif (.html) berhasil diunduh" : "Interactive HTML file exported", "success");
+            } else {
+              showToast(isId ? "Diagram tidak ditemukan untuk diekspor" : "Diagram not found to export", "error");
+            }
             break;
           }
           case "thesis-bundle": {

@@ -15,6 +15,8 @@ interface Props {
   onOpenTestCases?: () => void;
   onOpenMockData?: () => void;
   onOpenDependencyMatrix?: () => void;
+  onOpenUseCaseNarrative?: () => void;
+  onOpenDataDictionary?: () => void;
   onOpenWorkspaceBackup?: () => void;
   onOpenNodeHierarchy?: () => void;
   onOpenCommandPalette?: () => void;
@@ -36,6 +38,8 @@ export function ProjectMenu({
   onOpenTestCases,
   onOpenMockData,
   onOpenDependencyMatrix,
+  onOpenUseCaseNarrative,
+  onOpenDataDictionary,
   onOpenWorkspaceBackup,
   onOpenNodeHierarchy,
   onOpenCommandPalette,
@@ -315,6 +319,40 @@ export function ProjectMenu({
               <div>
                 <div className="font-medium">Generator Data Dummy (Seed)</div>
                 <div className="text-[10px] text-text-muted">Generate JSON mock & SQL INSERT seed</div>
+              </div>
+            </button>
+          )}
+
+          {onOpenUseCaseNarrative && (
+            <button
+              onClick={() => {
+                onOpenUseCaseNarrative();
+                setOpen(false);
+              }}
+              disabled={!hasDiagram}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text hover:bg-surface-3 transition-colors text-left disabled:opacity-40"
+            >
+              <span className="text-base">📋</span>
+              <div>
+                <div className="font-medium">Skenario Narasi Use Case</div>
+                <div className="text-[10px] text-text-muted">Spesifikasi skenario Bab 3/4 Skripsi & SRS</div>
+              </div>
+            </button>
+          )}
+
+          {onOpenDataDictionary && (
+            <button
+              onClick={() => {
+                onOpenDataDictionary();
+                setOpen(false);
+              }}
+              disabled={!hasDiagram}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-text hover:bg-surface-3 transition-colors text-left disabled:opacity-40"
+            >
+              <span className="text-base">📚</span>
+              <div>
+                <div className="font-medium">Kamus Data Basis Data (ERD)</div>
+                <div className="text-[10px] text-text-muted">Tabel kamus data teknis spesifikasi database</div>
               </div>
             </button>
           )}

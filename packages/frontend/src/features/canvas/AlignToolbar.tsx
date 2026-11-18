@@ -15,8 +15,8 @@ export function AlignToolbar({ onAlign, onDistribute, nodeCount }: Props) {
   if (nodeCount < 2) return null;
 
   return (
-    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-md z-10">
-      <span className="text-[10px] text-slate-400 mr-1">
+    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-surface-2/95 backdrop-blur-md border border-border rounded-xl px-2.5 py-1.5 shadow-xl z-20 animate-in fade-in slide-in-from-bottom-2 duration-150">
+      <span className="text-[11px] font-semibold text-text-muted mr-1">
         {nodeCount} {t("align.selected")}
       </span>
       <Sep />
@@ -73,7 +73,7 @@ function Btn({
     <button
       onClick={onClick}
       title={title}
-      className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 text-slate-600 text-sm"
+      className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-surface-3 text-text hover:text-accent font-bold text-sm transition-colors"
     >
       {children}
     </button>
@@ -81,5 +81,5 @@ function Btn({
 }
 
 function Sep() {
-  return <div className="w-px h-5 bg-slate-200 mx-0.5" />;
+  return <div className="w-px h-4 bg-border/80 mx-0.5" />;
 }

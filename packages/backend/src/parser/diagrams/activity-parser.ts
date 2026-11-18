@@ -21,16 +21,27 @@ export class ActivityDiagramParser extends BaseDiagramParser {
     const token = this.currentToken();
     if (!token) return;
 
-    // Swimlane declaration: swimlane "Name"
-    if (token.type === "keyword" && token.value === "swimlane") {
+    // Swimlane / Partition declaration: swimlane "Name" or partition "Name"
+    if (
+      (token.type === "keyword" || token.type === "identifier") &&
+      (token.value === "swimlane" || token.value === "partition")
+    ) {
       this.advance();
       this.skipNewlines();
-      const name = this.currentToken()?.value || "Lane";
+      let name = this.currentToken()?.value || "Lane";
       this.advance();
+      if (this.currentToken()?.value === "{") {
+        this.advance();
+      }
       const laneName = name.replace(/^["']|["']$/g, "");
       if (!this.swimlanes.includes(laneName)) this.swimlanes.push(laneName);
       this.currentSwimlane = laneName;
       (this.diagram as any).swimlanes = this.swimlanes;
+      return;
+    }
+
+    if (token.type === "punctuation" && token.value === "}") {
+      this.advance();
       return;
     }
 

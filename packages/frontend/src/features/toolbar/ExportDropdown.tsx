@@ -30,6 +30,20 @@ function getExportOptions(locale: Locale): ExportOption[] {
       category: "doc",
     },
     {
+      id: "academic-a4",
+      label: isId ? "Lembar Lampiran Skripsi A4 (PDF)" : "Academic A4 Thesis Sheet (PDF)",
+      icon: "📑",
+      description: isId ? "Format resmi A4 dengan margin 4-4-3-3cm & Kop Diagram" : "Standard A4 layout with margins & title block",
+      category: "doc",
+    },
+    {
+      id: "html",
+      label: isId ? "Web Interaktif Mandiri (.html)" : "Interactive Web Page (.html)",
+      icon: "🌐",
+      description: isId ? "File HTML mandiri dengan pan, zoom & cari node offline" : "Standalone offline HTML with zoom, pan & search",
+      category: "doc",
+    },
+    {
       id: "thesis-bundle",
       label: isId ? "Paket Lampiran Skripsi (.md)" : "Thesis Appendix Bundle (.md)",
       icon: "📦",

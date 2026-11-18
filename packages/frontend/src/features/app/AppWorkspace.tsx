@@ -65,6 +65,9 @@ export interface AppWorkspaceProps {
   onGlobalStyleChange: (s: any) => void;
   onCreateNewDiagram?: (type: DiagramType) => void;
   onCopyPNG?: () => void;
+  canvasSketchMode?: boolean;
+  onToggleSketchMode?: () => void;
+  onOpenShortcuts?: () => void;
 }
 
 export function AppWorkspace(props: AppWorkspaceProps) {
@@ -207,6 +210,9 @@ export function AppWorkspace(props: AppWorkspaceProps) {
               onDuplicateNode={actions.duplicateNode}
               onDuplicateNodes={actions.duplicateNodes}
               onContextMenu={onCanvasContextMenu}
+              canvasSketchMode={props.canvasSketchMode}
+              onToggleSketchMode={props.onToggleSketchMode}
+              onOpenShortcuts={props.onOpenShortcuts}
             />
           </div>
         )}

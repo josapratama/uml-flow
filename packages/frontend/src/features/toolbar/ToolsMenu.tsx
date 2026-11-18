@@ -14,6 +14,8 @@ interface Props {
   onOpenDependencyMatrix?: () => void;
   onOpenUseCaseNarrative?: () => void;
   onOpenDataDictionary?: () => void;
+  onOpenAcademicA4?: () => void;
+  onOpenShortcuts?: () => void;
   onLayout?: (preset: string) => void;
 }
 
@@ -30,6 +32,8 @@ export function ToolsMenu({
   onOpenDependencyMatrix,
   onOpenUseCaseNarrative,
   onOpenDataDictionary,
+  onOpenAcademicA4,
+  onOpenShortcuts,
   onLayout,
 }: Props) {
   const { locale } = useI18n();
@@ -148,6 +152,22 @@ export function ToolsMenu({
                 </div>
               </button>
             )}
+
+            {onOpenShortcuts && (
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  onOpenShortcuts();
+                }}
+                className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left text-text hover:bg-surface-3 transition-colors group"
+              >
+                <span className="text-sky-400 group-hover:scale-110 transition-transform">⌨️</span>
+                <div className="flex-1 min-w-0 flex items-center justify-between">
+                  <div className="font-medium text-text">{isId ? "Pintasan Keyboard" : "Keyboard Shortcuts"}</div>
+                  <kbd className="font-mono text-[9px] px-1 py-0.5 rounded bg-surface-3 border border-border/80 text-text-muted">?</kbd>
+                </div>
+              </button>
+            )}
           </div>
 
           {/* Section: Academic & Testing */}
@@ -155,6 +175,23 @@ export function ToolsMenu({
             <div className="px-2 py-1 text-[10px] font-semibold text-text-muted uppercase tracking-wider">
               {isId ? "Akademik & Pengujian" : "Academic & Testing"}
             </div>
+
+            {onOpenAcademicA4 && (
+              <button
+                disabled={!hasDiagram}
+                onClick={() => {
+                  setOpen(false);
+                  onOpenAcademicA4();
+                }}
+                className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left text-text hover:bg-surface-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed group"
+              >
+                <span>📑</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-text">{isId ? "Lembar Lampiran Skripsi A4" : "Academic A4 Thesis Sheet"}</div>
+                  <div className="text-[10px] text-text-muted truncate">{isId ? "Cetak PDF bingkai formal & Kop Diagram" : "Print-ready PDF with border & title block"}</div>
+                </div>
+              </button>
+            )}
 
             {onOpenUseCaseNarrative && (
               <button

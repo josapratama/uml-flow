@@ -12,8 +12,11 @@ export function useEdgeActions({ diagram, history }: ActionDeps) {
         edges: diagram.edges.map((e) => {
           if (e.id !== edgeId) return e;
           const pts = [...(e.points || [])];
-          if (pts.length === 0) pts.push({ x, y });
-          else pts[idx] = { x, y };
+          if (pts.length === 0 || idx >= pts.length) {
+            pts.push({ x, y });
+          } else {
+            pts[idx] = { x, y };
+          }
           return { ...e, points: pts };
         }),
       });

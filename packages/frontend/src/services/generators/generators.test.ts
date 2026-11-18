@@ -893,4 +893,36 @@ describe("LaTeX TikZ Code Exporter", () => {
     const ellipseEq = ((ptDiag.x - cx) / rx) ** 2 + ((ptDiag.y - cy) / ry) ** 2;
     expect(ellipseEq).toBeCloseTo(1, 2); // Exact mathematical hit on ellipse perimeter!
   });
+
+  it("exports standalone interactive HTML viewer with zoom/pan and embedded SVG", async () => {
+    const { exportToStandaloneHTML } = await import("../standalone-html-exporter");
+    // Mock SVG element
+    const mockSvg = {
+      cloneNode: () => mockSvg,
+      querySelector: () => null,
+      querySelectorAll: () => [],
+      setAttribute: () => {},
+      removeAttribute: () => {},
+    } as any;
+
+    const html = exportToStandaloneHTML(mockSvg, sampleClassDiagram);
+    expect(html).toContain("<!DOCTYPE html>");
+    expect(html).toContain("UML Flow Viewer");
+    expect(html).toContain("UserAuth");
+    expect(html).toContain("btn-fit");
+    expect(html).toContain("search-input");
+    expect(html).toContain("updateTransform()");
+  });
+
+  it("verifies academic activity diagram with swimlanes template is structured correctly", async () => {
+    const { ACADEMIC_ACTIVITY_TEMPLATES } = await import("../templates/presets/academicActivityTemplates");
+    const tmpl = ACADEMIC_ACTIVITY_TEMPLATES[0];
+    expect(tmpl).toBeDefined();
+    expect(tmpl.diagram.type).toBe("activity");
+    expect(tmpl.diagram.swimlanes).toContain("Mahasiswa");
+    expect(tmpl.diagram.swimlanes).toContain("Portal SIAKAD");
+    expect(tmpl.diagram.nodes.some(n => (n as any).swimlane === "Mahasiswa")).toBe(true);
+    expect(tmpl.diagram.nodes.some(n => (n as any).swimlane === "Portal SIAKAD")).toBe(true);
+    expect(tmpl.dsl).toContain("swimlane \"Mahasiswa\"");
+  });
 });

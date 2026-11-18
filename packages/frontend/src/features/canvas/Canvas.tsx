@@ -103,6 +103,9 @@ interface CanvasProps {
   onDeleteEdge?: (edgeId: string) => void;
   onDuplicateNode?: (nodeId: string) => string | null;
   onDuplicateNodes?: (nodeIds: string[]) => string[];
+  canvasSketchMode?: boolean;
+  onToggleSketchMode?: () => void;
+  onOpenShortcuts?: () => void;
   onContextMenu?: (
     e: React.MouseEvent,
     target: {
@@ -157,6 +160,9 @@ export function Canvas({
   onDeleteEdge,
   onDuplicateNode,
   onDuplicateNodes,
+  canvasSketchMode = false,
+  onToggleSketchMode,
+  onOpenShortcuts,
   onContextMenu,
 }: CanvasProps) {
   // --- Watermark State ---
@@ -317,6 +323,20 @@ export function Canvas({
 
       const isMac = navigator.platform?.toUpperCase().indexOf("MAC") >= 0;
       const mod = isMac ? e.metaKey : e.ctrlKey;
+
+      // Ctrl+Shift+C: 1-Click Copy PNG image to clipboard
+      if (mod && e.shiftKey && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        onCopyPNG?.();
+        return;
+      }
+
+      // ?: Open Keyboard Shortcuts cheat sheet modal
+      if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+        e.preventDefault();
+        onOpenShortcuts?.();
+        return;
+      }
 
       // Ctrl+F: Search Bar
       if (mod && e.key.toLowerCase() === "f") {
@@ -679,6 +699,9 @@ export function Canvas({
         onToggleWatermark={handleToggleWatermark}
         isAnnotating={isAnnotating}
         onToggleAnnotation={() => setIsAnnotating((v) => !v)}
+        isSketchMode={canvasSketchMode}
+        onToggleSketchMode={onToggleSketchMode}
+        onOpenShortcuts={onOpenShortcuts}
       />
 
       {/* Floating Freehand Annotation Toolbar */}
@@ -819,6 +842,10 @@ export function Canvas({
             )}
           </pattern>
           <ArrowDefs theme={canvasTheme} />
+          <filter id="sketch-filter" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
         </defs>
 
         {/* Marquee */}
@@ -843,6 +870,8 @@ export function Canvas({
 
         <g
           transform={`translate(${view.offsetX},${view.offsetY}) scale(${view.scale})`}
+          filter={canvasSketchMode ? "url(#sketch-filter)" : undefined}
+          style={canvasSketchMode ? { fontFamily: "'Comic Neue', 'Caveat', 'Comic Sans MS', cursive, sans-serif" } : undefined}
         >
           {/* World Grid Layer - Aligned 100% pixel-perfect to world coordinates */}
           <rect

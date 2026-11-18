@@ -26,6 +26,7 @@ const WorkspaceBackupModal = lazy(() => import("../ui/WorkspaceBackupModal").the
 const NodeHierarchyModal = lazy(() => import("../ui/NodeHierarchyModal").then(m => ({ default: m.NodeHierarchyModal })));
 const UseCaseNarrativeModal = lazy(() => import("../ui/UseCaseNarrativeModal").then(m => ({ default: m.UseCaseNarrativeModal })));
 const DataDictionaryModal = lazy(() => import("../ui/DataDictionaryModal").then(m => ({ default: m.DataDictionaryModal })));
+const AcademicA4Modal = lazy(() => import("../ui/AcademicA4Modal").then(m => ({ default: m.AcademicA4Modal })));
 
 interface AppModalsProps {
   showShortcuts: boolean;
@@ -93,6 +94,8 @@ interface AppModalsProps {
   showDataDictionary?: boolean;
   onCloseDataDictionary?: () => void;
   onOpenDataDictionary?: () => void;
+  showAcademicA4?: boolean;
+  onCloseAcademicA4?: () => void;
   showCommandPalette?: boolean;
   onCloseCommandPalette?: () => void;
   onSelectNode?: (nodeId: string) => void;
@@ -187,6 +190,8 @@ export function AppModals({
   showDataDictionary = false,
   onCloseDataDictionary,
   onOpenDataDictionary = () => { },
+  showAcademicA4 = false,
+  onCloseAcademicA4,
   showCommandPalette = false,
   onCloseCommandPalette,
   onSelectNode = () => { },
@@ -395,6 +400,14 @@ export function AppModals({
           <DataDictionaryModal
             isOpen={showDataDictionary}
             onClose={onCloseDataDictionary || (() => { })}
+            diagram={diagram}
+          />
+        )}
+
+        {showAcademicA4 && (
+          <AcademicA4Modal
+            isOpen={showAcademicA4}
+            onClose={onCloseAcademicA4 || (() => { })}
             diagram={diagram}
           />
         )}

@@ -21,6 +21,9 @@ interface CanvasControlsProps {
   onToggleWatermark?: () => void;
   isAnnotating?: boolean;
   onToggleAnnotation?: () => void;
+  isSketchMode?: boolean;
+  onToggleSketchMode?: () => void;
+  onOpenShortcuts?: () => void;
 }
 
 export function CanvasControls({
@@ -42,6 +45,9 @@ export function CanvasControls({
   onToggleWatermark,
   isAnnotating,
   onToggleAnnotation,
+  isSketchMode,
+  onToggleSketchMode,
+  onOpenShortcuts,
 }: CanvasControlsProps) {
   const { t, locale } = useI18n();
   const isId = locale === "id";
@@ -224,6 +230,37 @@ export function CanvasControls({
         >
           <span>🏷️</span>
           <span className="text-[10px] hidden md:inline">{isId ? "Info" : "Title"}</span>
+        </button>
+      )}
+
+      {onToggleSketchMode && (
+        <button
+          onClick={onToggleSketchMode}
+          className={`h-7 px-2 flex items-center justify-center gap-1 rounded-lg text-xs font-medium transition-all ${
+            isSketchMode
+              ? "bg-amber-500/20 text-amber-400 font-semibold border border-amber-500/40 shadow-2xs"
+              : canvasTheme === "dark"
+              ? "hover:bg-surface-3 text-text opacity-70 hover:opacity-100"
+              : "hover:bg-slate-100 text-slate-700 opacity-70 hover:opacity-100"
+          }`}
+          title={isId ? "Gaya Sketsa / Hand-Drawn Organik (Excalidraw Mode)" : "Hand-Drawn / Sketch Style Mode"}
+        >
+          <span>✏️</span>
+          <span className="text-[10px] hidden md:inline">{isId ? "Sketsa" : "Sketch"}</span>
+        </button>
+      )}
+
+      {onOpenShortcuts && (
+        <button
+          onClick={onOpenShortcuts}
+          className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-mono transition-colors ${
+            canvasTheme === "dark"
+              ? "hover:bg-surface-3 text-text opacity-70 hover:opacity-100"
+              : "hover:bg-slate-100 text-slate-700 opacity-70 hover:opacity-100"
+          }`}
+          title={isId ? "Pintasan Keyboard (?)" : "Keyboard Shortcuts (?)"}
+        >
+          ?
         </button>
       )}
     </div>

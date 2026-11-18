@@ -3,6 +3,7 @@ import { ACADEMIC_FLOWCHART_TEMPLATES } from "./academicFlowchartTemplates";
 import { ACADEMIC_ERD_TEMPLATES } from "./academicErdTemplates";
 import { ACADEMIC_ARCHITECTURE_TEMPLATES } from "./academicArchitectureTemplates";
 import { ACADEMIC_USECASE_TEMPLATES } from "./academicUsecaseTemplates";
+import { ACADEMIC_ACTIVITY_TEMPLATES } from "./academicActivityTemplates";
 import { ENTERPRISE_ARCHITECTURE_TEMPLATES } from "./enterpriseArchitectureTemplates";
 
 export * from "./types";
@@ -10,6 +11,7 @@ export * from "./academicFlowchartTemplates";
 export * from "./academicErdTemplates";
 export * from "./academicArchitectureTemplates";
 export * from "./academicUsecaseTemplates";
+export * from "./academicActivityTemplates";
 export * from "./enterpriseArchitectureTemplates";
 
 export const BUILT_IN_TEMPLATES: DiagramTemplate[] = [
@@ -18,4 +20,5 @@ export const BUILT_IN_TEMPLATES: DiagramTemplate[] = [
   ...ACADEMIC_FLOWCHART_TEMPLATES,
   ...ACADEMIC_ERD_TEMPLATES,
   ...ACADEMIC_USECASE_TEMPLATES,
+  ...ACADEMIC_ACTIVITY_TEMPLATES,
 ];
