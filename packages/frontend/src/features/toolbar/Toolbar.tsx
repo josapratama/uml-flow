@@ -8,6 +8,7 @@ import { ProjectMenu } from "./ProjectMenu";
 import { CanvasOptionsMenu } from "./CanvasOptionsMenu";
 import { SamplesMenu } from "./SamplesMenu";
 import { DiagramTypeBadge } from "./DiagramTypeBadge";
+import { ToolsMenu } from "./ToolsMenu";
 import { useI18n } from "../../i18n";
 
 type EditorMode = "visual" | "code" | "split";
@@ -138,13 +139,13 @@ export function Toolbar(props: ToolbarProps) {
   };
 
   return (
-    <header className="flex items-center justify-between px-2 sm:px-3 h-12 bg-surface-2 border-b border-border shrink-0 gap-1.5 sm:gap-2 z-50 relative select-none w-full min-w-0 overflow-visible">
+    <header className="flex items-center justify-between px-2 sm:px-3 h-12 bg-surface-2 border-b border-border shrink-0 gap-1.5 sm:gap-2 z-50 relative select-none w-full min-w-0">
       {/* --- Left Zone: Brand & Document Management --- */}
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
+      <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0 min-w-0">
         {/* Brand / Logo */}
         <button
           onClick={handleGoHome}
-          className="flex items-center gap-2 group text-left transition-transform active:scale-95 shrink-0 pr-1"
+          className="flex items-center gap-1.5 sm:gap-2 group text-left transition-transform active:scale-95 shrink-0 pr-0.5 sm:pr-1"
           title={t("nav.home")}
         >
           <div className="w-7 h-7 rounded-lg bg-linear-to-tr from-accent via-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-xs group-hover:shadow-accent/40 transition-shadow">
@@ -161,12 +162,12 @@ export function Toolbar(props: ToolbarProps) {
               <rect x="8" y="14" width="7" height="7" rx="1.5" />
             </svg>
           </div>
-          <span className="font-bold text-xs tracking-tight text-text group-hover:text-accent transition-colors hidden xl:inline">
+          <span className="font-bold text-xs tracking-tight text-text group-hover:text-accent transition-colors hidden lg:inline">
             UML Flow
           </span>
         </button>
 
-        <div className="w-px h-5 bg-border/60 mx-0.5 hidden xl:block" />
+        <div className="w-px h-5 bg-border/60 mx-0.5 hidden lg:block" />
 
         {/* Project File Menu */}
         <ProjectMenu
@@ -199,11 +200,13 @@ export function Toolbar(props: ToolbarProps) {
           onOpenTab={onOpenTab}
         />
 
-        {/* Samples Custom Dropdown */}
-        <SamplesMenu onSampleChange={onSampleChange} />
+        {/* Samples Custom Dropdown (Visible on xl and above) */}
+        <div className="hidden xl:block">
+          <SamplesMenu onSampleChange={onSampleChange} />
+        </div>
 
         {/* Undo / Redo */}
-        <div className="flex items-center gap-0.5 bg-surface-3 border border-border rounded-lg p-0.5 shadow-2xs">
+        <div className="hidden sm:flex items-center gap-0.5 bg-surface-3 border border-border rounded-lg p-0.5 shadow-2xs">
           <button
             onClick={onUndo}
             disabled={!canUndo}
@@ -229,13 +232,13 @@ export function Toolbar(props: ToolbarProps) {
         </div>
       </div>
 
-      {/* --- Center Zone: View Mode Segmented Pill --- */}
+      {/* --- Center Zone: View Mode Segmented Control --- */}
       <div className="flex items-center justify-center shrink-0">
         <div className="flex items-center h-8 bg-surface-3 border border-border rounded-lg p-0.5 shadow-2xs">
           <button
-            className={`h-7 px-2 sm:px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${mode === "code"
-              ? "bg-accent text-white shadow-xs"
-              : "text-text-muted hover:text-text"
+            className={`h-7 px-2 sm:px-2.5 md:px-3 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${mode === "code"
+              ? "bg-accent text-white shadow-xs font-semibold"
+              : "text-text-muted hover:text-text hover:bg-surface-4"
               }`}
             onClick={() => onModeChange("code")}
             title={t("toolbar.codeMode")}
@@ -244,9 +247,9 @@ export function Toolbar(props: ToolbarProps) {
             <span className="hidden md:inline">{t("toolbar.codeMode")}</span>
           </button>
           <button
-            className={`h-7 px-2 sm:px-2.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${mode === "split"
-              ? "bg-accent text-white shadow-xs"
-              : "text-text-muted hover:text-text"
+            className={`h-7 px-2 sm:px-2 md:px-2.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${mode === "split"
+              ? "bg-accent text-white shadow-xs font-semibold"
+              : "text-text-muted hover:text-text hover:bg-surface-4"
               }`}
             onClick={() => onModeChange("split")}
             title={t("toolbar.splitMode")}
@@ -255,9 +258,9 @@ export function Toolbar(props: ToolbarProps) {
             <span className="hidden md:inline">{t("toolbar.splitMode")}</span>
           </button>
           <button
-            className={`h-7 px-2 sm:px-2.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${mode === "visual"
-              ? "bg-accent text-white shadow-xs"
-              : "text-text-muted hover:text-text"
+            className={`h-7 px-2 sm:px-2 md:px-2.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 sm:gap-1.5 ${mode === "visual"
+              ? "bg-accent text-white shadow-xs font-semibold"
+              : "text-text-muted hover:text-text hover:bg-surface-4"
               }`}
             onClick={() => onModeChange("visual")}
             title={t("toolbar.visualMode")}
@@ -268,62 +271,24 @@ export function Toolbar(props: ToolbarProps) {
         </div>
       </div>
 
-      {/* --- Right Zone: Tools, Export, Options & Mode-Adaptive CTA --- */}
-      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 min-w-0">
-        {/* Validate Diagram CTA */}
-        {onValidate && (
-          <button
-            onClick={onValidate}
-            disabled={!hasDiagram}
-            title={t("toolbar.validateDiagramDesc")}
-            className="h-8 px-2 sm:px-2.5 text-xs font-medium rounded-lg border border-border bg-surface-3 hover:bg-surface-4 text-text-muted hover:text-text transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-xs active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            <span className="text-emerald-400 font-bold">✓</span>
-            <span className="hidden 2xl:inline">{t("common.validate")}</span>
-          </button>
-        )}
+      {/* --- Right Zone: Tools, AI, Export, Options & Primary CTA --- */}
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        {/* Tools Dropdown: Groups Simulator, Metrics, Validator, Thesis Bundle, Test Cases, Mock Data, DSM, Share & Command Palette */}
+        <ToolsMenu
+          hasDiagram={hasDiagram}
+          onValidate={onValidate}
+          onShowMetrics={onShowMetrics}
+          onOpenSimulator={onOpenSimulator}
+          onOpenCommandPalette={onOpenCommandPalette}
+          onShareLink={onShareLink}
+          onOpenThesisBundle={onOpenThesisBundle}
+          onOpenTestCases={onOpenTestCases}
+          onOpenMockData={onOpenMockData}
+          onOpenDependencyMatrix={onOpenDependencyMatrix}
+          onLayout={onLayout}
+        />
 
-        {/* Command Palette Trigger */}
-        {onOpenCommandPalette && (
-          <button
-            onClick={onOpenCommandPalette}
-            title={locale === "id" ? "Command Palette (Ctrl+K)" : "Command Palette (Ctrl+K)"}
-            className="h-8 px-2 sm:px-2.5 text-xs font-medium rounded-lg border border-border bg-surface-3 hover:bg-surface-4 text-text-muted hover:text-text transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-xs active:scale-95"
-          >
-            <span>⚡</span>
-            <kbd className="hidden sm:inline font-mono text-[10px] px-1 py-0.5 rounded bg-surface-2 border border-border/70 text-text-muted">
-              Ctrl+K
-            </kbd>
-          </button>
-        )}
-
-        {/* Diagram Complexity & Metrics Analyzer */}
-        {onShowMetrics && (
-          <button
-            onClick={onShowMetrics}
-            disabled={!hasDiagram}
-            title={locale === "id" ? "Analisis Kompleksitas & Metrik Cyclomatic" : "Diagram Complexity & Metrics"}
-            className="h-8 px-2 sm:px-2.5 text-xs font-medium rounded-lg border border-border bg-surface-3 hover:bg-surface-4 text-text-muted hover:text-text transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-xs active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            <span>📊</span>
-            <span className="hidden 2xl:inline">{locale === "id" ? "Metrik" : "Metrics"}</span>
-          </button>
-        )}
-
-        {/* Interactive Flow Simulator */}
-        {onOpenSimulator && (
-          <button
-            onClick={onOpenSimulator}
-            disabled={!hasDiagram}
-            title={locale === "id" ? "Simulasi Alur & State Interaktif" : "Interactive Flow Simulator"}
-            className="h-8 px-2 sm:px-2.5 text-xs font-medium rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-xs active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            <span>▶️</span>
-            <span className="hidden xl:inline">{locale === "id" ? "Simulasi" : "Simulate"}</span>
-          </button>
-        )}
-
-        {/* AI Assistant Button */}
+        {/* AI Assistant Button - Compact Stylish Pill */}
         {onShowAI && (
           <button
             onClick={onShowAI}
@@ -331,35 +296,23 @@ export function Toolbar(props: ToolbarProps) {
             className="h-8 px-2 sm:px-2.5 text-xs font-medium rounded-lg border border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-xs active:scale-95"
           >
             <span>✨</span>
-            <span className="hidden xl:inline 2xl:hidden">AI</span>
-            <span className="hidden 2xl:inline">{t("nav.aiAssistant")}</span>
+            <span className="hidden sm:inline font-semibold">AI</span>
           </button>
         )}
 
-        {/* Auto Layout Dropdown */}
-        <LayoutDropdown onLayout={onLayout} disabled={!hasDiagram} />
+        {/* Auto Layout Dropdown: Visible on larger screens (>= 1280px) */}
+        <div className="hidden xl:block">
+          <LayoutDropdown onLayout={onLayout} disabled={!hasDiagram} />
+        </div>
 
-        {/* Export Dropdown */}
+        {/* Export Dropdown - ALWAYS VISIBLE */}
         <ExportDropdown
           onExport={onExport}
           disabled={!hasDiagram}
           diagramType={diagramType}
         />
 
-        {/* Share Link Button */}
-        {onShareLink && (
-          <button
-            onClick={onShareLink}
-            disabled={!hasDiagram}
-            title={t("toolbar.shareLink")}
-            className="h-8 px-2 sm:px-2.5 text-xs font-medium rounded-lg border border-border bg-surface-3 hover:bg-surface-4 text-text-muted hover:text-text transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shadow-xs active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            <span>🔗</span>
-            <span className="hidden 2xl:inline">{t("common.share")}</span>
-          </button>
-        )}
-
-        {/* Canvas & Workspace Options Menu */}
+        {/* Canvas & Workspace Options Menu - ALWAYS VISIBLE */}
         <CanvasOptionsMenu
           autoCompile={autoCompile}
           onAutoCompileToggle={onAutoCompileToggle}
@@ -382,7 +335,7 @@ export function Toolbar(props: ToolbarProps) {
           onShareLink={onShareLink}
         />
 
-        {/* Primary Action Button: In Visual mode it syncs to code; In Code/Split mode it compiles */}
+        {/* Primary Action Button (Compile in Code/Split; Sync in Visual) - ALWAYS VISIBLE */}
         {mode === "visual" ? (
           onSyncToCode && (
             <button
@@ -392,7 +345,7 @@ export function Toolbar(props: ToolbarProps) {
               className="h-8 px-2.5 sm:px-3 bg-linear-to-r from-accent to-indigo-500 hover:from-accent-hover hover:to-indigo-400 text-white text-xs font-semibold rounded-lg transition-all shadow-xs hover:shadow-accent/25 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
             >
               <span className="text-sm">⟳</span>
-              <span>{locale === "id" ? "Sinkron" : "Sync"}</span>
+              <span className="hidden sm:inline">{locale === "id" ? "Sinkron" : "Sync"}</span>
             </button>
           )
         ) : (

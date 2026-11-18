@@ -168,7 +168,7 @@ export function CanvasControls({
             }
           >
             <span>{edgeRouting === "orthogonal" ? "⌐" : "↗"}</span>
-            <span className="text-[10px]">
+            <span className="text-[10px] hidden lg:inline">
               {edgeRouting === "orthogonal"
                 ? t("canvas.modeSiku")
                 : t("canvas.modeLurus")}
