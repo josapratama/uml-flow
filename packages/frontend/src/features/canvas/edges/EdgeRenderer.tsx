@@ -3,6 +3,7 @@ import type { Edge, DiagramNode, Position } from "@uml-editor/shared";
 import { getVisualSize } from "../nodes/getVisualSize";
 import {
   getConnectionPoint,
+  getDistributedSidePoint,
   getMidpoint,
   getPathPointAndNormal,
 } from "./edge-geometry";
@@ -26,7 +27,7 @@ interface EdgeRendererProps {
   edge: Edge;
   nodes: DiagramNode[];
   isSelected: boolean;
-  edgeRouting?: "straight" | "orthogonal";
+  edgeRouting?: "straight" | "orthogonal" | "curved";
   labelOffset?: number;
   laneOffset?: number;
   labelRatio?: number;
@@ -86,37 +87,22 @@ export function EdgeRenderer({
     y: targetNode.position.y + targetSize.height / 2,
   };
 
-  // Resolve anchor points with distributed ports
+  // Resolve anchor points with distributed ports projected onto actual shape perimeter
   const resolveAnchor = (
     node: DiagramNode,
     side?: string,
     fallback?: Position,
     portFraction: number = 0.5,
   ): Position => {
-    const { position } = node;
-    const size = getVisualSize(node);
-    switch (side) {
-      case "top":
-        return { x: position.x + size.width * portFraction, y: position.y };
-      case "bottom":
-        return {
-          x: position.x + size.width * portFraction,
-          y: position.y + size.height,
-        };
-      case "left":
-        return { x: position.x, y: position.y + size.height * portFraction };
-      case "right":
-        return {
-          x: position.x + size.width,
-          y: position.y + size.height * portFraction,
-        };
-      default:
-        return fallback ? getConnectionPoint(node, fallback) : sourceCenter;
+    if (side === "top" || side === "bottom" || side === "left" || side === "right") {
+      return getDistributedSidePoint(node, side, portFraction);
     }
+    return fallback ? getConnectionPoint(node, fallback) : sourceCenter;
   };
 
   // --- Build path points ---
   let allPoints: Position[];
+  let isBezierCurve = false;
   const hasWaypoints = edge.points && edge.points.length > 0;
 
   if (hasWaypoints) {
@@ -146,6 +132,34 @@ export function EdgeRenderer({
       { x: p.x + sz.width + offset, y: tp.y },
       tp,
     ];
+  } else if (edgeRouting === "curved") {
+    isBezierCurve = true;
+    const effectiveLaneOffset =
+      laneOffset !== undefined ? laneOffset : labelOffset;
+    const dx = targetCenter.x - sourceCenter.x;
+    const dy = targetCenter.y - sourceCenter.y;
+    let c1: Position;
+    let c2: Position;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      c1 = { x: sourceCenter.x + dx * 0.48, y: sourceCenter.y + effectiveLaneOffset };
+      c2 = { x: targetCenter.x - dx * 0.48, y: targetCenter.y + effectiveLaneOffset };
+    } else {
+      c1 = { x: sourceCenter.x + effectiveLaneOffset, y: sourceCenter.y + dy * 0.48 };
+      c2 = { x: targetCenter.x + effectiveLaneOffset, y: targetCenter.y - dy * 0.48 };
+    }
+    const sp = resolveAnchor(
+      sourceNode,
+      edge.sourceAnchor,
+      c1,
+      sourcePortFraction,
+    );
+    const tp = resolveAnchor(
+      targetNode,
+      edge.targetAnchor,
+      c2,
+      targetPortFraction,
+    );
+    allPoints = [sp, c1, c2, tp];
   } else {
     const isOrthogonal = edgeRouting === "orthogonal";
     const effectiveLaneOffset =
@@ -244,10 +258,42 @@ export function EdgeRenderer({
     }
   }
 
-  // --- Build SVG path ---
-  const d = allPoints
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
-    .join(" ");
+  // --- Build SVG path (Bezier curve or rounded-corner polyline) ---
+  const buildPathD = (): string => {
+    if (isBezierCurve && allPoints.length === 4) {
+      const [p0, c1, c2, p1] = allPoints;
+      return `M ${p0.x} ${p0.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${p1.x} ${p1.y}`;
+    }
+    if (allPoints.length <= 2) {
+      return allPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+    }
+    const radius = 8;
+    const parts: string[] = [`M ${allPoints[0].x} ${allPoints[0].y}`];
+    for (let i = 1; i < allPoints.length - 1; i++) {
+      const prev = allPoints[i - 1];
+      const curr = allPoints[i];
+      const next = allPoints[i + 1];
+      const v1x = curr.x - prev.x;
+      const v1y = curr.y - prev.y;
+      const len1 = Math.hypot(v1x, v1y);
+      const v2x = next.x - curr.x;
+      const v2y = next.y - curr.y;
+      const len2 = Math.hypot(v2x, v2y);
+      const r = Math.min(radius, len1 * 0.35, len2 * 0.35);
+      if (r > 1.5) {
+        const pStart = { x: curr.x - (v1x / len1) * r, y: curr.y - (v1y / len1) * r };
+        const pEnd = { x: curr.x + (v2x / len2) * r, y: curr.y + (v2y / len2) * r };
+        parts.push(`L ${pStart.x} ${pStart.y} Q ${curr.x} ${curr.y} ${pEnd.x} ${pEnd.y}`);
+      } else {
+        parts.push(`L ${curr.x} ${curr.y}`);
+      }
+    }
+    const last = allPoints[allPoints.length - 1];
+    parts.push(`L ${last.x} ${last.y}`);
+    return parts.join(" ");
+  };
+
+  const d = buildPathD();
   const mid = getMidpoint(allPoints);
 
   // --- Styles ---
@@ -295,7 +341,7 @@ export function EdgeRenderer({
       {isSelected && (
         <EdgeWaypointHandles
           edge={edge}
-          allPoints={allPoints}
+          allPoints={isBezierCurve && !hasWaypoints ? [allPoints[0], allPoints[allPoints.length - 1]] : allPoints}
           nodes={nodes}
           onWaypointDragStart={onWaypointDragStart}
           onWaypointDelete={onWaypointDelete}

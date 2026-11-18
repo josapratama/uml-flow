@@ -11,7 +11,7 @@ interface Props {
   onAutoSyncCanvasToggle?: () => void;
   snapEnabled: boolean;
   onSnapToggle: () => void;
-  edgeRouting: "straight" | "orthogonal";
+  edgeRouting: "straight" | "orthogonal" | "curved";
   onEdgeRoutingToggle: () => void;
   canvasTheme: CanvasTheme;
   onThemeToggle: () => void;

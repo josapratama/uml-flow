@@ -114,12 +114,7 @@ export class LayoutEngine {
         }
         return layoutLinear(diagram, this.options);
       case "usecase":
-        return layoutLayered(diagram, {
-          ...this.options,
-          direction: "LR",
-          rankSpacing: 180,
-          nodeSpacing: 70,
-        });
+        return this.layoutUseCaseDiagram(diagram);
       case "state":
         return layoutLayered(diagram, {
           ...this.options,
@@ -158,6 +153,155 @@ export class LayoutEngine {
       default:
         return layoutLayered(diagram, this.options);
     }
+  }
+
+  private layoutUseCaseDiagram(diagram: Diagram): Diagram {
+    const actors = diagram.nodes.filter((n) => (n.type as string) === "actor");
+    const usecases = diagram.nodes.filter((n) => (n.type as string) === "usecase");
+    const others = diagram.nodes.filter(
+      (n) => (n.type as string) !== "actor" && (n.type as string) !== "usecase"
+    );
+
+    if (actors.length === 0 || usecases.length === 0) {
+      return layoutLayered(diagram, {
+        ...this.options,
+        direction: "LR",
+        rankSpacing: 180,
+        nodeSpacing: 70,
+      });
+    }
+
+    // 1. Partition actors into left (primary) and right (secondary/admin) columns
+    let leftActors = actors;
+    let rightActors: typeof actors = [];
+    if (actors.length >= 2) {
+      const splitIdx = Math.ceil(actors.length * 0.65);
+      leftActors = actors.slice(0, splitIdx);
+      rightActors = actors.slice(splitIdx);
+    }
+    const rightActorIds = new Set(rightActors.map((a) => a.id));
+
+    // 2. Partition use cases into col1 (left inside system boundary) & col2 (right inside system boundary)
+    const includeExtendTargetIds = new Set<string>();
+    for (const e of diagram.edges) {
+      const lbl = (e.label?.text || "").toLowerCase();
+      if (
+        e.type === "include" ||
+        e.type === "extend" ||
+        lbl.includes("include") ||
+        lbl.includes("extend")
+      ) {
+        includeExtendTargetIds.add(e.target);
+      }
+    }
+
+    const col1: typeof usecases = [];
+    const col2: typeof usecases = [];
+
+    for (const uc of usecases) {
+      const connectedToRightActor = diagram.edges.some(
+        (e) =>
+          (e.source === uc.id && rightActorIds.has(e.target)) ||
+          (e.target === uc.id && rightActorIds.has(e.source))
+      );
+      if (includeExtendTargetIds.has(uc.id) || connectedToRightActor) {
+        col2.push(uc);
+      } else {
+        col1.push(uc);
+      }
+    }
+
+    // Balance columns if one is empty and total usecases >= 5
+    if (col1.length === 0 && col2.length > 1) {
+      const half = Math.ceil(col2.length / 2);
+      col1.push(...col2.splice(0, half));
+    } else if (col2.length === 0 && col1.length >= 6) {
+      const half = Math.ceil(col1.length / 2);
+      col2.push(...col1.splice(half));
+    }
+
+    const startY = 120;
+    const rowStep = 94;
+    const col1X = 310;
+    const maxCol1Width = col1.reduce((m, n) => Math.max(m, n.size?.width || 180), 180);
+    const col2X = col1.length > 0 ? col1X + maxCol1Width + 90 : col1X;
+    const maxCol2Width = col2.reduce((m, n) => Math.max(m, n.size?.width || 180), 180);
+
+    const maxRows = Math.max(col1.length, col2.length, 1);
+    const totalBoundaryH = (maxRows - 1) * rowStep;
+
+    const posMap = new Map<string, { x: number; y: number }>();
+
+    // Position Column 1 Use Cases
+    const col1OffsetY = startY + Math.max(0, (totalBoundaryH - Math.max(0, col1.length - 1) * rowStep) / 2);
+    col1.forEach((uc, idx) => {
+      const w = uc.size?.width || 180;
+      posMap.set(uc.id, {
+        x: Math.round(col1X + (maxCol1Width - w) / 2),
+        y: Math.round(col1OffsetY + idx * rowStep),
+      });
+    });
+
+    // Position Column 2 Use Cases
+    const col2OffsetY = startY + Math.max(0, (totalBoundaryH - Math.max(0, col2.length - 1) * rowStep) / 2);
+    col2.forEach((uc, idx) => {
+      const w = uc.size?.width || 180;
+      posMap.set(uc.id, {
+        x: Math.round(col2X + (maxCol2Width - w) / 2),
+        y: Math.round(col2OffsetY + idx * rowStep),
+      });
+    });
+
+    // Helper to position an actor column aligned with connected use cases
+    const positionActorColumn = (actorList: typeof actors, baseX: number) => {
+      const minActorGap = 150;
+      const desiredYs = actorList.map((actor, idx) => {
+        const connectedUcs = diagram.edges
+          .filter((e) => e.source === actor.id || e.target === actor.id)
+          .map((e) => (e.source === actor.id ? e.target : e.source))
+          .map((id) => posMap.get(id))
+          .filter(Boolean) as { x: number; y: number }[];
+        if (connectedUcs.length > 0) {
+          const avgY = connectedUcs.reduce((sum, p) => sum + p.y, 0) / connectedUcs.length;
+          return avgY - 20;
+        }
+        return startY + idx * minActorGap;
+      });
+
+      // Enforce minimum vertical separation between actors
+      for (let i = 1; i < desiredYs.length; i++) {
+        if (desiredYs[i] < desiredYs[i - 1] + minActorGap) {
+          desiredYs[i] = desiredYs[i - 1] + minActorGap;
+        }
+      }
+
+      actorList.forEach((actor, idx) => {
+        posMap.set(actor.id, {
+          x: Math.round(baseX),
+          y: Math.round(Math.max(80, desiredYs[idx])),
+        });
+      });
+    };
+
+    positionActorColumn(leftActors, 70);
+    const rightActorX = (col2.length > 0 ? col2X + maxCol2Width : col1X + maxCol1Width) + 120;
+    positionActorColumn(rightActors, rightActorX);
+
+    // Position any remaining nodes (e.g. notes or system boxes)
+    others.forEach((n, idx) => {
+      posMap.set(n.id, {
+        x: col1X + idx * 180,
+        y: startY + maxRows * rowStep + 40,
+      });
+    });
+
+    return {
+      ...diagram,
+      nodes: diagram.nodes.map((node) => ({
+        ...node,
+        position: posMap.get(node.id) || node.position,
+      })),
+    };
   }
 
   private layoutSequenceDiagram(diagram: Diagram): Diagram {

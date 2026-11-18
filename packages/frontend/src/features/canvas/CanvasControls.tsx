@@ -11,7 +11,7 @@ interface CanvasControlsProps {
   onZoomOut: () => void;
   onZoomReset: () => void;
   onZoomToFit: () => void;
-  edgeRouting?: "straight" | "orthogonal";
+  edgeRouting?: "straight" | "orthogonal" | "curved";
   onEdgeRoutingToggle?: () => void;
   onCopyPNG?: () => void;
   onCopySVG?: () => void;
@@ -161,7 +161,7 @@ export function CanvasControls({
           <button
             onClick={onEdgeRoutingToggle}
             className={`h-7 px-2 flex items-center justify-center gap-1 rounded-lg text-xs font-medium transition-all ${
-              edgeRouting === "orthogonal"
+              edgeRouting === "orthogonal" || edgeRouting === "curved"
                 ? "bg-accent text-white shadow-xs font-semibold"
                 : canvasTheme === "dark"
                 ? "hover:bg-surface-3 text-text opacity-70 hover:opacity-100"
@@ -170,13 +170,21 @@ export function CanvasControls({
             title={
               edgeRouting === "orthogonal"
                 ? t("toolbar.orthogonalTooltip")
+                : edgeRouting === "curved"
+                ? isId
+                  ? "Mode Garis Lengkung (Bezier) Aktif - Klik untuk ubah ke Garis Lurus"
+                  : "Curved Bezier Routing Active - Click to switch to Straight"
                 : t("toolbar.straightTooltip")
             }
           >
-            <span>{edgeRouting === "orthogonal" ? "⌐" : "↗"}</span>
+            <span>{edgeRouting === "orthogonal" ? "⌐" : edgeRouting === "curved" ? "〰️" : "↗"}</span>
             <span className="text-[10px] hidden lg:inline">
               {edgeRouting === "orthogonal"
                 ? t("canvas.modeSiku")
+                : edgeRouting === "curved"
+                ? isId
+                  ? "Lengkung"
+                  : "Curved"
                 : t("canvas.modeLurus")}
             </span>
           </button>

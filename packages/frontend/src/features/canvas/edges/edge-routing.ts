@@ -5,8 +5,26 @@ import {
   getStubPoint,
   pointInsideBounds,
   lineIntersectsBox,
+  getConnectionPoint,
+  type Bounds,
 } from "./edge-geometry";
+import { getVisualSize } from "../nodes/getVisualSize";
 import { isContainerOf } from "../utils/anchor-utils";
+
+function getTightObstacleBounds(node: DiagramNode, pad: number = 4): Bounds {
+  const size = getVisualSize(node);
+  if ((node.type as string) === "actor") {
+    const cx = node.position.x + size.width / 2;
+    const halfW = Math.min(size.width / 2, 24) + pad;
+    return {
+      left: cx - halfW,
+      right: cx + halfW,
+      top: node.position.y + 4 - pad,
+      bottom: node.position.y + size.height + pad,
+    };
+  }
+  return getNodeBounds(node, pad);
+}
 
 /**
  * Builds a straight-line path between two points.
@@ -22,7 +40,8 @@ export function buildStraightPath(
 /**
  * Builds a path with obstacle avoidance.
  * If the direct line between source and target intersects any intermediate node,
- * it routes around the obstacle(s) cleanly to prevent overlapping lines and obscured nodes.
+ * it routes around the obstacle(s) cleanly and recalculates exact shape perimeter
+ * connection points so endpoints never detach from ellipses, diamonds, or actors.
  */
 export function routeWithObstacleAvoidance(
   source: Position,
@@ -33,11 +52,12 @@ export function routeWithObstacleAvoidance(
 ): Position[] {
   const obstacles = allNodes.filter((n) => {
     if (n.id === sourceNode.id || n.id === targetNode.id) return false;
+    if ((n.type as string) === "system" || (n.type as string) === "boundary") return false;
     // Don't treat parent container as obstacle for internal transitions
     if (isContainerOf(n, sourceNode) || isContainerOf(n, targetNode)) return false;
     // Don't treat child subnodes of source/target as obstacles
     if (isContainerOf(sourceNode, n) || isContainerOf(targetNode, n)) return false;
-    const b = getNodeBounds(n, 12);
+    const b = getTightObstacleBounds(n, 4);
     return lineIntersectsBox(source, target, b);
   });
 
@@ -45,26 +65,41 @@ export function routeWithObstacleAvoidance(
     return [source, target];
   }
 
-  // Obstacle detected! Route around it cleanly.
+  const sSize = getVisualSize(sourceNode);
+  const tSize = getVisualSize(targetNode);
+  const sCenter: Position = {
+    x: sourceNode.position.x + sSize.width / 2,
+    y: sourceNode.position.y + sSize.height / 2,
+  };
+  const tCenter: Position = {
+    x: targetNode.position.x + tSize.width / 2,
+    y: targetNode.position.y + tSize.height / 2,
+  };
+
+  // Obstacle detected! Pick the cleanest detour side and attach flush to node perimeters.
   const isVertical =
-    Math.abs(target.y - source.y) >= Math.abs(target.x - source.x);
+    Math.abs(tCenter.y - sCenter.y) >= Math.abs(tCenter.x - sCenter.x);
 
   if (isVertical) {
     const maxRight = Math.max(
-      ...obstacles.map((o) => getNodeBounds(o, 20).right),
-      getNodeBounds(sourceNode, 20).right,
-      getNodeBounds(targetNode, 20).right,
+      ...obstacles.map((o) => getTightObstacleBounds(o, 16).right),
+      getTightObstacleBounds(sourceNode, 12).right,
+      getTightObstacleBounds(targetNode, 12).right,
     );
-    const bypassX = maxRight + 24;
+    const minLeft = Math.min(
+      ...obstacles.map((o) => getTightObstacleBounds(o, 16).left),
+      getTightObstacleBounds(sourceNode, 12).left,
+      getTightObstacleBounds(targetNode, 12).left,
+    );
+    const avgX = (sCenter.x + tCenter.x) / 2;
+    const distRight = Math.abs(maxRight + 24 - avgX);
+    const distLeft = Math.abs(avgX - (minLeft - 24));
+    const bypassX = distLeft < distRight ? minLeft - 24 : maxRight + 24;
 
-    const startPt: Position = {
-      x: getNodeBounds(sourceNode, 0).right,
-      y: source.y,
-    };
-    const endPt: Position = {
-      x: getNodeBounds(targetNode, 0).right,
-      y: target.y,
-    };
+    const wp1: Position = { x: bypassX, y: sCenter.y };
+    const wp2: Position = { x: bypassX, y: tCenter.y };
+    const startPt = getConnectionPoint(sourceNode, wp1);
+    const endPt = getConnectionPoint(targetNode, wp2);
 
     return [
       startPt,
@@ -74,20 +109,24 @@ export function routeWithObstacleAvoidance(
     ];
   } else {
     const maxBottom = Math.max(
-      ...obstacles.map((o) => getNodeBounds(o, 20).bottom),
-      getNodeBounds(sourceNode, 20).bottom,
-      getNodeBounds(targetNode, 20).bottom,
+      ...obstacles.map((o) => getTightObstacleBounds(o, 16).bottom),
+      getTightObstacleBounds(sourceNode, 12).bottom,
+      getTightObstacleBounds(targetNode, 12).bottom,
     );
-    const bypassY = maxBottom + 24;
+    const minTop = Math.min(
+      ...obstacles.map((o) => getTightObstacleBounds(o, 16).top),
+      getTightObstacleBounds(sourceNode, 12).top,
+      getTightObstacleBounds(targetNode, 12).top,
+    );
+    const avgY = (sCenter.y + tCenter.y) / 2;
+    const distBottom = Math.abs(maxBottom + 24 - avgY);
+    const distTop = Math.abs(avgY - (minTop - 24));
+    const bypassY = distTop < distBottom ? minTop - 24 : maxBottom + 24;
 
-    const startPt: Position = {
-      x: source.x,
-      y: getNodeBounds(sourceNode, 0).bottom,
-    };
-    const endPt: Position = {
-      x: target.x,
-      y: getNodeBounds(targetNode, 0).bottom,
-    };
+    const wp1: Position = { x: sCenter.x, y: bypassY };
+    const wp2: Position = { x: tCenter.x, y: bypassY };
+    const startPt = getConnectionPoint(sourceNode, wp1);
+    const endPt = getConnectionPoint(targetNode, wp2);
 
     return [
       startPt,

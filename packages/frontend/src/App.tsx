@@ -77,11 +77,11 @@ export default function App(props: AppProps = {}) {
     } catch { }
     return true;
   });
-  const [edgeRouting, setEdgeRouting] = useState<"straight" | "orthogonal">(
+  const [edgeRouting, setEdgeRouting] = useState<"straight" | "orthogonal" | "curved">(
     () => {
       try {
         const saved = localStorage.getItem("uml_edge_routing");
-        if (saved === "orthogonal" || saved === "straight") return saved;
+        if (saved === "orthogonal" || saved === "straight" || saved === "curved") return saved;
       } catch { }
       return "straight";
     }
@@ -162,13 +162,37 @@ export default function App(props: AppProps = {}) {
   // --- Diagram actions ---
   const actions = useDiagramActions(diagram, diagramHistory, snapEnabled);
 
-  // --- Persist ---
+  // --- Persist & Auto-Sync Active Tab Metadata ---
   useEffect(() => {
     storage.saveCode(code);
   }, [code]);
   useEffect(() => {
     storage.saveCurrent(diagram);
-  }, [diagram]);
+    const currentTabId = activeTabIdRef.current;
+    if (diagram && currentTabId) {
+      const resolvedName =
+        diagram.name && diagram.name !== "Untitled"
+          ? diagram.name
+          : DIAGRAM_TYPES.find((dt) => dt.id === diagram.type)?.label || diagram.name || "Untitled";
+      setTabs((prev) =>
+        prev.map((t) =>
+          t.id === currentTabId && (t.name !== resolvedName || t.diagram?.type !== diagram.type)
+            ? { ...t, name: resolvedName, diagram }
+            : t
+        )
+      );
+      const currentEntry = storage.list().find((d) => d.id === currentTabId);
+      if (currentEntry && (currentEntry.name !== resolvedName || currentEntry.diagram?.type !== diagram.type)) {
+        storage.save({
+          ...currentEntry,
+          name: resolvedName,
+          code,
+          diagram,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+  }, [diagram, code]);
 
   // --- Tab helpers ---
   // --- Compile ---
@@ -889,7 +913,12 @@ export default function App(props: AppProps = {}) {
 
   const handleEdgeRoutingToggle = useCallback(() => {
     setEdgeRouting((prev) => {
-      const next = prev === "straight" ? "orthogonal" : "straight";
+      const next: "straight" | "orthogonal" | "curved" =
+        prev === "straight"
+          ? "orthogonal"
+          : prev === "orthogonal"
+            ? "curved"
+            : "straight";
       try {
         localStorage.setItem("uml_edge_routing", next);
       } catch { }
@@ -898,9 +927,13 @@ export default function App(props: AppProps = {}) {
           ? isId
             ? "Mode Garis Siku (Orthogonal) Aktif"
             : "Orthogonal Routing Enabled"
-          : isId
-            ? "Mode Garis Lurus (Straight) Aktif"
-            : "Straight Routing Enabled",
+          : next === "curved"
+            ? isId
+              ? "Mode Garis Lengkung (Bezier Curve) Aktif"
+              : "Curved Bezier Routing Enabled"
+            : isId
+              ? "Mode Garis Lurus (Straight) Aktif"
+              : "Straight Routing Enabled",
         "info"
       );
       return next;

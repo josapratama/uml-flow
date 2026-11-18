@@ -52,6 +52,34 @@ describe("layout: branching flowchart", () => {
     expect(ok.position.y).toBe(bad.position.y);
     expect(ok.position.x).not.toBe(bad.position.x);
   });
+
+  test("usecase auto layout places actors on outer sides and use cases in center boundary", () => {
+    const ucSrc = `@diagram "SIAKAD System Boundary" usecase
+actor Mahasiswa
+actor Dosen
+actor "Bagian Akademik" as Admin
+usecase "Login Akun"
+usecase "Pengisian KRS"
+usecase "Input Nilai Semester"
+usecase "Manajemen Mata Kuliah"
+Mahasiswa --> "Pengisian KRS"
+Dosen --> "Input Nilai Semester"
+Admin --> "Manajemen Mata Kuliah"
+"Pengisian KRS" <<include>> "Login Akun"`;
+    const laid = new LayoutEngine(undefined, "auto").layout(parseFlow(ucSrc));
+    const mhs = laid.nodes.find((n) => n.name === "Mahasiswa")!;
+    const admin = laid.nodes.find((n) => n.name === "Bagian Akademik")!;
+    const ucs = laid.nodes.filter((n) => (n.type as string) === "usecase");
+    for (const uc of ucs) {
+      expect(mhs.position.x).toBeLessThan(uc.position.x);
+      expect(admin.position.x).toBeGreaterThan(uc.position.x);
+    }
+    for (let i = 0; i < laid.nodes.length; i++) {
+      for (let j = i + 1; j < laid.nodes.length; j++) {
+        expect(overlaps(laid.nodes[i], laid.nodes[j])).toBe(false);
+      }
+    }
+  });
 });
 
 describe("export: SVG matches canvas shapes", () => {

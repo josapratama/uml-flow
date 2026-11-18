@@ -37,6 +37,13 @@ function getExportOptions(locale: Locale): ExportOption[] {
       category: "doc",
     },
     {
+      id: "srs-word",
+      label: isId ? "Dokumen SRS & Bab 3 Skripsi (.doc Word)" : "Full SRS & Thesis Report (.doc Word)",
+      icon: "📘",
+      description: isId ? "Laporan Word lengkap: Diagram, Narasi Use Case, Kamus Data & Uji" : "Complete MS Word report: Diagram, Use Case Spec, Data Dict & Tests",
+      category: "doc",
+    },
+    {
       id: "html",
       label: isId ? "Web Interaktif Mandiri (.html)" : "Interactive Web Page (.html)",
       icon: "🌐",

@@ -1001,4 +1001,102 @@ describe("LaTeX TikZ Code Exporter", () => {
     expect(flowBack.nodes[0].type).toBe("start");
     expect(flowBack.nodes[1].type).toBe("process");
   });
+
+  it("projects actor connection points to stick-figure torso and distributed ports onto ellipse curve", async () => {
+    const { getConnectionPoint, getDistributedSidePoint } = await import("../../features/canvas/edges/edge-geometry");
+    const actorNode: any = {
+      id: "act-1",
+      name: "Bagian Akademik Universitas",
+      type: "actor",
+      position: { x: 100, y: 200 },
+      size: { width: 160, height: 110 },
+    };
+    // Center X is 180. Lateral ray to the right should exit near stick figure hand (cx + 24 = 204), not at outer box (260)
+    const ptActorRight = getConnectionPoint(actorNode, { x: 500, y: 245 });
+    expect(ptActorRight.x).toBeLessThanOrEqual(205);
+    expect(ptActorRight.x).toBeGreaterThanOrEqual(200);
+
+    // Distributed port on top of ellipse (portFraction = 0.25) should lie on the ellipse curve, not y = position.y
+    const ucNode: any = {
+      id: "uc-1",
+      name: "Manajemen Mata Kuliah",
+      type: "usecase",
+      position: { x: 100, y: 100 },
+      size: { width: 200, height: 60 },
+    };
+    const ptDistTop = getDistributedSidePoint(ucNode, "top", 0.25);
+    const cx = 200, cy = 130, rx = 100, ry = 30;
+    const eq = ((ptDistTop.x - cx) / rx) ** 2 + ((ptDistTop.y - cy) / ry) ** 2;
+    expect(eq).toBeCloseTo(1, 2);
+  });
+
+  it("routes around obstacles while keeping endpoints attached to ellipse perimeter", async () => {
+    const { routeWithObstacleAvoidance } = await import("../../features/canvas/edges/edge-routing");
+    const { getConnectionPoint } = await import("../../features/canvas/edges/edge-geometry");
+    const srcUc: any = {
+      id: "u1",
+      name: "Source UC",
+      type: "usecase",
+      position: { x: 100, y: 400 },
+      size: { width: 160, height: 60 },
+    };
+    const obstacleUc: any = {
+      id: "u2",
+      name: "Obstacle UC",
+      type: "usecase",
+      position: { x: 100, y: 240 },
+      size: { width: 160, height: 60 },
+    };
+    const tgtUc: any = {
+      id: "u3",
+      name: "Target UC",
+      type: "usecase",
+      position: { x: 100, y: 80 },
+      size: { width: 160, height: 60 },
+    };
+    const sp = getConnectionPoint(srcUc, { x: 180, y: 110 });
+    const tp = getConnectionPoint(tgtUc, { x: 180, y: 430 });
+    const pts = routeWithObstacleAvoidance(sp, tp, srcUc, tgtUc, [srcUc, obstacleUc, tgtUc]);
+    expect(pts.length).toBe(4);
+    // First and last points must lie on the respective ellipse horizontal perimeters (y = center Y)
+    expect(pts[0].y).toBeCloseTo(430, 0);
+    expect(pts[3].y).toBeCloseTo(110, 0);
+  });
+
+  it("converts Use Case and Class diagrams into chronological Sequence Diagrams", async () => {
+    const { convertUseCaseToSequence, convertClassToSequence } = await import("../diagram-converter");
+    const ucDiag: Diagram = {
+      id: "uc-diag",
+      name: "SIAKAD",
+      type: "usecase",
+      nodes: [
+        { id: "a1", name: "Mahasiswa", type: "actor", position: { x: 50, y: 100 }, size: { width: 80, height: 110 } } as any,
+        { id: "u1", name: "Pengisian KRS", type: "usecase", position: { x: 300, y: 100 }, size: { width: 160, height: 50 } } as any,
+      ],
+      edges: [
+        { id: "e1", source: "a1", target: "u1", type: "association" },
+      ],
+    };
+
+    const seqFromUc = convertUseCaseToSequence(ucDiag);
+    expect(seqFromUc.type).toBe("sequence");
+    expect(seqFromUc.participants?.length).toBeGreaterThanOrEqual(3);
+    expect(seqFromUc.messages?.length).toBeGreaterThanOrEqual(4);
+
+    const seqFromClass = convertClassToSequence(sampleClassDiagram);
+    expect(seqFromClass.type).toBe("sequence");
+    expect(seqFromClass.participants?.some((p) => p.name === "User")).toBe(true);
+    expect(seqFromClass.messages?.some((m) => m.label.includes("login"))).toBe(true);
+  });
+
+  it("generates complete MS Word / HTML SRS & Thesis Chapter 3 document", async () => {
+    const { generateSRSDocumentHTML } = await import("../srs-document-generator");
+    const doc = generateSRSDocumentHTML(sampleClassDiagram, "<svg><rect width='10' height='10'/></svg>", "id");
+    expect(doc).toContain("DOKUMEN SPESIFIKASI KEBUTUHAN PERANGKAT LUNAK (SRS)");
+    expect(doc).toContain("BAB I. VISUALISASI ARSITEKTUR");
+    expect(doc).toContain("BAB II. SPESIFIKASI NARATIF");
+    expect(doc).toContain("BAB III. KAMUS DATA");
+    expect(doc).toContain("BAB IV. METRIK KOMPLEKSITAS MCCABE");
+    expect(doc).toContain("<svg><rect width='10' height='10'/></svg>");
+  });
 });

@@ -139,6 +139,34 @@ export function useAppExport({
             }
             break;
           }
+          case "srs-word": {
+            const el = document.querySelector(
+              ".canvas-svg-element"
+            ) as SVGSVGElement | null;
+            let svgStr: string | undefined;
+            if (el) {
+              const { getFullDiagramSVG } = await import("../../services/export-png");
+              svgStr = getFullDiagramSVG(el);
+            }
+            const { generateSRSDocumentHTML } = await import("../../services/srs-document-generator");
+            const docHtml = generateSRSDocumentHTML(diagram, svgStr, isId ? "id" : "en");
+            const blob = new Blob(["\ufeff", docHtml], {
+              type: "application/msword;charset=utf-8",
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${(diagram.name || "SRS_Skripsi").replace(/\s+/g, "_")}_SRS_Bab3.doc`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast(
+              isId
+                ? "Dokumen SRS / Bab 3 Skripsi (.doc Word) berhasil diunduh!"
+                : "SRS / Thesis Document (.doc Word) downloaded!",
+              "success"
+            );
+            break;
+          }
           case "html": {
             const el = document.querySelector(
               ".canvas-svg-element"

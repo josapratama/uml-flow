@@ -17,7 +17,7 @@ interface CanvasContextMenuParams {
   toggleCanvasTheme: () => void;
   snapEnabled: boolean;
   setSnapEnabled: React.Dispatch<React.SetStateAction<boolean>>;
-  edgeRouting: "straight" | "orthogonal";
+  edgeRouting: "straight" | "orthogonal" | "curved";
   handleEdgeRoutingToggle: () => void;
   locale?: Locale;
 }

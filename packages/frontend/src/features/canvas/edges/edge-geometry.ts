@@ -299,20 +299,49 @@ export function getConnectionPoint(
   else if (nodeType === "usecase" || nodeType === "database") {
     // Ellipse equation: (x/w)^2 + (y/h)^2 = 1 -> ray: x = cx + t*dx, y = cy + t*dy
     // t = 1 / sqrt((dx/w)^2 + (dy/h)^2)
-    const scaleX = dx / Math.max(1, w);
-    const scaleY = dy / Math.max(1, h);
+    const rx = Math.max(1, w);
+    const ry = Math.max(1, h);
+    const scaleX = dx / rx;
+    const scaleY = dy / ry;
     const t = 1 / Math.sqrt(scaleX * scaleX + scaleY * scaleY);
     x = cx + t * dx;
     y = cy + t * dy;
   }
-  // 3. Diamond (rhombus) shapes (decision)
+  // 3. Actor stick-figure shape (narrow torso + bottom label)
+  else if (nodeType === "actor") {
+    const actorCy = node.position.y + Math.min(45, size.height * 0.42);
+    const actorDx = target.x - cx;
+    const actorDy = target.y - actorCy;
+    const absActorDx = Math.abs(actorDx);
+    const absActorDy = Math.abs(actorDy);
+    const rx = Math.min(w, 24);
+    const ryTop = Math.max(16, actorCy - (node.position.y + 6));
+    const ryBottom = Math.max(24, node.position.y + size.height - actorCy);
+
+    if (absActorDx < 0.01 && absActorDy < 0.01) {
+      x = cx;
+      y = actorCy;
+    } else if (actorDy > 0 && absActorDy > absActorDx * 1.35) {
+      // Exiting downward below the actor text label
+      y = node.position.y + size.height;
+      x = cx + Math.max(-rx, Math.min(rx, (actorDx / absActorDy) * ryBottom));
+    } else {
+      const ry = actorDy < 0 ? ryTop : Math.min(42, ryBottom);
+      const scaleX = actorDx / Math.max(1, rx);
+      const scaleY = actorDy / Math.max(1, ry);
+      const t = 1 / Math.sqrt(scaleX * scaleX + scaleY * scaleY);
+      x = cx + t * actorDx;
+      y = actorCy + t * actorDy;
+    }
+  }
+  // 4. Diamond (rhombus) shapes (decision)
   else if (nodeType === "decision") {
     // Diamond equation: |x/w| + |y/h| = 1 -> t = 1 / (|dx/w| + |dy/h|)
     const t = 1 / (absDx / Math.max(1, w) + absDy / Math.max(1, h));
     x = cx + t * dx;
     y = cy + t * dy;
   }
-  // 4. Standard Rectangular Box (classes, components, states, activities, etc.)
+  // 5. Standard Rectangular Box (classes, components, states, activities, etc.)
   else {
     if (absDx * h > absDy * w) {
       x = dx > 0 ? cx + w : cx - w;
@@ -334,26 +363,108 @@ export function getConnectionPoint(
   return { x, y };
 }
 
-/** Get the anchor point on a specific side of a node. */
+/** Get the anchor point on a specific side of a node (with optional port distribution fraction 0..1). */
+export function getDistributedSidePoint(
+  node: DiagramNode,
+  side: string,
+  portFraction: number = 0.5,
+): Position {
+  const { position } = node;
+  const size = getVisualSize(node);
+  const cx = position.x + size.width / 2;
+  const cy = position.y + size.height / 2;
+  const w = size.width / 2;
+  const h = size.height / 2;
+  const f = Math.max(0.15, Math.min(0.85, portFraction));
+  const nodeType = (node.type as string) || "";
+
+  // 1. Ellipse (usecase, database) -> project onto exact ellipse perimeter
+  if (nodeType === "usecase" || nodeType === "database") {
+    const rx = Math.max(1, w);
+    const ry = Math.max(1, h);
+    if (side === "top" || side === "bottom") {
+      const normX = (f - 0.5) * 1.4; // [-0.49 .. 0.49]
+      const x = cx + normX * rx;
+      const yOffset = ry * Math.sqrt(Math.max(0, 1 - normX * normX));
+      return { x, y: side === "top" ? cy - yOffset : cy + yOffset };
+    }
+    if (side === "left" || side === "right") {
+      const normY = (f - 0.5) * 1.4;
+      const y = cy + normY * ry;
+      const xOffset = rx * Math.sqrt(Math.max(0, 1 - normY * normY));
+      return { x: side === "left" ? cx - xOffset : cx + xOffset, y };
+    }
+  }
+
+  // 2. Diamond (decision) -> project onto rhombus perimeter |dx/w| + |dy/h| = 1
+  if (nodeType === "decision") {
+    if (side === "top" || side === "bottom") {
+      const normX = (f - 0.5) * 0.9;
+      const x = cx + normX * w;
+      const yOffset = h * (1 - Math.abs(normX));
+      return { x, y: side === "top" ? cy - yOffset : cy + yOffset };
+    }
+    if (side === "left" || side === "right") {
+      const normY = (f - 0.5) * 0.9;
+      const y = cy + normY * h;
+      const xOffset = w * (1 - Math.abs(normY));
+      return { x: side === "left" ? cx - xOffset : cx + xOffset, y };
+    }
+  }
+
+  // 3. Actor stick figure -> keep connection points close to torso/hands
+  if (nodeType === "actor") {
+    const actorCy = position.y + Math.min(45, size.height * 0.42);
+    const actorRx = Math.min(w, 24);
+    switch (side) {
+      case "top":
+        return { x: cx + (f - 0.5) * 20, y: position.y + 6 };
+      case "bottom":
+        return { x: cx + (f - 0.5) * 32, y: position.y + size.height };
+      case "left":
+        return { x: cx - actorRx, y: actorCy + (f - 0.5) * 32 };
+      case "right":
+        return { x: cx + actorRx, y: actorCy + (f - 0.5) * 32 };
+    }
+  }
+
+  // 4. Circle (initial, final, start/end circle)
+  if (
+    nodeType === "initial" ||
+    nodeType === "final" ||
+    ((nodeType === "start" || nodeType === "end") && size.width <= 40)
+  ) {
+    const r = Math.min(w, h);
+    const baseAngle =
+      side === "top"
+        ? -Math.PI / 2
+        : side === "bottom"
+          ? Math.PI / 2
+          : side === "left"
+            ? Math.PI
+            : 0;
+    const angle = baseAngle + (f - 0.5) * 0.8;
+    return { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r };
+  }
+
+  // 5. Standard Rectangular Box
+  switch (side) {
+    case "top":
+      return { x: position.x + size.width * f, y: position.y };
+    case "bottom":
+      return { x: position.x + size.width * f, y: position.y + size.height };
+    case "left":
+      return { x: position.x, y: position.y + size.height * f };
+    case "right":
+      return { x: position.x + size.width, y: position.y + size.height * f };
+    default:
+      return { x: cx, y: cy };
+  }
+}
+
 export function getAnchorPointOnNode(
   node: DiagramNode,
   side: string,
 ): Position {
-  const { position } = node;
-  const size = getVisualSize(node);
-  switch (side) {
-    case "top":
-      return { x: position.x + size.width / 2, y: position.y };
-    case "bottom":
-      return { x: position.x + size.width / 2, y: position.y + size.height };
-    case "left":
-      return { x: position.x, y: position.y + size.height / 2 };
-    case "right":
-      return { x: position.x + size.width, y: position.y + size.height / 2 };
-    default:
-      return {
-        x: position.x + size.width / 2,
-        y: position.y + size.height / 2,
-      };
-  }
+  return getDistributedSidePoint(node, side, 0.5);
 }

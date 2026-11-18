@@ -253,6 +253,14 @@ export function CommandPaletteModal({
         onSelect: onOpenAcademicA4,
       },
       {
+        id: "export-srs-word",
+        title: isId ? "📘 Unduh Dokumen SRS & Bab 3 Skripsi (.doc Word)" : "📘 Download Full SRS & Thesis Report (.doc Word)",
+        description: isId ? "Generate laporan Microsoft Word lengkap: Diagram, Narasi Use Case, Kamus Data & Matriks Uji" : "Generate complete MS Word document with Diagram, Use Case Spec, Data Dict & Test Cases",
+        icon: "📘",
+        category: "export",
+        onSelect: () => onExport?.("srs-word"),
+      },
+      {
         id: "open-workspace-backup",
         title: isId ? "💾 Backup & Restore Seluruh Ruang Kerja" : "💾 Workspace Backup & Restore Suite",
         description: isId ? "Ekspor/impor seluruh diagram, tab aktif, template dan konfigurasi dalam 1 berkas JSON" : "Export or import full workspace diagrams, tabs, templates & metadata snapshot",

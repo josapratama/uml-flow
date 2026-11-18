@@ -26,7 +26,7 @@ interface UseCanvasContextMenuItemsOptions {
   toggleCanvasTheme: () => void;
   snapEnabled: boolean;
   setSnapEnabled: React.Dispatch<React.SetStateAction<boolean>>;
-  edgeRouting: "straight" | "orthogonal";
+  edgeRouting: "straight" | "orthogonal" | "curved";
   handleEdgeRoutingToggle: () => void;
   handleLayout: (preset: string) => void;
   handleQuickAddNode: (nodeId: string) => void;

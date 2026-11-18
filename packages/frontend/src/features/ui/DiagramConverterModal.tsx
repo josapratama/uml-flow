@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { Diagram } from "@uml-editor/shared";
 import { getAvailableConversions, convertDiagram, type ConversionTarget } from "../../services/diagram-converter";
 import { showToast } from "./Toast";
@@ -25,6 +25,11 @@ export function DiagramConverterModal({
     available[0]?.target || null
   );
   const [openInNewTab, setOpenInNewTab] = useState(true);
+
+  useEffect(() => {
+    const opts = diagram ? getAvailableConversions(diagram.type) : [];
+    setSelectedTarget(opts[0]?.target || null);
+  }, [diagram?.type, isOpen]);
 
   if (!isOpen || !diagram) return null;
 

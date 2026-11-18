@@ -1,6 +1,6 @@
-import type { Diagram, DiagramNode, Edge, ClassNode, ERDEntity, ActivityNode, FlowchartNode } from "@uml-editor/shared";
+import type { Diagram, DiagramNode, Edge, ClassNode, ERDEntity, ActivityNode, FlowchartNode, SequenceParticipant as Participant, SequenceMessage as Message } from "@uml-editor/shared";
 
-export type ConversionTarget = "class" | "erd" | "activity" | "flowchart";
+export type ConversionTarget = "class" | "erd" | "activity" | "flowchart" | "sequence";
 
 export function getAvailableConversions(type: string): { target: ConversionTarget; labelId: string; labelEn: string; descId: string; descEn: string }[] {
   switch (type) {
@@ -22,6 +22,23 @@ export function getAvailableConversions(type: string): { target: ConversionTarge
           labelEn: "Entity Relationship Diagram (ERD)",
           descId: "Konversi Class ke Tabel Database relasional lengkap dengan PK & FK",
           descEn: "Convert Classes to Relational Database Tables with PK & FK",
+        },
+        {
+          target: "sequence",
+          labelId: "Sequence Diagram (Interaksi Objek & Method)",
+          labelEn: "Sequence Diagram (Object & Method Interaction)",
+          descId: "Generate alur pemanggilan method antar Class menjadi Sequence Diagram",
+          descEn: "Generate chronological method call interactions across Classes",
+        },
+      ];
+    case "usecase":
+      return [
+        {
+          target: "sequence",
+          labelId: "Sequence Diagram (Alur Boundary-Control-Entity)",
+          labelEn: "Sequence Diagram (Boundary-Control-Entity Flow)",
+          descId: "Generate interaksi Aktor → Sistem Boundary → Database dari Use Case",
+          descEn: "Generate Actor → System Boundary → Database sequence flow from Use Cases",
         },
       ];
     case "flowchart":
@@ -314,9 +331,235 @@ export function convertActivityToFlowchart(diagram: Diagram): Diagram {
   };
 }
 
+export function convertUseCaseToSequence(diagram: Diagram): Diagram {
+  const actors = diagram.nodes.filter((n) => (n.type as string) === "actor");
+  const usecases = diagram.nodes.filter((n) => (n.type as string) === "usecase");
+
+  const participants: Participant[] = [];
+  const spacing = 190;
+
+  // Add actors as participants
+  if (actors.length > 0) {
+    actors.forEach((a, idx) => {
+      participants.push({
+        id: a.id,
+        name: a.name,
+        type: "actor",
+        position: { x: 100 + idx * spacing, y: 60 },
+      });
+    });
+  } else {
+    participants.push({
+      id: "actor_user",
+      name: "User",
+      type: "actor",
+      position: { x: 100, y: 60 },
+    });
+  }
+
+  const sysIdx = participants.length;
+  const sysId = "p_system_boundary";
+  const dbId = "p_database_entity";
+
+  participants.push(
+    {
+      id: sysId,
+      name: diagram.name && diagram.name !== "Untitled" ? diagram.name : "System Controller",
+      type: "boundary",
+      position: { x: 100 + sysIdx * spacing, y: 60 },
+    },
+    {
+      id: dbId,
+      name: "Database",
+      type: "entity",
+      position: { x: 100 + (sysIdx + 1) * spacing, y: 60 },
+    }
+  );
+
+  const messages: Message[] = [];
+  let order = 1;
+
+  for (const uc of usecases) {
+    // Find actor connected to this usecase
+    const actorEdge = diagram.edges.find(
+      (e) =>
+        (e.source === uc.id && actors.some((a) => a.id === e.target)) ||
+        (e.target === uc.id && actors.some((a) => a.id === e.source))
+    );
+    const actorId = actorEdge
+      ? actorEdge.source === uc.id
+        ? actorEdge.target
+        : actorEdge.source
+      : participants[0].id;
+
+    // 1. Request from Actor to System
+    messages.push({
+      id: `msg_${order}`,
+      from: actorId,
+      to: sysId,
+      label: `Request: ${uc.name}`,
+      type: "sync",
+      order: order++,
+    });
+
+    // 2. Check if this use case includes another use case
+    const includeEdges = diagram.edges.filter(
+      (e) =>
+        e.source === uc.id &&
+        (e.type === "include" || (e.label?.text || "").toLowerCase().includes("include"))
+    );
+    for (const inc of includeEdges) {
+      const targetUc = usecases.find((u) => u.id === inc.target);
+      if (targetUc) {
+        messages.push({
+          id: `msg_${order}`,
+          from: sysId,
+          to: sysId,
+          label: `Verify <<include>>: ${targetUc.name}`,
+          type: "self",
+          order: order++,
+        });
+      }
+    }
+
+    // 3. Query/Persist to Database
+    messages.push({
+      id: `msg_${order}`,
+      from: sysId,
+      to: dbId,
+      label: `Process & Query (${uc.name})`,
+      type: "sync",
+      order: order++,
+    });
+
+    // 4. Return from Database
+    messages.push({
+      id: `msg_${order}`,
+      from: dbId,
+      to: sysId,
+      label: `Result OK`,
+      type: "return",
+      order: order++,
+    });
+
+    // 5. Response back to Actor
+    messages.push({
+      id: `msg_${order}`,
+      from: sysId,
+      to: actorId,
+      label: `Response: ${uc.name} Berhasil`,
+      type: "return",
+      order: order++,
+    });
+  }
+
+  return {
+    id: `seq_${Date.now()}`,
+    name: `${diagram.name} (Sequence)`,
+    type: "sequence",
+    nodes: [],
+    edges: [],
+    participants,
+    messages,
+    metadata: {
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      version: 1,
+    },
+  };
+}
+
+export function convertClassToSequence(diagram: Diagram): Diagram {
+  const classes = diagram.nodes as ClassNode[];
+  const spacing = 190;
+  const participants: Participant[] = [
+    {
+      id: "p_client",
+      name: "Client / Caller",
+      type: "actor",
+      position: { x: 100, y: 60 },
+    },
+    ...classes.map((cls, idx) => ({
+      id: cls.id,
+      name: cls.name,
+      type: "object" as const,
+      position: { x: 100 + (idx + 1) * spacing, y: 60 },
+    })),
+  ];
+
+  const messages: Message[] = [];
+  let order = 1;
+
+  for (const cls of classes) {
+    const methods = cls.methods || [];
+    const firstMethod = methods[0]?.name ? `${methods[0].name}()` : `execute${cls.name}()`;
+
+    messages.push({
+      id: `msg_${order}`,
+      from: "p_client",
+      to: cls.id,
+      label: firstMethod,
+      type: "sync",
+      order: order++,
+    });
+
+    // Check outgoing class relations
+    const relatedEdges = diagram.edges.filter((e) => e.source === cls.id && e.target !== cls.id);
+    for (const rel of relatedEdges) {
+      const targetCls = classes.find((c) => c.id === rel.target);
+      if (targetCls) {
+        const targetMethod =
+          targetCls.methods?.[0]?.name ? `${targetCls.methods[0].name}()` : `load${targetCls.name}()`;
+        messages.push({
+          id: `msg_${order}`,
+          from: cls.id,
+          to: targetCls.id,
+          label: targetMethod,
+          type: "sync",
+          order: order++,
+        });
+        messages.push({
+          id: `msg_${order}`,
+          from: targetCls.id,
+          to: cls.id,
+          label: `${targetCls.name}Data`,
+          type: "return",
+          order: order++,
+        });
+      }
+    }
+
+    messages.push({
+      id: `msg_${order}`,
+      from: cls.id,
+      to: "p_client",
+      label: `return ${methods[0]?.returnType || "Result"}`,
+      type: "return",
+      order: order++,
+    });
+  }
+
+  return {
+    id: `seq_${Date.now()}`,
+    name: `${diagram.name} (Sequence)`,
+    type: "sequence",
+    nodes: [],
+    edges: [],
+    participants,
+    messages,
+    metadata: {
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      version: 1,
+    },
+  };
+}
+
 export function convertDiagram(diagram: Diagram, target: ConversionTarget): Diagram | null {
   if (diagram.type === "erd" && target === "class") return convertErdToClass(diagram);
   if (diagram.type === "class" && target === "erd") return convertClassToErd(diagram);
+  if (diagram.type === "class" && target === "sequence") return convertClassToSequence(diagram);
+  if (diagram.type === "usecase" && target === "sequence") return convertUseCaseToSequence(diagram);
   if (diagram.type === "flowchart" && target === "activity") return convertFlowchartToActivity(diagram);
   if (diagram.type === "activity" && target === "flowchart") return convertActivityToFlowchart(diagram);
   return null;

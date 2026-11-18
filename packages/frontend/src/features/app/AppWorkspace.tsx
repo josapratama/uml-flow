@@ -40,7 +40,7 @@ export interface AppWorkspaceProps {
   onEdgeShiftSelect: (edgeId: string) => void;
   canvasTheme: CanvasTheme;
   snapEnabled: boolean;
-  edgeRouting: "straight" | "orthogonal";
+  edgeRouting: "straight" | "orthogonal" | "curved";
   onEdgeRoutingToggle: () => void;
   onQuickAddNode?: (
     sourceNodeId: string,

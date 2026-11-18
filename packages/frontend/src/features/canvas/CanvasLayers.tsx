@@ -9,6 +9,7 @@ import { InlineEditor } from "./InlineEditor";
 import { ConnectionLine } from "./ConnectionLine";
 import { ValidationOverlay } from "./ValidationOverlay";
 import { CanvasNodeItem } from "./CanvasNodeItem";
+import { getVisualSize } from "./nodes/getVisualSize";
 import type { ComputedEdgeLayout } from "./utils/edgeRoutingLayout";
 
 interface CanvasLayersProps {
@@ -42,7 +43,7 @@ interface CanvasLayersProps {
   setEditingEdgeId: (id: string | null) => void;
   editingEdgePos?: Position | null;
   setEditingEdgePos?: (pos: Position | null) => void;
-  edgeRouting?: "straight" | "orthogonal";
+  edgeRouting?: "straight" | "orthogonal" | "curved";
   edgeLayout: ComputedEdgeLayout;
   startNodeDrag: (nodeId: string, e: React.MouseEvent) => void;
   handleAnchorMouseDown: (
@@ -263,6 +264,71 @@ export function CanvasLayers(props: CanvasLayersProps) {
       {diagram.type === "activity" && diagram.swimlanes?.length && (
         <ActivityRenderer diagram={diagram} />
       )}
+
+      {/* Automatic UML 2.5 System Boundary Frame for Use Case Diagrams */}
+      {diagram.type === "usecase" && containerNodes.length === 0 && (() => {
+        const useCaseOvals = diagram.nodes.filter((n) => (n.type as string) === "usecase");
+        if (useCaseOvals.length === 0) return null;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const uc of useCaseOvals) {
+          const vs = getVisualSize(uc);
+          minX = Math.min(minX, uc.position.x);
+          minY = Math.min(minY, uc.position.y);
+          maxX = Math.max(maxX, uc.position.x + vs.width);
+          maxY = Math.max(maxY, uc.position.y + vs.height);
+        }
+        const padX = 36;
+        const padTop = 52;
+        const padBottom = 32;
+        const bx = minX - padX;
+        const by = minY - padTop;
+        const bw = Math.max(240, maxX - minX + padX * 2);
+        const bh = Math.max(160, maxY - minY + padTop + padBottom);
+        const isDark = canvasTheme === "dark";
+        const rawTitle = diagram.name && diagram.name !== "Untitled" ? diagram.name : "System Boundary";
+        return (
+          <g className="usecase-system-boundary pointer-events-none">
+            <rect
+              x={bx}
+              y={by}
+              width={bw}
+              height={bh}
+              rx={10}
+              fill={isDark ? "rgba(30, 41, 59, 0.28)" : "rgba(241, 245, 249, 0.55)"}
+              stroke={isDark ? "#475569" : "#94a3b8"}
+              strokeWidth={1.75}
+              strokeDasharray="6,4"
+            />
+            <rect
+              x={bx}
+              y={by}
+              width={bw}
+              height={32}
+              rx={10}
+              fill={isDark ? "rgba(51, 65, 85, 0.45)" : "rgba(226, 232, 240, 0.7)"}
+            />
+            <line
+              x1={bx}
+              y1={by + 32}
+              x2={bx + bw}
+              y2={by + 32}
+              stroke={isDark ? "#475569" : "#cbd5e1"}
+              strokeWidth={1}
+            />
+            <text
+              x={bx + bw / 2}
+              y={by + 20}
+              textAnchor="middle"
+              fontSize={12.5}
+              fontWeight="bold"
+              fontFamily="Inter, system-ui, sans-serif"
+              fill={isDark ? "#e2e8f0" : "#1e293b"}
+            >
+              {rawTitle}
+            </text>
+          </g>
+        );
+      })()}
 
       {/* Layer 1: Containers */}
       {containerNodes.map(renderNode)}

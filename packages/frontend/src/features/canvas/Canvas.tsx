@@ -89,7 +89,7 @@ interface CanvasProps {
   selectedEdgeIds?: Set<string>;
   canvasTheme: CanvasTheme;
   snapEnabled: boolean;
-  edgeRouting?: "straight" | "orthogonal";
+  edgeRouting?: "straight" | "orthogonal" | "curved";
   onEdgeRoutingToggle?: () => void;
   activeEdgeTool?: string | null;
   onQuickAddNode?: (
@@ -1083,6 +1083,87 @@ export function Canvas({
           />
         </g>
       </svg>
+
+      {/* Contextual Multi-Select Alignment & Distribution Floating Bar */}
+      {multiSelected.size >= 2 && (onAlignNodes || onDistributeNodes) && (
+        <div
+          className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 px-3 py-1.5 rounded-xl shadow-xl border backdrop-blur-md transition-all ${
+            canvasTheme === "dark"
+              ? "bg-surface-2/95 border-border text-text"
+              : "bg-white/95 border-slate-200 text-slate-800"
+          }`}
+        >
+          <span className="text-[11px] font-semibold text-accent mr-1.5 whitespace-nowrap">
+            {multiSelected.size} Node
+          </span>
+          {onAlignNodes && (
+            <>
+              <button
+                onClick={() => onAlignNodes([...multiSelected], "left")}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-xs hover:bg-accent/15 hover:text-accent transition-colors"
+                title="Rata Kiri (Align Left)"
+              >
+                ⫷
+              </button>
+              <button
+                onClick={() => onAlignNodes([...multiSelected], "center")}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-xs hover:bg-accent/15 hover:text-accent transition-colors"
+                title="Rata Tengah Horizontal (Align Center)"
+              >
+                ⫿
+              </button>
+              <button
+                onClick={() => onAlignNodes([...multiSelected], "right")}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-xs hover:bg-accent/15 hover:text-accent transition-colors"
+                title="Rata Kanan (Align Right)"
+              >
+                ⫸
+              </button>
+              <div className="w-px h-4 bg-border/60 mx-0.5" />
+              <button
+                onClick={() => onAlignNodes([...multiSelected], "top")}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-xs hover:bg-accent/15 hover:text-accent transition-colors"
+                title="Rata Atas (Align Top)"
+              >
+                ⊤
+              </button>
+              <button
+                onClick={() => onAlignNodes([...multiSelected], "middle")}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-xs hover:bg-accent/15 hover:text-accent transition-colors"
+                title="Rata Tengah Vertikal (Align Middle)"
+              >
+                ⊶
+              </button>
+              <button
+                onClick={() => onAlignNodes([...multiSelected], "bottom")}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-xs hover:bg-accent/15 hover:text-accent transition-colors"
+                title="Rata Bawah (Align Bottom)"
+              >
+                ⊥
+              </button>
+            </>
+          )}
+          {onDistributeNodes && multiSelected.size >= 3 && (
+            <>
+              <div className="w-px h-4 bg-border/60 mx-0.5" />
+              <button
+                onClick={() => onDistributeNodes([...multiSelected], "horizontal")}
+                className="px-2 h-7 flex items-center justify-center gap-1 rounded-lg text-[11px] font-medium hover:bg-accent/15 hover:text-accent transition-colors"
+                title="Bagi Rata Jarak Horizontal (Distribute Horizontally)"
+              >
+                ⇔
+              </button>
+              <button
+                onClick={() => onDistributeNodes([...multiSelected], "vertical")}
+                className="px-2 h-7 flex items-center justify-center gap-1 rounded-lg text-[11px] font-medium hover:bg-accent/15 hover:text-accent transition-colors"
+                title="Bagi Rata Jarak Vertikal (Distribute Vertically)"
+              >
+                ⇕
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

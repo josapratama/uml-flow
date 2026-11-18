@@ -10,7 +10,7 @@ interface CanvasAppearanceOptionsProps {
   onMonochromeToggle?: () => void;
   snapEnabled: boolean;
   onSnapToggle: () => void;
-  edgeRouting: "straight" | "orthogonal";
+  edgeRouting: "straight" | "orthogonal" | "curved";
   onEdgeRoutingToggle: () => void;
   onApplyPalette?: (palette: PalettePreset) => void;
   onCloseMenu: () => void;
