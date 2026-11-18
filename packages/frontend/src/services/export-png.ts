@@ -237,6 +237,13 @@ export function exportAsPDF(
   svgElement: SVGSVGElement,
   diagramName: string,
 ): void {
+  const diagramGroup = svgElement.querySelector(
+    "g[transform]",
+  ) as SVGGraphicsElement | null;
+  const contentBBox = calculateContentBBox(diagramGroup);
+  const isPortrait = contentBBox.height > contentBBox.width * 1.15;
+  const pageSize = isPortrait ? "A4 portrait" : "A4 landscape";
+
   const svgString = getFullDiagramSVG(svgElement);
   const printWindow = window.open("", "_blank");
   if (!printWindow) {
@@ -252,7 +259,7 @@ export function exportAsPDF(
   <title>${diagramName} - PDF Export</title>
   <style>
     @page {
-      size: A4 landscape;
+      size: ${pageSize};
       margin: 15mm;
     }
     * { box-sizing: border-box; }

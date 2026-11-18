@@ -22,6 +22,7 @@ import { exportWorkspaceBackup, restoreWorkspaceBackup } from "../workspace-back
 import { generateTikZ, escapeLaTeX } from "./tikz";
 import { exportToPlantUML } from "../plantuml-exporter";
 import { ENTERPRISE_ARCHITECTURE_TEMPLATES } from "../templates/presets/enterpriseArchitectureTemplates";
+import { validateDiagramNodes } from "../diagram-validator";
 
 const sampleClassDiagram: Diagram = {
   id: "diag-1",
@@ -762,5 +763,31 @@ describe("LaTeX TikZ Code Exporter", () => {
     expect(c4Container).toBeDefined();
     expect(c4Container?.tag).toBe("C4 Model");
     expect(c4Container?.diagram.nodes.some((n) => n.name.includes("API Gateway"))).toBe(true);
+  });
+
+  it("validates flowchart branching rules, dead-ends, and sequence participant activity", () => {
+    const flawedFlowchart: Diagram = {
+      id: "fc-flawed",
+      name: "FlawedFlow",
+      type: "flowchart",
+      nodes: [
+        { id: "s1", name: "Start 1", type: "start", position: { x: 50, y: 50 } },
+        { id: "s2", name: "Start 2", type: "start", position: { x: 50, y: 150 } },
+        { id: "dec", name: "Is Valid?", type: "decision", position: { x: 200, y: 100 } },
+        { id: "proc", name: "Dead Process", type: "process", position: { x: 350, y: 100 } },
+      ],
+      edges: [
+        { id: "e1", source: "s1", target: "dec" },
+        { id: "e2", source: "dec", target: "proc" }, // Only 1 outgoing branch from decision!
+      ],
+    };
+
+    const warnings = validateDiagramNodes(flawedFlowchart, "id");
+    // Should warn on multi-start
+    expect(warnings.some((w) => w.message.includes("lebih dari 1 node Start"))).toBe(true);
+    // Should warn on decision node with only 1 outgoing branch
+    expect(warnings.some((w) => w.nodeId === "dec" && w.message.includes("minimal 2 cabang"))).toBe(true);
+    // Should warn on dead process
+    expect(warnings.some((w) => w.nodeId === "proc" && w.message.includes("berhenti tanpa mencapai node End"))).toBe(true);
   });
 });

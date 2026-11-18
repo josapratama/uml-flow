@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import type { Diagram } from "@uml-editor/shared";
 import { useI18n } from "../../i18n";
+import { validateDiagramNodes } from "../../services/diagram-validator";
 
 interface Props {
   diagram: Diagram | null;
@@ -7,6 +9,7 @@ interface Props {
   redoCount: number;
   snapEnabled?: boolean;
   onSnapToggle?: () => void;
+  onOpenMetrics?: () => void;
 }
 
 /** Bottom status bar showing diagram statistics, grid snap status, and save status. */
@@ -16,8 +19,16 @@ export function StatusBar({
   redoCount,
   snapEnabled,
   onSnapToggle,
+  onOpenMetrics,
 }: Props) {
   const { t, locale } = useI18n();
+  const isId = locale === "id";
+
+  const warnings = useMemo(() => {
+    if (!diagram) return [];
+    return validateDiagramNodes(diagram, locale);
+  }, [diagram, locale]);
+
   if (!diagram) return null;
 
   const nodeCount = diagram.nodes.length;
@@ -40,6 +51,33 @@ export function StatusBar({
             {nodeCount} {t("statusBar.nodes")} · {edgeCount} {t("statusBar.edges")}
           </span>
         )}
+        <span className="opacity-50">|</span>
+        <button
+          onClick={onOpenMetrics}
+          className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
+            warnings.length === 0
+              ? "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
+              : "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20"
+          }`}
+          title={
+            warnings.length === 0
+              ? isId
+                ? "Kesehatan Diagram: 100% Sempurna (Klik untuk periksa metrik & kompleksitas)"
+                : "Diagram Health: 100% Optimal (Click for metrics & complexity)"
+              : isId
+              ? `${warnings.length} catatan kesehatan diagram ditemukan (Klik untuk analisis & perbaikan)`
+              : `${warnings.length} diagram health warnings found (Click to review)`
+          }
+        >
+          <span>{warnings.length === 0 ? "🩺" : "⚠️"}</span>
+          <span>
+            {warnings.length === 0
+              ? isId
+                ? "100% Sehat"
+                : "100% Optimal"
+              : `${warnings.length} ${isId ? "Catatan" : "Warnings"}`}
+          </span>
+        </button>
       </div>
       <div className="flex items-center gap-3">
         {onSnapToggle !== undefined && (

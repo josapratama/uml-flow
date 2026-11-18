@@ -84,6 +84,87 @@ export function validateDiagramNodes(
         severity: "info",
       });
     }
+
+    // Flowchart specific validations
+    if (diagram.type === "flowchart" || diagram.type === "activity") {
+      const outgoingEdges = diagram.edges.filter((e) => e.source === node.id);
+      const incomingEdges = diagram.edges.filter((e) => e.target === node.id);
+      const nodeType = node.type as string;
+
+      // Decision nodes must branch to at least 2 directions
+      if (nodeType === "decision" && outgoingEdges.length < 2) {
+        warnings.push({
+          nodeId: node.id,
+          message: isId
+            ? "Node keputusan (decision) memerlukan minimal 2 cabang keluar (misal: Ya dan Tidak)"
+            : "Decision node should have at least 2 outgoing branches (e.g. Yes and No)",
+          severity: "warning",
+        });
+      }
+
+      // Non-terminal nodes with no outgoing edges (accidental dead-end)
+      if (
+        nodeType !== "end" &&
+        nodeType !== "terminal" &&
+        nodeType !== "note" &&
+        outgoingEdges.length === 0 &&
+        diagram.nodes.length > 1
+      ) {
+        warnings.push({
+          nodeId: node.id,
+          message: isId
+            ? "Alur proses berhenti tanpa mencapai node End/Terminal"
+            : "Process flow dead-ends without reaching an End/Terminal node",
+          severity: "warning",
+        });
+      }
+
+      // Start node shouldn't have incoming edges
+      if (nodeType === "start" && incomingEdges.length > 0) {
+        warnings.push({
+          nodeId: node.id,
+          message: isId
+            ? "Node Start umumnya tidak memiliki relasi masuk"
+            : "Start node should typically not have incoming edges",
+          severity: "info",
+        });
+      }
+    }
+  }
+
+  // Multi-start check in Flowchart
+  if (diagram.type === "flowchart" || diagram.type === "activity") {
+    const startNodes = diagram.nodes.filter(
+      (n) => (n.type as string) === "start"
+    );
+    if (startNodes.length > 1) {
+      for (const sn of startNodes) {
+        warnings.push({
+          nodeId: sn.id,
+          message: isId
+            ? "Ditemukan lebih dari 1 node Start pada flowchart"
+            : "Multiple Start nodes found in flowchart",
+          severity: "warning",
+        });
+      }
+    }
+  }
+
+  // Sequence participant inactivity check
+  if (diagram.type === "sequence" && diagram.participants) {
+    const messages = diagram.messages || [];
+    for (const p of diagram.participants) {
+      const hasMsg = messages.some((m) => m.from === p.id || m.to === p.id);
+      if (!hasMsg && diagram.participants.length > 1) {
+        warnings.push({
+          nodeId: p.id,
+          message: isId
+            ? "Partisipan tidak memiliki pesan masuk maupun keluar"
+            : "Participant has no incoming or outgoing messages",
+          severity: "info",
+        });
+      }
+    }
   }
 
   return warnings;

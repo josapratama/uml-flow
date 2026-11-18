@@ -1236,6 +1236,7 @@ export default function App(props: AppProps = {}) {
         redoCount={diagramHistory.redoLength || 0}
         snapEnabled={snapEnabled}
         onSnapToggle={handleSnapToggle}
+        onOpenMetrics={() => setShowMetrics(true)}
       />
 
       <AppModals

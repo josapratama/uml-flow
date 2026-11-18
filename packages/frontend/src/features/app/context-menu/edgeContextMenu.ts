@@ -56,6 +56,16 @@ export function buildEdgeContextMenuItems({
     },
   });
 
+  if (currentEdge.points && currentEdge.points.length > 0) {
+    items.push({
+      label: isId ? "Luruskan Garis (Reset Waypoints)" : "Straighten Line (Reset Waypoints)",
+      icon: "🧹",
+      action: () => {
+        actions.edgeWaypointsReset?.(currentEdge.id);
+      },
+    });
+  }
+
   const edgeTypes = [
     { label: "Association", type: "association" },
     { label: "Inheritance", type: "inheritance" },

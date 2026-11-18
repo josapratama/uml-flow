@@ -53,6 +53,21 @@ export function useEdgeActions({ diagram, history }: ActionDeps) {
     [diagram, history],
   );
 
+  const edgeWaypointsReset = useCallback(
+    (edgeId: string) => {
+      if (!diagram) return;
+      history.set({
+        ...diagram,
+        edges: diagram.edges.map((e) => {
+          if (e.id !== edgeId) return e;
+          const { points: _pts, ...rest } = e;
+          return rest;
+        }),
+      });
+    },
+    [diagram, history],
+  );
+
   const edgeEndpointDrag = useCallback(
     (edgeId: string, end: "source" | "target", anchor: string) => {
       if (!diagram) return;
@@ -230,6 +245,7 @@ export function useEdgeActions({ diagram, history }: ActionDeps) {
     edgeWaypointMove,
     edgeWaypointAdd,
     edgeWaypointDelete,
+    edgeWaypointsReset,
     edgeEndpointDrag,
     edgeReconnect,
     edgeStyleChange,
