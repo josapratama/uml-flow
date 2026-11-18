@@ -181,17 +181,8 @@ export function Toolbar(props: ToolbarProps) {
           onSaveCurrent={onSaveCurrent}
           onShareLink={onShareLink}
           onShowDiff={onShowDiff}
-          onShowMetrics={onShowMetrics}
           onOpenAcademicMetadata={onOpenAcademicMetadata}
-          onOpenThesisBundle={onOpenThesisBundle}
-          onOpenTestCases={onOpenTestCases}
-          onOpenMockData={onOpenMockData}
-          onOpenDependencyMatrix={onOpenDependencyMatrix}
-          onOpenUseCaseNarrative={props.onOpenUseCaseNarrative}
-          onOpenDataDictionary={props.onOpenDataDictionary}
           onOpenWorkspaceBackup={onOpenWorkspaceBackup}
-          onOpenNodeHierarchy={onOpenNodeHierarchy}
-          onOpenCommandPalette={onOpenCommandPalette}
           onNewDiagram={onNewDiagram}
           hasDiagram={hasDiagram}
         />
@@ -294,7 +285,6 @@ export function Toolbar(props: ToolbarProps) {
           onOpenDataDictionary={props.onOpenDataDictionary}
           onOpenAcademicA4={props.onOpenAcademicA4}
           onOpenShortcuts={onShowShortcuts}
-          onLayout={onLayout}
         />
 
         {/* AI Assistant Button - Compact Stylish Pill */}
@@ -337,11 +327,8 @@ export function Toolbar(props: ToolbarProps) {
           onMonochromeToggle={onMonochromeToggle}
           onPresentationMode={onPresentationMode}
           onShowHistory={onShowHistory}
-          onShowShortcuts={onShowShortcuts}
-          onValidate={onValidate}
           onApplyPalette={onApplyPalette}
           hasDiagram={hasDiagram}
-          onShareLink={onShareLink}
         />
 
         {/* Primary Action Button (Compile in Code/Split; Sync in Visual) - ALWAYS VISIBLE */}

@@ -10,9 +10,6 @@ interface CanvasSystemOptionsProps {
   hasDiagram: boolean;
   onPresentationMode?: () => void;
   onShowHistory?: () => void;
-  onValidate?: () => void;
-  onShowShortcuts: () => void;
-  onShareLink?: () => void;
   onCloseMenu: () => void;
 }
 
@@ -24,9 +21,6 @@ export function CanvasSystemOptions({
   hasDiagram,
   onPresentationMode,
   onShowHistory,
-  onValidate,
-  onShowShortcuts,
-  onShareLink,
   onCloseMenu,
 }: CanvasSystemOptionsProps) {
   const { t, locale } = useI18n();
@@ -99,6 +93,7 @@ export function CanvasSystemOptions({
             </div>
           </button>
         )}
+
         {/* Sound FX Toggle */}
         <button
           onClick={handleToggleSound}
@@ -127,7 +122,7 @@ export function CanvasSystemOptions({
 
       <div className="h-px bg-border/40 mx-1" />
 
-      {/* Quick Action Grid (2x2) */}
+      {/* Quick Action Grid */}
       <div className="space-y-1.5">
         <div className="px-1 text-[10px] uppercase tracking-wider text-text-muted font-semibold">
           {t("toolbar.toolsActions")}
@@ -146,7 +141,7 @@ export function CanvasSystemOptions({
               title={t("toolbar.presentationDesc")}
             >
               <span className="text-sm group-hover:scale-110 transition-transform">
-                ⛶
+                📺
               </span>
               <div className="min-w-0">
                 <div className="font-medium truncate">{t("toolbar.presentation")}</div>
@@ -168,7 +163,7 @@ export function CanvasSystemOptions({
               title={t("toolbar.historyTimelineDesc")}
             >
               <span className="text-sm group-hover:scale-110 transition-transform">
-                🕐
+                🕒
               </span>
               <div className="min-w-0">
                 <div className="font-medium truncate">{t("toolbar.historyTimeline")}</div>
@@ -176,81 +171,6 @@ export function CanvasSystemOptions({
                   {isId ? "Riwayat aksi" : "Undo history"}
                 </div>
               </div>
-            </button>
-          )}
-
-          {/* Validate Rules */}
-          {onValidate && (
-            <button
-              onClick={() => {
-                onValidate();
-                onCloseMenu();
-              }}
-              disabled={!hasDiagram}
-              className="flex items-center gap-2 p-2 rounded-lg bg-surface-2 hover:bg-surface-4 border border-border text-xs text-text text-left transition-all disabled:opacity-35 disabled:cursor-not-allowed shadow-2xs group"
-              title={t("toolbar.validateDiagramDesc")}
-            >
-              <span className="text-sm group-hover:scale-110 transition-transform">
-                ✓
-              </span>
-              <div className="min-w-0">
-                <div className="font-medium truncate">{t("toolbar.validateDiagram")}</div>
-                <div className="text-[9px] text-text-muted">
-                  {isId ? "Cek sintaks" : "Check syntax"}
-                </div>
-              </div>
-            </button>
-          )}
-
-          {/* Keyboard Shortcuts */}
-          <button
-            onClick={() => {
-              onShowShortcuts();
-              onCloseMenu();
-            }}
-            className="flex items-center gap-2 p-2 rounded-lg bg-surface-2 hover:bg-surface-4 border border-border text-xs text-text text-left transition-all shadow-2xs group"
-            title={t("toolbar.keyboardShortcutsDesc")}
-          >
-            <span className="text-sm group-hover:scale-110 transition-transform">
-              ⌨
-            </span>
-            <div className="min-w-0 flex-1 flex items-center justify-between">
-              <div>
-                <div className="font-medium truncate">{t("toolbar.keyboardShortcuts")}</div>
-                <div className="text-[9px] text-text-muted">
-                  {isId ? "Pintasan cepat" : "Quick keys"}
-                </div>
-              </div>
-              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-surface-4 text-text-muted">
-                ?
-              </span>
-            </div>
-          </button>
-
-          {/* Share Diagram Link */}
-          {onShareLink && (
-            <button
-              onClick={() => {
-                onShareLink();
-                onCloseMenu();
-              }}
-              className="col-span-2 flex items-center justify-between p-2 rounded-lg bg-linear-to-r from-accent/10 to-indigo-500/10 hover:from-accent/20 hover:to-indigo-500/20 border border-accent/30 text-xs text-text text-left transition-all shadow-2xs group"
-              title={t("toolbar.shareDiagramLinkDesc")}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-sm group-hover:scale-110 transition-transform">
-                  🔗
-                </span>
-                <div className="min-w-0">
-                  <div className="font-semibold text-accent truncate">{t("toolbar.shareDiagramLink")}</div>
-                  <div className="text-[9px] text-text-muted">
-                    {t("toolbar.shareDiagramLinkDesc")}
-                  </div>
-                </div>
-              </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent font-semibold font-mono">
-                {isId ? "BUKA" : "OPEN"}
-              </span>
             </button>
           )}
         </div>

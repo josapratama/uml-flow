@@ -16,7 +16,6 @@ interface Props {
   onOpenDataDictionary?: () => void;
   onOpenAcademicA4?: () => void;
   onOpenShortcuts?: () => void;
-  onLayout?: (preset: string) => void;
 }
 
 export function ToolsMenu({
@@ -25,7 +24,6 @@ export function ToolsMenu({
   onShowMetrics,
   onOpenSimulator,
   onOpenCommandPalette,
-  onShareLink,
   onOpenThesisBundle,
   onOpenTestCases,
   onOpenMockData,
@@ -34,7 +32,6 @@ export function ToolsMenu({
   onOpenDataDictionary,
   onOpenAcademicA4,
   onOpenShortcuts,
-  onLayout,
 }: Props) {
   const { locale } = useI18n();
   const isId = locale === "id";
@@ -291,43 +288,6 @@ export function ToolsMenu({
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-text">{isId ? "Matriks Ketergantungan (DSM)" : "Dependency Structure Matrix"}</div>
                   <div className="text-[10px] text-text-muted truncate">{isId ? "Deteksi siklus dependensi sirkular" : "Circular cycle detection"}</div>
-                </div>
-              </button>
-            )}
-          </div>
-
-          {/* Section: Quick Actions */}
-          <div className="py-1">
-            {onLayout && (
-              <button
-                disabled={!hasDiagram}
-                onClick={() => {
-                  setOpen(false);
-                  onLayout("auto");
-                }}
-                className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left text-text hover:bg-surface-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed group"
-              >
-                <span>📐</span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-text">{isId ? "Rapikan Tata Letak (Auto-Layout)" : "Auto-Layout Diagram"}</div>
-                  <div className="text-[10px] text-text-muted truncate">{isId ? "Susun node & relasi otomatis rapi" : "Clean non-overlapping layout"}</div>
-                </div>
-              </button>
-            )}
-
-            {onShareLink && (
-              <button
-                disabled={!hasDiagram}
-                onClick={() => {
-                  setOpen(false);
-                  onShareLink();
-                }}
-                className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left text-text hover:bg-surface-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed group"
-              >
-                <span>🔗</span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-text">{isId ? "Bagikan Tautan Diagram" : "Share Diagram Link"}</div>
-                  <div className="text-[10px] text-text-muted truncate">{isId ? "Salin URL diagram instan" : "Instant shareable URL"}</div>
                 </div>
               </button>
             )}

@@ -19,8 +19,6 @@ interface Props {
   onMonochromeToggle?: () => void;
   onPresentationMode?: () => void;
   onShowHistory?: () => void;
-  onShowShortcuts: () => void;
-  onValidate?: () => void;
   onApplyPalette?: (palette: {
     bg: string;
     border: string;
@@ -28,7 +26,6 @@ interface Props {
     name: string;
   }) => void;
   hasDiagram: boolean;
-  onShareLink?: () => void;
 }
 
 export function CanvasOptionsMenu({
@@ -46,11 +43,8 @@ export function CanvasOptionsMenu({
   onMonochromeToggle,
   onPresentationMode,
   onShowHistory,
-  onShowShortcuts,
-  onValidate,
   onApplyPalette,
   hasDiagram,
-  onShareLink,
 }: Props) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -162,9 +156,6 @@ export function CanvasOptionsMenu({
                 hasDiagram={hasDiagram}
                 onPresentationMode={onPresentationMode}
                 onShowHistory={onShowHistory}
-                onValidate={onValidate}
-                onShowShortcuts={onShowShortcuts}
-                onShareLink={onShareLink}
                 onCloseMenu={() => setOpen(false)}
               />
             )}
