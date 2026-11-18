@@ -32,7 +32,7 @@ function overlaps(a: any, b: any): boolean {
 function parseFlow(src: string): Diagram {
   const r = new Parser().parse(src);
   expect(r.success).toBe(true);
-  return r.diagram;
+  return r.diagram!;
 }
 
 describe("layout: branching flowchart", () => {
@@ -127,16 +127,16 @@ b --> c`);
     const dsl = diagramToDSL(d);
     const again = new Parser().parse(dsl);
     expect(again.success).toBe(true);
-    expect(again.diagram.nodes.length).toBe(3);
-    expect(again.diagram.edges.length).toBe(2);
-    const ids = new Set(again.diagram.edges.map((e) => `${e.source}>${e.target}`));
+    expect(again.diagram!.nodes.length).toBe(3);
+    expect(again.diagram!.edges.length).toBe(2);
+    const ids = new Set(again.diagram!.edges.map((e) => `${e.source}>${e.target}`));
     expect(ids.size).toBe(2);
   });
 
   test("multiline names survive DSL generation", () => {
     const d = parseFlow(`@diagram flowchart\nprocess "Judul\\nIsi" as p`);
     const again = new Parser().parse(diagramToDSL(d));
-    expect(again.diagram.nodes[0].name).toBe("Judul\nIsi");
+    expect(again.diagram!.nodes[0].name).toBe("Judul\nIsi");
   });
 });
 

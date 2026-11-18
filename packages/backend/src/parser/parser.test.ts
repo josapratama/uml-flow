@@ -17,20 +17,20 @@ describe("flowchart shorthand + auto-detect", () => {
   const r = new Parser().parse(USER_DSL);
 
   test("detects flowchart without @diagram", () => {
-    expect(r.diagram.type).toBe("flowchart");
+    expect(r.diagram!.type).toBe("flowchart");
     expect(r.errors?.some((e) => e.message.includes("terdeteksi otomatis"))).toBe(true);
   });
 
   test("all nodes and edges survive (nothing swallowed)", () => {
-    expect(r.diagram.nodes.length).toBe(5);
-    expect(r.diagram.edges.length).toBe(4);
+    expect(r.diagram!.nodes.length).toBe(5);
+    expect(r.diagram!.edges.length).toBe(4);
     expect(r.success).toBe(true);
   });
 
   test("preserves \\n as real newline and wraps node sizes proportionally", () => {
-    const tahap1 = r.diagram.nodes.find((n: any) => n.alias === "tahap1")!;
-    const startNode = r.diagram.nodes.find((n: any) => n.alias === "start")!;
-    const endNode = r.diagram.nodes.find((n: any) => n.alias === "end")!;
+    const tahap1 = r.diagram!.nodes.find((n: any) => n.alias === "tahap1")!;
+    const startNode = r.diagram!.nodes.find((n: any) => n.alias === "start")!;
+    const endNode = r.diagram!.nodes.find((n: any) => n.alias === "end")!;
 
     expect(tahap1.name).toContain("\n");
     expect(tahap1.size.width).toBeLessThanOrEqual(380);
@@ -42,7 +42,7 @@ describe("flowchart shorthand + auto-detect", () => {
   });
 
   test("re-layout stacks nodes cleanly without overlap", () => {
-    const laidOut = new LayoutEngine(undefined, "auto").layout(r.diagram);
+    const laidOut = new LayoutEngine(undefined, "auto").layout(r.diagram!);
     for (let i = 0; i < laidOut.nodes.length - 1; i++) {
       const curr = laidOut.nodes[i];
       const next = laidOut.nodes[i + 1];
@@ -56,14 +56,14 @@ describe("flowchart shorthand + auto-detect", () => {
 
   test("edges connect the right nodes", () => {
     const byAlias = (a: string) =>
-      r.diagram.nodes.find((n: any) => n.alias === a)!.id;
+      r.diagram!.nodes.find((n: any) => n.alias === a)!.id;
     expect(
-      r.diagram.edges.some(
+      r.diagram!.edges.some(
         (e) => e.source === byAlias("start") && e.target === byAlias("tahap1"),
       ),
     ).toBe(true);
     expect(
-      r.diagram.edges.some(
+      r.diagram!.edges.some(
         (e) => e.source === byAlias("tahap3") && e.target === byAlias("end"),
       ),
     ).toBe(true);
@@ -73,7 +73,7 @@ describe("flowchart shorthand + auto-detect", () => {
 describe("parseRelation no longer swallows next line (class)", () => {
   test("garbage line does not eat following relation", () => {
     const r = new Parser().parse(`class A\nclass B\nclass C\nfoo bar baz\nA --> B\nB --> C`);
-    expect(r.diagram.edges.length).toBe(2);
+    expect(r.diagram!.edges.length).toBe(2);
     expect(
       r.errors?.some((e) => e.severity === "warning" && e.line === 4),
     ).toBe(true);

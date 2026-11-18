@@ -1269,4 +1269,98 @@ describe("LaTeX TikZ Code Exporter", () => {
     expect(dsl).toContain('orders ||--o{ order_items : "tenant_id"');
     expect(dsl).toContain('orders ||--o{ order_items : "order_id"');
   });
+
+  it("parses trailing swimlanes in Activity DSL and preserves them in auto-layout", async () => {
+    const { Parser } = await import("../../../../backend/src/parser/parser");
+    const { LayoutEngine } = await import("../../../../backend/src/layout/layout-engine");
+
+    const dsl = `@diagram "KRS Workflow" activity
+swimlane "Mahasiswa"
+swimlane "Admin SIAKAD"
+
+start [Mahasiswa]
+action "Pilih Kelas" [Mahasiswa]
+action "Validasi SKS" [Admin SIAKAD]
+end [Admin SIAKAD]
+
+start --> "Pilih Kelas"
+"Pilih Kelas" --> "Validasi SKS"
+"Validasi SKS" --> end
+`;
+
+    const parser = new Parser();
+    const result = parser.parse(dsl);
+    expect(result.success).toBe(true);
+    const diagram = result.diagram;
+
+    expect((diagram as any).swimlanes).toContain("Mahasiswa");
+    expect((diagram as any).swimlanes).toContain("Admin SIAKAD");
+
+    const pilihNode = diagram.nodes.find(n => n.name === "Pilih Kelas");
+    const validasiNode = diagram.nodes.find(n => n.name === "Validasi SKS");
+    expect((pilihNode as any).swimlane).toBe("Mahasiswa");
+    expect((validasiNode as any).swimlane).toBe("Admin SIAKAD");
+
+    // Layout
+    const engine = new LayoutEngine({}, "auto");
+    const laidOut = engine.layout(diagram);
+    const lPilih = laidOut.nodes.find(n => n.name === "Pilih Kelas")!;
+    const lValidasi = laidOut.nodes.find(n => n.name === "Validasi SKS")!;
+
+    // They must belong to separate columns (x of Mahasiswa < x of Admin SIAKAD)
+    expect(lPilih.position.x).toBeLessThan(lValidasi.position.x);
+  });
+
+  it("converts Activity diagram with swimlanes to Use Case diagram", async () => {
+    const { convertDiagram } = await import("../diagram-converter");
+    const actDiagram: Diagram = {
+      id: "act-conv",
+      name: "Sistem Peminjaman",
+      type: "activity",
+      swimlanes: ["Mahasiswa", "Petugas"],
+      nodes: [
+        { id: "s1", name: "start", type: "start", position: { x: 0, y: 0 }, size: { width: 30, height: 30 }, swimlane: "Mahasiswa" } as any,
+        { id: "a1", name: "Cari Buku", type: "action", position: { x: 0, y: 0 }, size: { width: 140, height: 40 }, swimlane: "Mahasiswa" } as any,
+        { id: "a2", name: "Konfirmasi Peminjaman", type: "action", position: { x: 0, y: 0 }, size: { width: 160, height: 40 }, swimlane: "Petugas" } as any,
+        { id: "e1", name: "end", type: "end", position: { x: 0, y: 0 }, size: { width: 30, height: 30 }, swimlane: "Petugas" } as any,
+      ],
+      edges: [],
+    };
+
+    const ucDiagram = convertDiagram(actDiagram, "usecase");
+    expect(ucDiagram).not.toBeNull();
+    expect(ucDiagram!.type).toBe("usecase");
+
+    const actors = ucDiagram!.nodes.filter(n => n.type === "actor");
+    const cases = ucDiagram!.nodes.filter(n => n.type === "usecase");
+
+    expect(actors.map(a => a.name)).toEqual(["Mahasiswa", "Petugas"]);
+    expect(cases.map(c => c.name)).toEqual(["Cari Buku", "Konfirmasi Peminjaman"]);
+    expect(ucDiagram!.edges.length).toBe(2);
+  });
+
+  it("generates Black-Box test cases and UAT questionnaire evaluation rubric", async () => {
+    const { generateBlackBoxCases, generateUATMatrix } = await import("../test-case-generator");
+    const diag: Diagram = {
+      id: "diag-uat",
+      name: "Sistem Pembayaran",
+      type: "activity",
+      swimlanes: ["Pelanggan", "Kasir"],
+      nodes: [
+        { id: "n1", name: "Scan Barcode Produk", type: "action", position: { x: 0, y: 0 }, size: { width: 140, height: 40 } } as any,
+        { id: "n2", name: "Pilih Metode Pembayaran", type: "action", position: { x: 0, y: 0 }, size: { width: 140, height: 40 } } as any,
+      ],
+      edges: [],
+    };
+
+    const bbCases = generateBlackBoxCases(diag);
+    expect(bbCases.length).toBeGreaterThanOrEqual(4);
+    expect(bbCases.some(b => b.type === "Positive")).toBe(true);
+    expect(bbCases.some(b => b.type === "Negative")).toBe(true);
+
+    const uat = generateUATMatrix(diag);
+    expect(uat.length).toBe(5);
+    expect(uat[0].targetRole).toBe("Pelanggan");
+    expect(uat.every(u => u.percentage >= 80)).toBe(true);
+  });
 });

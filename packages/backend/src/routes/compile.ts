@@ -11,7 +11,7 @@ async function parseJsonBody<T>(
   c: any,
 ): Promise<{ data?: T; error?: string }> {
   try {
-    const data = await c.req.json<T>();
+    const data = (await c.req.json()) as T;
     if (!data || typeof data !== "object") {
       return { error: "Request body must be a JSON object" };
     }

@@ -1,6 +1,6 @@
 import type { Diagram, DiagramNode, Edge, ClassNode, ERDEntity, ActivityNode, FlowchartNode, SequenceParticipant as Participant, SequenceMessage as Message } from "@uml-editor/shared";
 
-export type ConversionTarget = "class" | "erd" | "activity" | "flowchart" | "sequence";
+export type ConversionTarget = "class" | "erd" | "activity" | "flowchart" | "sequence" | "usecase";
 
 export function getAvailableConversions(type: string): { target: ConversionTarget; labelId: string; labelEn: string; descId: string; descEn: string }[] {
   switch (type) {
@@ -50,6 +50,13 @@ export function getAvailableConversions(type: string): { target: ConversionTarge
           descId: "Konversi alur flowchart ke Activity Diagram resmi skripsi",
           descEn: "Convert flowchart process to standard UML Activity Diagram",
         },
+        {
+          target: "usecase",
+          labelId: "Use Case Diagram (Aktor & Kasus Penggunaan)",
+          labelEn: "Use Case Diagram (Actors & Use Cases)",
+          descId: "Konversi langkah proses sistem menjadi Aktor dan Use Case",
+          descEn: "Convert flowchart process steps into Actors and Use Cases",
+        },
       ];
     case "activity":
       return [
@@ -59,6 +66,13 @@ export function getAvailableConversions(type: string): { target: ConversionTarge
           labelEn: "Flowchart (System Flow)",
           descId: "Konversi aksi aktivitas ke simbol flowchart proses & keputusan",
           descEn: "Convert activity actions to standard process & decision flowchart symbols",
+        },
+        {
+          target: "usecase",
+          labelId: "Use Case Diagram (Aktor & Kasus Penggunaan)",
+          labelEn: "Use Case Diagram (Actors & Use Cases)",
+          descId: "Konversi partisi swimlane menjadi Aktor dan action menjadi Use Case",
+          descEn: "Convert swimlane partitions into Actors and actions into Use Cases",
         },
       ];
     default:
@@ -555,6 +569,95 @@ export function convertClassToSequence(diagram: Diagram): Diagram {
   };
 }
 
+function convertActivityOrFlowchartToUseCase(diagram: Diagram): Diagram {
+  const swimlanes = (diagram as any).swimlanes as string[] | undefined;
+  const nodes = diagram.nodes || [];
+
+  // Filter out start, end, fork, join, merge
+  const actionNodes = nodes.filter((n) => {
+    const t = (n.type || "").toLowerCase();
+    return !["start", "end", "fork", "join", "merge", "initial", "final"].includes(t);
+  });
+
+  const actorsList: string[] = [];
+  if (swimlanes && swimlanes.length > 0) {
+    actorsList.push(...swimlanes);
+  } else {
+    const foundLanes = new Set<string>();
+    for (const n of nodes) {
+      if ((n as any).swimlane) foundLanes.add((n as any).swimlane);
+    }
+    if (foundLanes.size > 0) {
+      actorsList.push(...Array.from(foundLanes));
+    } else {
+      actorsList.push("Pengguna / User");
+    }
+  }
+
+  // Create Actor nodes
+  const actorNodes: DiagramNode[] = actorsList.map((name, idx) => ({
+    id: `actor_${idx + 1}`,
+    name,
+    type: "actor" as const,
+    position: {
+      x: idx === 0 ? 80 : 80 + (idx % 2 === 1 ? 580 : 0),
+      y: 120 + Math.floor(idx / 2) * 160,
+    },
+    size: { width: 80, height: 90 },
+  }));
+
+  // Create UseCase nodes
+  const useCaseNodes: DiagramNode[] = actionNodes.map((act, idx) => {
+    const ucName = act.name.replace(/^Melakukan\s+/i, "");
+    return {
+      id: `uc_${act.id || idx + 1}`,
+      name: ucName,
+      type: "usecase" as const,
+      position: {
+        x: 240 + (idx % 2 === 0 ? 0 : 40),
+        y: 100 + idx * 75,
+      },
+      size: { width: 170, height: 50 },
+    };
+  });
+
+  // Create Edges (association between Actor and Use Case)
+  const edges: Edge[] = [];
+  let edgeId = 1;
+
+  for (let i = 0; i < actionNodes.length; i++) {
+    const act = actionNodes[i];
+    const ucId = useCaseNodes[i].id;
+    const laneName = (act as any).swimlane;
+
+    let targetActorId = actorNodes[0].id;
+    if (laneName) {
+      const matchActor = actorNodes.find((a) => a.name.toLowerCase() === laneName.toLowerCase());
+      if (matchActor) targetActorId = matchActor.id;
+    }
+
+    edges.push({
+      id: `edge_assoc_${edgeId++}`,
+      source: targetActorId,
+      target: ucId,
+      type: "association",
+    });
+  }
+
+  return {
+    id: `uc_${Date.now()}`,
+    name: `${diagram.name} (Use Case)`,
+    type: "usecase",
+    nodes: [...actorNodes, ...useCaseNodes],
+    edges,
+    metadata: {
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      version: 1,
+    },
+  };
+}
+
 export function convertDiagram(diagram: Diagram, target: ConversionTarget): Diagram | null {
   if (diagram.type === "erd" && target === "class") return convertErdToClass(diagram);
   if (diagram.type === "class" && target === "erd") return convertClassToErd(diagram);
@@ -562,5 +665,8 @@ export function convertDiagram(diagram: Diagram, target: ConversionTarget): Diag
   if (diagram.type === "usecase" && target === "sequence") return convertUseCaseToSequence(diagram);
   if (diagram.type === "flowchart" && target === "activity") return convertFlowchartToActivity(diagram);
   if (diagram.type === "activity" && target === "flowchart") return convertActivityToFlowchart(diagram);
+  if ((diagram.type === "activity" || diagram.type === "flowchart") && target === "usecase") {
+    return convertActivityOrFlowchartToUseCase(diagram);
+  }
   return null;
 }

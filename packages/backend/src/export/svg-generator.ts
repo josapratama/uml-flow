@@ -63,6 +63,14 @@ function computeBoundingBox(diagram: Diagram): {
     }
   }
 
+  // Account for activity swimlane header & columns
+  if (diagram.type === "activity" && (diagram as any).swimlanes?.length) {
+    minY = Math.min(minY, minY - 56);
+    minX = Math.min(minX, minX - 36);
+    maxX = Math.max(maxX, maxX + 36);
+    maxY = Math.max(maxY, maxY + 36);
+  }
+
   if (!isFinite(minX)) {
     minX = 0;
     minY = 0;
@@ -214,6 +222,39 @@ export function generateSVG(diagram: Diagram, options: ExportOptions): string {
         svg += `<rect x="${bx}" y="${by}" width="${bw}" height="32" rx="10" fill="rgba(226, 232, 240, 0.7)"/>`;
         svg += `<line x1="${bx}" y1="${by + 32}" x2="${bx + bw}" y2="${by + 32}" stroke="#cbd5e1" stroke-width="1"/>`;
         svg += `<text x="${bx + bw / 2}" y="${by + 20}" text-anchor="middle" font-size="12.5" font-weight="bold" font-family="sans-serif" fill="#1e293b">${escapeXml(rawTitle)}</text>`;
+      }
+    }
+
+    // Render UML 2.5 Activity Diagram Swimlane Columns & Header
+    if (diagram.type === "activity" && (diagram as any).swimlanes?.length) {
+      const swimlanes = (diagram as any).swimlanes as string[];
+      let sMinX = Infinity, sMinY = Infinity, sMaxX = -Infinity, sMaxY = -Infinity;
+      for (const n of diagramWithEdges.nodes) {
+        sMinX = Math.min(sMinX, n.position.x);
+        sMinY = Math.min(sMinY, n.position.y);
+        sMaxX = Math.max(sMaxX, n.position.x + n.size.width);
+        sMaxY = Math.max(sMaxY, n.position.y + n.size.height);
+      }
+      if (!isFinite(sMinX)) {
+        sMinX = 0; sMinY = 0; sMaxX = 700; sMaxY = 500;
+      }
+      const padding = 36;
+      const headerHeight = 40;
+      const totalHeight = Math.max(sMaxY - sMinY + padding * 2 + headerHeight, 400);
+      const laneWidth = Math.max((sMaxX - sMinX + padding * 2) / swimlanes.length, 220);
+      const startX = sMinX - padding;
+      const startY = sMinY - padding - headerHeight;
+
+      for (let i = 0; i < swimlanes.length; i++) {
+        const lane = swimlanes[i];
+        const lx = startX + i * laneWidth;
+        const bgFill = i % 2 === 0 ? "rgba(99, 102, 241, 0.03)" : "rgba(99, 102, 241, 0.07)";
+        svg += `<g class="swimlane-col">`;
+        svg += `<rect x="${lx}" y="${startY}" width="${laneWidth}" height="${totalHeight}" fill="${bgFill}" stroke="rgba(148, 163, 184, 0.4)" stroke-width="1" stroke-dasharray="4,4"/>`;
+        svg += `<rect x="${lx}" y="${startY}" width="${laneWidth}" height="${headerHeight}" fill="rgba(99, 102, 241, 0.15)" stroke="rgba(148, 163, 184, 0.6)" stroke-width="1"/>`;
+        svg += `<rect x="${lx}" y="${startY}" width="${laneWidth}" height="3" fill="#6366f1"/>`;
+        svg += `<text x="${lx + laneWidth / 2}" y="${startY + headerHeight / 2 + 5}" text-anchor="middle" font-size="12" font-weight="bold" font-family="sans-serif" fill="#6366f1">${escapeXml(lane)}</text>`;
+        svg += `</g>`;
       }
     }
 
@@ -583,7 +624,25 @@ function renderSequenceDiagram(diagram: any): string {
     svg += `<line x1="${p.position.x}" y1="${startY - 10}" x2="${p.position.x}" y2="${lifelineEnd}" stroke="#999" stroke-width="1" stroke-dasharray="4,4"/>`;
   }
 
-  // Messages
+  // UML 2.5 Execution Specification (Activation Bars) on Lifelines
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    if (msg.type === "return") continue;
+    const toP = participants.find((p: any) => p.id === msg.to);
+    if (!toP) continue;
+    const y = startY + i * msgSpacing;
+    let actEndY = y + 36;
+    for (let k = i + 1; k < messages.length; k++) {
+      const nextMsg = messages[k];
+      if (nextMsg.from === toP.id && (nextMsg.type === "return" || nextMsg.to === msg.from)) {
+        actEndY = startY + k * msgSpacing + 6;
+        break;
+      }
+    }
+    svg += `<rect x="${toP.position.x - 6}" y="${y - 4}" width="12" height="${Math.max(24, actEndY - y + 4)}" fill="#ffffff" stroke="#6366f1" stroke-width="1.5" rx="1"/>`;
+  }
+
+  // Messages with UML 2.5 chronological numbering
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
     const fromP = participants.find((p: any) => p.id === msg.from);
@@ -597,8 +656,10 @@ function renderSequenceDiagram(diagram: any): string {
       msg.type === "return" || msg.type === "async"
         ? ' stroke-dasharray="5,3"'
         : "";
+    const rawLabel = msg.label || "";
+    const labelText = /^\d+[\.:\s]/.test(rawLabel) ? rawLabel : `${i + 1}. ${rawLabel}`;
     svg += `<line x1="${x1}" y1="${y}" x2="${x2 - (x2 > x1 ? 8 : -8)}" y2="${y}" stroke="#555" stroke-width="1.5"${dash} marker-end="url(#arrow)"/>`;
-    svg += `<text x="${midX}" y="${y - 8}" text-anchor="middle" font-size="11" fill="#444">${escapeXml(msg.label)}</text>`;
+    svg += `<text x="${midX}" y="${y - 8}" text-anchor="middle" font-size="11" font-weight="500" fill="#334155">${escapeXml(labelText)}</text>`;
   }
 
   return svg;

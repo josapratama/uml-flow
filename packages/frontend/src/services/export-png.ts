@@ -121,12 +121,19 @@ export async function exportAsPNG(
     clone.querySelectorAll(sel).forEach((el) => el.remove());
   });
 
-  // Remove selection visual indicators (blue borders) without deleting the nodes/edges
-  clone.querySelectorAll(".uml-node.selected").forEach((el) => {
+  // Remove selection visual indicators (blue borders) and reset focus-dimming opacity
+  clone.querySelectorAll<SVGGraphicsElement>(".uml-node, .uml-edge, [data-node-id], [data-edge-id]").forEach((el) => {
     el.classList.remove("selected");
+    if (el.style) {
+      el.style.opacity = "1";
+      el.style.filter = "";
+    }
   });
-  clone.querySelectorAll(".uml-edge.selected").forEach((el) => {
-    el.classList.remove("selected");
+  // Reset any other inline opacity applied by subgraph focus
+  clone.querySelectorAll<SVGGraphicsElement>("[style*='opacity']").forEach((el) => {
+    if (el.style) {
+      el.style.opacity = "1";
+    }
   });
 
   // Set SVG dimensions to fit full content
@@ -248,11 +255,18 @@ export function getFullDiagramSVG(svgElement: SVGSVGElement): string {
     clone.querySelectorAll(sel).forEach((el) => el.remove());
   });
 
-  clone.querySelectorAll(".uml-node.selected").forEach((el) => {
+  // Remove selection visual indicators and reset focus-dimming opacity
+  clone.querySelectorAll<SVGGraphicsElement>(".uml-node, .uml-edge, [data-node-id], [data-edge-id]").forEach((el) => {
     el.classList.remove("selected");
+    if (el.style) {
+      el.style.opacity = "1";
+      el.style.filter = "";
+    }
   });
-  clone.querySelectorAll(".uml-edge.selected").forEach((el) => {
-    el.classList.remove("selected");
+  clone.querySelectorAll<SVGGraphicsElement>("[style*='opacity']").forEach((el) => {
+    if (el.style) {
+      el.style.opacity = "1";
+    }
   });
 
   clone.setAttribute("width", String(totalW));

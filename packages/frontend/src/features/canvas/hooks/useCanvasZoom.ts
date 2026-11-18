@@ -65,6 +65,14 @@ export function useCanvasZoom(
       }
     }
 
+    // For activity diagrams with swimlanes, add extra margin for swimlane header & columns
+    if (diagram.type === "activity" && (diagram as any).swimlanes?.length) {
+      minY -= 76;
+      minX -= 40;
+      maxX += 40;
+      maxY += 40;
+    }
+
     const topPadScreen = 68; // Reserve space for CanvasControls floating bar at top
     const bottomPadScreen = 40;
     const horizontalPadScreen = 48;

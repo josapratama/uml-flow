@@ -1,4 +1,4 @@
-import { computeFlowNodeSize, type ActivityNode } from "@uml-editor/shared";
+import { computeFlowNodeSize, type ActivityNode, type DSLToken, type Diagram } from "@uml-editor/shared";
 import { BaseDiagramParser } from "../base-parser";
 
 export class ActivityDiagramParser extends BaseDiagramParser {
@@ -10,6 +10,14 @@ export class ActivityDiagramParser extends BaseDiagramParser {
   private currentSwimlane: string | null = null;
   /** Active decision node for branching */
   private currentDecision: ActivityNode | null = null;
+
+  constructor(diagram: Diagram, tokens: DSLToken[], startPos: number) {
+    super(diagram, tokens, startPos);
+    this.swimlanes = (diagram as any).swimlanes ? [...(diagram as any).swimlanes] : [];
+    this.currentSwimlane =
+      (diagram as any)._currentSwimlane ||
+      (this.swimlanes.length > 0 ? this.swimlanes[this.swimlanes.length - 1] : null);
+  }
 
   private hasExplicitRelations(): boolean {
     return this.tokens.some(
@@ -37,6 +45,7 @@ export class ActivityDiagramParser extends BaseDiagramParser {
       if (!this.swimlanes.includes(laneName)) this.swimlanes.push(laneName);
       this.currentSwimlane = laneName;
       (this.diagram as any).swimlanes = this.swimlanes;
+      (this.diagram as any)._currentSwimlane = this.currentSwimlane;
       return;
     }
 
@@ -63,6 +72,7 @@ export class ActivityDiagramParser extends BaseDiagramParser {
         if (!this.swimlanes.includes(laneName)) this.swimlanes.push(laneName);
         this.currentSwimlane = laneName;
         (this.diagram as any).swimlanes = this.swimlanes;
+        (this.diagram as any)._currentSwimlane = this.currentSwimlane;
       }
       return;
     }
@@ -141,12 +151,14 @@ export class ActivityDiagramParser extends BaseDiagramParser {
       const val = token.value.toLowerCase();
       if (val === "start") {
         this.advance();
-        this.createNode("start", "start", 30, 30);
+        const lane = this.parseTrailingSwimlane();
+        this.createNode("start", "start", 30, 30, lane);
         return;
       }
       if (val === "end") {
         this.advance();
-        this.createNode("end", "end", 30, 30);
+        const lane = this.parseTrailingSwimlane();
+        this.createNode("end", "end", 30, 30, lane);
         return;
       }
       if (["yes", "no", "true", "false", "ya", "tidak"].includes(val)) {
@@ -184,12 +196,14 @@ export class ActivityDiagramParser extends BaseDiagramParser {
       switch (token.value) {
         case "start": {
           this.advance();
-          this.createNode("start", "start", 30, 30);
+          const lane = this.parseTrailingSwimlane();
+          this.createNode("start", "start", 30, 30, lane);
           return;
         }
         case "end": {
           this.advance();
-          this.createNode("end", "end", 30, 30);
+          const lane = this.parseTrailingSwimlane();
+          this.createNode("end", "end", 30, 30, lane);
           return;
         }
         case "action":
@@ -201,8 +215,9 @@ export class ActivityDiagramParser extends BaseDiagramParser {
               ? this.currentToken()!.value
               : this.currentToken()?.value || "Action";
           this.advance();
+          const lane = this.parseTrailingSwimlane();
           const sz = computeFlowNodeSize("action", name, 13, "activity");
-          this.createNode("action", name, sz.width, sz.height);
+          this.createNode("action", name, sz.width, sz.height, lane);
           return;
         }
         case "decision": {
@@ -213,24 +228,28 @@ export class ActivityDiagramParser extends BaseDiagramParser {
               ? this.currentToken()!.value
               : this.currentToken()?.value || "?";
           this.advance();
+          const lane = this.parseTrailingSwimlane();
           const sz = computeFlowNodeSize("decision", name, 13, "activity");
-          this.createNode("decision", name, sz.width, sz.height);
+          this.createNode("decision", name, sz.width, sz.height, lane);
           return;
         }
         case "merge": {
           this.advance();
-          this.createNode("merge", "◇", 40, 40);
+          const lane = this.parseTrailingSwimlane();
+          this.createNode("merge", "◇", 40, 40, lane);
           this.currentDecision = null;
           return;
         }
         case "fork": {
           this.advance();
-          this.createNode("fork", "═", 120, 8);
+          const lane = this.parseTrailingSwimlane();
+          this.createNode("fork", "═", 120, 8, lane);
           return;
         }
         case "join": {
           this.advance();
-          this.createNode("join", "═", 120, 8);
+          const lane = this.parseTrailingSwimlane();
+          this.createNode("join", "═", 120, 8, lane);
           return;
         }
       }
@@ -248,11 +267,32 @@ export class ActivityDiagramParser extends BaseDiagramParser {
     this.advance();
   }
 
+  private parseTrailingSwimlane(): string | null {
+    const token = this.currentToken();
+    if (token && token.type === "bracket") {
+      const val = token.value.trim();
+      const lower = val.toLowerCase();
+      if (
+        val &&
+        !["start", "end", "yes", "no", "true", "false", "ya", "tidak"].includes(lower)
+      ) {
+        this.advance();
+        if (!this.swimlanes.includes(val)) {
+          this.swimlanes.push(val);
+          (this.diagram as any).swimlanes = this.swimlanes;
+        }
+        return val;
+      }
+    }
+    return null;
+  }
+
   private createNode(
     type: ActivityNode["type"],
     name: string,
     w: number,
     h: number,
+    explicitLane?: string | null,
   ): void {
     const id = `node_${type}_${name.replace(/[^a-zA-Z0-9]/g, "_")}_${this.diagram.nodes.length}`;
     const node: ActivityNode = {
@@ -263,9 +303,14 @@ export class ActivityDiagramParser extends BaseDiagramParser {
       size: { width: w, height: h },
     } as any;
 
-    // Set swimlane if active
-    if (this.currentSwimlane) {
-      (node as any).swimlane = this.currentSwimlane;
+    // Set swimlane if explicit or active
+    const lane = explicitLane || this.currentSwimlane;
+    if (lane) {
+      (node as any).swimlane = lane;
+      if (!this.swimlanes.includes(lane)) {
+        this.swimlanes.push(lane);
+        (this.diagram as any).swimlanes = this.swimlanes;
+      }
     }
 
     // Auto-connect to previous node ONLY if there are no explicit edges in the diagram

@@ -21,6 +21,27 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
         for (const sub of (targetNode as any).substates) subIds.add(sub.id);
       }
 
+      // Detect swimlane in activity diagram based on drop column X
+      let detectedSwimlane = (targetNode as any).swimlane;
+      const swimlanes = (diagram as any).swimlanes as string[] | undefined;
+      if (diagram.type === "activity" && swimlanes && swimlanes.length > 0) {
+        let minX = Infinity, maxX = -Infinity;
+        for (const n of diagram.nodes) {
+          minX = Math.min(minX, n.position.x);
+          maxX = Math.max(maxX, n.position.x + n.size.width);
+        }
+        if (isFinite(minX) && isFinite(maxX)) {
+          const padding = 36;
+          const laneWidth = Math.max((maxX - minX + padding * 2) / swimlanes.length, 220);
+          const startX = minX - padding;
+          const nodeCenterX = targetX + targetNode.size.width / 2;
+          const laneIdx = Math.floor((nodeCenterX - startX) / laneWidth);
+          if (laneIdx >= 0 && laneIdx < swimlanes.length) {
+            detectedSwimlane = swimlanes[laneIdx];
+          }
+        }
+      }
+
       history.replace({
         ...diagram,
         nodes: diagram.nodes.map((n) => {
@@ -28,6 +49,7 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
             return {
               ...n,
               position: { x: targetX, y: targetY },
+              swimlane: detectedSwimlane,
             };
           }
           if (subIds.has(n.id)) {
@@ -202,14 +224,26 @@ export function useNodeActions({ diagram, history, snapEnabled }: ActionDeps) {
     [diagram, history],
   );
 
-  /** Edit name and/or size from the properties panel. */
+  /** Edit name, size, or swimlane from the properties panel. */
   const nodeUpdate = useCallback(
-    (nodeId: string, patch: { name?: string; width?: number; height?: number }) => {
+    (
+      nodeId: string,
+      patch: { name?: string; width?: number; height?: number; swimlane?: string },
+    ) => {
       if (!diagram) return;
       const node = diagram.nodes.find((n) => n.id === nodeId);
       if (!node) return;
       if (patch.name !== undefined && patch.name.trim() !== node.name) {
         nodeRename(nodeId, patch.name);
+        return;
+      }
+      if (patch.swimlane !== undefined) {
+        history.set({
+          ...diagram,
+          nodes: diagram.nodes.map((n) =>
+            n.id === nodeId ? { ...n, swimlane: patch.swimlane || undefined } : n,
+          ),
+        });
         return;
       }
       if (patch.width === undefined && patch.height === undefined) return;

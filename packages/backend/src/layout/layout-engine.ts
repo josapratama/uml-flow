@@ -104,6 +104,17 @@ export class LayoutEngine {
   private autoLayout(diagram: Diagram): Diagram {
     switch (diagram.type) {
       case "activity":
+        if ((diagram as any).swimlanes && (diagram as any).swimlanes.length > 0) {
+          return this.layoutActivityWithSwimlanes(diagram);
+        }
+        if (this.hasBranching(diagram)) {
+          return layoutLayered(diagram, {
+            ...this.options,
+            rankSpacing: 96,
+            nodeSpacing: 80,
+          });
+        }
+        return layoutLinear(diagram, this.options);
       case "flowchart":
         if (this.hasBranching(diagram)) {
           return layoutLayered(diagram, {
@@ -136,14 +147,18 @@ export class LayoutEngine {
       diagram.type === "flowchart" || diagram.type === "activity";
     switch (preset) {
       case "layered":
-        return layoutLayered(
-          diagram,
-          isFlow
-            ? { ...this.options, rankSpacing: 96, nodeSpacing: 80 }
-            : this.options,
-        );
       case "linear":
-        return layoutLinear(diagram, this.options);
+        if (diagram.type === "activity" && (diagram as any).swimlanes?.length) {
+          return this.layoutActivityWithSwimlanes(diagram);
+        }
+        return preset === "linear"
+          ? layoutLinear(diagram, this.options)
+          : layoutLayered(
+              diagram,
+              isFlow
+                ? { ...this.options, rankSpacing: 96, nodeSpacing: 80 }
+                : this.options,
+            );
       case "force":
         return layoutForce(diagram, this.options);
       case "grid":
@@ -153,6 +168,115 @@ export class LayoutEngine {
       default:
         return layoutLayered(diagram, this.options);
     }
+  }
+
+  private layoutActivityWithSwimlanes(diagram: Diagram): Diagram {
+    const swimlanes = (diagram as any).swimlanes as string[];
+    if (!swimlanes || swimlanes.length === 0) {
+      return this.hasBranching(diagram)
+        ? layoutLayered(diagram, { ...this.options, rankSpacing: 96, nodeSpacing: 80 })
+        : layoutLinear(diagram, this.options);
+    }
+
+    const laneMap = new Map<string, number>();
+    swimlanes.forEach((name, idx) => laneMap.set(name, idx));
+
+    // Determine column widths
+    const minColWidth = 260;
+    let maxNodeWidth = 140;
+    for (const n of diagram.nodes) {
+      if (n.size?.width && n.size.width > maxNodeWidth) {
+        maxNodeWidth = n.size.width;
+      }
+    }
+    const colWidth = Math.max(minColWidth, maxNodeWidth + 60);
+    const startX = 60;
+    const startY = 80;
+    const rankSpacing = 95;
+
+    // Build adjacency and in-degree for topological ranking
+    const inDegree = new Map<string, number>();
+    const adj = new Map<string, string[]>();
+    for (const n of diagram.nodes) {
+      inDegree.set(n.id, 0);
+      adj.set(n.id, []);
+    }
+    for (const e of diagram.edges) {
+      if (adj.has(e.source) && inDegree.has(e.target)) {
+        adj.get(e.source)!.push(e.target);
+        inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
+      }
+    }
+
+    const rankMap = new Map<string, number>();
+    const queue: string[] = [];
+    for (const [id, deg] of inDegree.entries()) {
+      if (deg === 0) {
+        queue.push(id);
+        rankMap.set(id, 0);
+      }
+    }
+
+    const visited = new Set<string>();
+    while (queue.length > 0) {
+      const u = queue.shift()!;
+      visited.add(u);
+      const currRank = rankMap.get(u) || 0;
+      for (const v of adj.get(u) || []) {
+        const nextRank = Math.max(rankMap.get(v) || 0, currRank + 1);
+        rankMap.set(v, nextRank);
+        if (!visited.has(v) && !queue.includes(v)) {
+          queue.push(v);
+        }
+      }
+    }
+
+    // Any unranked nodes get fallback rank
+    let fallbackRank = Math.max(0, ...Array.from(rankMap.values())) + 1;
+    for (const n of diagram.nodes) {
+      if (!rankMap.has(n.id)) {
+        rankMap.set(n.id, fallbackRank++);
+      }
+    }
+
+    // Sort nodes by rank, then lane
+    const nodesByRank = [...diagram.nodes].sort((a, b) => {
+      const rA = rankMap.get(a.id) || 0;
+      const rB = rankMap.get(b.id) || 0;
+      if (rA !== rB) return rA - rB;
+      const laneA = laneMap.get((a as any).swimlane) ?? 0;
+      const laneB = laneMap.get((b as any).swimlane) ?? 0;
+      return laneA - laneB;
+    });
+
+    const laneYTracker = new Map<number, number>();
+    const newNodes = nodesByRank.map((node) => {
+      const laneIdx = laneMap.has((node as any).swimlane)
+        ? laneMap.get((node as any).swimlane)!
+        : 0;
+      const r = rankMap.get(node.id) || 0;
+      const nodeW = node.size?.width || 140;
+      const nodeH = node.size?.height || 50;
+      const colCenterX = startX + laneIdx * colWidth + colWidth / 2;
+      const posX = Math.round(colCenterX - nodeW / 2);
+
+      let targetY = startY + r * rankSpacing;
+      const lastY = laneYTracker.get(laneIdx);
+      if (lastY !== undefined && targetY < lastY + 60) {
+        targetY = lastY + 60;
+      }
+      laneYTracker.set(laneIdx, targetY + nodeH);
+
+      return {
+        ...node,
+        position: { x: posX, y: targetY },
+      };
+    });
+
+    return {
+      ...diagram,
+      nodes: newNodes,
+    };
   }
 
   private layoutUseCaseDiagram(diagram: Diagram): Diagram {

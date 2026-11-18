@@ -4,6 +4,7 @@ import { SvgInlineInput } from "./SvgInlineInput";
 
 export function MessageArrow({
   message,
+  index,
   theme = "dark",
   fromX,
   toX,
@@ -22,6 +23,7 @@ export function MessageArrow({
   onContextMenu,
 }: {
   message: SequenceMessage;
+  index?: number;
   theme?: "light" | "dark";
   fromX: number;
   toX: number;
@@ -48,6 +50,10 @@ export function MessageArrow({
   const color = isSelected ? selectColor : isHovered ? hoverColor : defaultColor;
   const sw = isSelected ? 2 : 1.5;
   const midX = (fromX + toX) / 2;
+  const rawLabel = message.label || "";
+  const displayLabel = index && !/^\d+[\.:\s]/.test(rawLabel)
+    ? `${index}. ${rawLabel}`
+    : rawLabel;
 
   if (isSelf) {
     const loopW = 30;
@@ -95,7 +101,7 @@ export function MessageArrow({
             onClick={onClick}
             onDoubleClick={onDoubleClick}
           >
-            {message.label}
+            {displayLabel}
           </text>
         )}
       </g>
@@ -149,12 +155,12 @@ export function MessageArrow({
           textAnchor="middle"
           fontSize="11"
           fill={color}
-          fontWeight={isSelected ? "600" : "normal"}
+          fontWeight={isSelected ? "600" : "500"}
           style={{ cursor: "pointer" }}
           onClick={onClick}
           onDoubleClick={onDoubleClick}
         >
-          {message.label}
+          {displayLabel}
         </text>
       )}
       {isSelected && (

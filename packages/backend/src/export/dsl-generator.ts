@@ -145,11 +145,16 @@ function generateActivityDSL(diagram: Diagram): string {
   let dsl = "";
   const nodeMap = new Map(diagram.nodes.map((n) => [n.id, n]));
 
-  // Write swimlanes if present
-  const swimlanes: string[] = (diagram as any).swimlanes || [];
-  if (swimlanes.length > 0) {
-    for (const lane of swimlanes) {
-      dsl += `swimlane "${lane}"\n`;
+  // Write swimlanes if present or inferred from nodes
+  const declaredSwimlanes = (diagram as any).swimlanes || [];
+  const allLanes = new Set<string>(declaredSwimlanes);
+  for (const n of diagram.nodes) {
+    if ((n as any).swimlane) allLanes.add((n as any).swimlane);
+  }
+  const effectiveSwimlanes = Array.from(allLanes);
+  if (effectiveSwimlanes.length > 0) {
+    for (const lane of effectiveSwimlanes) {
+      dsl += `swimlane "${escapeDslString(lane)}"\n`;
     }
     dsl += "\n";
   }
@@ -181,21 +186,21 @@ function generateActivityDSL(diagram: Diagram): string {
   for (const nodeId of ordered) {
     const node = nodeMap.get(nodeId) as any;
     if (!node) continue;
+    const laneTag = node.swimlane ? ` [${node.swimlane}]` : "";
     if (node.type === "start") {
-      dsl += `[start]\n`;
+      dsl += `[start]${laneTag}\n`;
     } else if (node.type === "end") {
-      dsl += `[end]\n`;
+      dsl += `[end]${laneTag}\n`;
     } else if (node.type === "decision") {
-      dsl += `decision "${escapeDslString(node.name)}"\n`;
+      dsl += `decision "${escapeDslString(node.name)}"${laneTag}\n`;
     } else if (node.type === "fork") {
-      dsl += `fork\n`;
+      dsl += `fork${laneTag}\n`;
     } else if (node.type === "join") {
-      dsl += `join\n`;
+      dsl += `join${laneTag}\n`;
     } else if (node.type === "merge") {
-      dsl += `merge\n`;
+      dsl += `merge${laneTag}\n`;
     } else {
-      const swimlane = node.swimlane ? ` [${node.swimlane}]` : "";
-      dsl += `action "${escapeDslString(node.name)}"${swimlane}\n`;
+      dsl += `action "${escapeDslString(node.name)}"${laneTag}\n`;
     }
   }
 

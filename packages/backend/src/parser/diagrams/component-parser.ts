@@ -85,7 +85,7 @@ export class ComponentDiagramParser extends BaseDiagramParser {
         size: { width: Math.max(140, name.length * 9 + 40), height: 60 },
       } as any;
       if (stereotype) (node as any).stereotype = stereotype;
-      this.diagram.nodes.push(node);
+      this.diagram.nodes.push(node!);
     }
     if (alias) {
       (node as any).alias = alias;

@@ -16,16 +16,16 @@ swimlane "Mahasiswa"
 swimlane "Portal SIAKAD"
 swimlane "Dosen Penasihat Akademik"
 
-start
-action "Pilih Menu KRS & Mata Kuliah"
-action "Verifikasi Prasyarat SKS & Kuota Kelas"
-decision "Kuota & Prasyarat Terpenuhi?"
-action "Kirim Pengajuan KRS ke Dosen PA"
-action "Review Rencana Studi & Konsultasi"
-decision "Setujui KRS?"
-action "Status KRS Disetujui (KRS Final)"
-action "Beri Catatan Revisi & Notifikasi"
-end
+start [Mahasiswa]
+action "Pilih Menu KRS & Mata Kuliah" [Mahasiswa]
+action "Verifikasi Prasyarat SKS & Kuota Kelas" [Portal SIAKAD]
+decision "Kuota & Prasyarat Terpenuhi?" [Portal SIAKAD]
+action "Kirim Pengajuan KRS ke Dosen PA" [Portal SIAKAD]
+action "Review Rencana Studi & Konsultasi" [Dosen Penasihat Akademik]
+decision "Setujui KRS?" [Dosen Penasihat Akademik]
+action "Status KRS Disetujui (KRS Final)" [Portal SIAKAD]
+action "Beri Catatan Revisi & Notifikasi" [Dosen Penasihat Akademik]
+end [Portal SIAKAD]
 
 start --> "Pilih Menu KRS & Mata Kuliah"
 "Pilih Menu KRS & Mata Kuliah" --> "Verifikasi Prasyarat SKS & Kuota Kelas"

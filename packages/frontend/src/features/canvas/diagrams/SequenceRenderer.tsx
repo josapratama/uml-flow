@@ -116,6 +116,37 @@ export function SequenceRenderer(props: Props) {
         />
       ))}
 
+      {/* UML 2.5 Execution Specification (Activation Bars) */}
+      {messages.map((msg, i) => {
+        if (msg.type === "return") return null;
+        const toP = participants.find((p) => p.id === msg.to);
+        if (!toP) return null;
+        const y = startY + i * msgSpacing;
+        let actEndY = y + 36;
+        for (let k = i + 1; k < messages.length; k++) {
+          const nextMsg = messages[k];
+          if (nextMsg.from === toP.id && (nextMsg.type === "return" || nextMsg.to === msg.from)) {
+            actEndY = startY + k * msgSpacing + 6;
+            break;
+          }
+        }
+        const barH = Math.max(24, actEndY - y + 4);
+        return (
+          <rect
+            key={`act_${msg.id}`}
+            x={toP.position.x - 6}
+            y={y - 4}
+            width={12}
+            height={barH}
+            rx={2}
+            fill={isDark ? "#1e293b" : "#ffffff"}
+            stroke={isDark ? "#818cf8" : "#64748b"}
+            strokeWidth="1.5"
+            className="pointer-events-none shadow-sm"
+          />
+        );
+      })}
+
       {/* Fragments */}
       {fragments.map((frag) => (
         <FragmentBox
@@ -141,6 +172,7 @@ export function SequenceRenderer(props: Props) {
         return (
           <MessageArrow
             key={msg.id}
+            index={i + 1}
             message={msg}
             theme={theme}
             fromX={fromP.position.x}

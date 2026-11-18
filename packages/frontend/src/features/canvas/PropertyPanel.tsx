@@ -12,11 +12,12 @@ interface Props {
   tab?: "props" | "style";
   onTabChange?: (tab: "props" | "style") => void;
   styleSlot?: React.ReactNode;
+  swimlanes?: string[];
   onOpenStyle?: () => void;
   onOpenGlobalStyle?: () => void;
   onUpdateNode?: (
     nodeId: string,
-    patch: { name?: string; width?: number; height?: number },
+    patch: { name?: string; width?: number; height?: number; swimlane?: string },
   ) => void;
   onLiveUpdate?: (nodeId: string, patch: { name?: string }) => void;
   onAutoFit?: (nodeId: string) => void;
@@ -85,6 +86,7 @@ function NumberField({
 
 export function PropertyPanel({
   node,
+  swimlanes,
   onClose,
   tab = "props",
   onTabChange,
@@ -184,6 +186,23 @@ export function PropertyPanel({
               </span>
             )}
           </PropRow>
+
+          {swimlanes && swimlanes.length > 0 && (
+            <PropRow label={isId ? "Swimlane / Jalur" : "Swimlane"}>
+              <select
+                className={inputCls}
+                value={(node as any).swimlane || ""}
+                onChange={(e) => onUpdateNode?.(node.id, { swimlane: e.target.value })}
+              >
+                <option value="">{isId ? "-- Tanpa Swimlane --" : "-- None --"}</option>
+                {swimlanes.map((lane) => (
+                  <option key={lane} value={lane}>
+                    {lane}
+                  </option>
+                ))}
+              </select>
+            </PropRow>
+          )}
 
           <PropRow label={t("properties.nodeName")}>
             {onUpdateNode && !isClassOrErd ? (

@@ -220,6 +220,7 @@ export function AppWorkspace(props: AppWorkspaceProps) {
         {selectedNode && (
           <PropertyPanel
             node={selectedNode}
+            swimlanes={diagram?.swimlanes}
             onClose={() => onNodeSelect(null)}
             tab={showStylePanel === "node" ? "style" : "props"}
             onTabChange={(tab) => onOpenStylePanel(tab === "style" ? "node" : null)}
