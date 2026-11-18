@@ -1,5 +1,7 @@
 import type { Diagram, ClassNode, ERDEntity } from "@uml-editor/shared";
 
+export type PythonTarget = "pydantic" | "sqlalchemy";
+
 function mapPythonType(t: string): string {
   if (!t) return "Any";
   const lower = t.toLowerCase().trim();
@@ -109,7 +111,7 @@ export function generatePythonPydantic(diagram: Diagram): string {
         for (const method of node.methods) {
           const methodName = toSnakeCase(method.name);
           const retType = mapPythonType(method.returnType || "None");
-          const params = (method.parameters || []).map(p => `${sanitizeIdentifier(p.name)}: ${mapPythonType(p.type)}`);
+          const params = ((method as any).parameters || method.params || []).map((p: any) => `${sanitizeIdentifier(p.name)}: ${mapPythonType(p.type)}`);
           const fullParams = ["self", ...params].join(", ");
           lines.push(`    def ${methodName}(${fullParams}) -> ${retType}:`);
           lines.push(`        """Method ${method.name} stub."""`);
@@ -136,9 +138,11 @@ export function generatePythonPydantic(diagram: Diagram): string {
         for (const attr of attrs) {
           const pyType = mapPythonType(attr.type || "str");
           const cleanName = sanitizeIdentifier(attr.name);
-          if (attr.pk) {
+          const isPk = attr.isPrimaryKey || (attr as any).pk;
+          const isNullable = attr.isNullable || (attr as any).nullable;
+          if (isPk) {
             lines.push(`    ${cleanName}: ${pyType} = Field(..., description="Primary Key")`);
-          } else if (attr.nullable) {
+          } else if (isNullable) {
             lines.push(`    ${cleanName}: Optional[${pyType}] = None`);
           } else {
             lines.push(`    ${cleanName}: ${pyType}`);
@@ -220,14 +224,18 @@ export function generatePythonSQLAlchemy(diagram: Diagram): string {
           const { pyType, colType } = mapSqlAlchemyType(attr.type || "str");
           const args: string[] = [colType];
 
-          if (attr.pk) {
+          const isPk = attr.isPrimaryKey || (attr as any).pk;
+          const isFk = attr.isForeignKey || (attr as any).fk;
+          const isNullable = attr.isNullable || (attr as any).nullable;
+
+          if (isPk) {
             args.push("primary_key=True");
             if (pyType === "int") args.push("autoincrement=True");
           }
-          if (attr.fk) {
+          if (isFk) {
             args.push(`ForeignKey("${cleanName}_table.id")`);
           }
-          if (attr.nullable) {
+          if (isNullable) {
             args.push("nullable=True");
             lines.push(`    ${cleanName}: Mapped[Optional[${pyType}]] = mapped_column(${args.join(", ")})`);
           } else {

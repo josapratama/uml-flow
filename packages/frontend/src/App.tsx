@@ -1338,9 +1338,6 @@ export default function App(props: AppProps = {}) {
         onOpenThesisBundle={() => setShowThesisBundle(true)}
         onOpenTestCases={() => setShowTestCases(true)}
         onOpenMockData={() => setShowMockData(true)}
-        onOpenDependencyMatrix={() => setShowDependencyMatrix(true)}
-        onOpenWorkspaceBackup={() => setShowWorkspaceBackup(true)}
-        onOpenNodeHierarchy={() => setShowNodeHierarchy(true)}
         onOpenAI={() => setShowAI(true)}
         onOpenTemplates={() => setShowTemplates(true)}
         onOpenLibrary={() => setShowLibrary(true)}

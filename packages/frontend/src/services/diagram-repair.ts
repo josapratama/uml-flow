@@ -99,7 +99,7 @@ export function repairDiagram(diagram: Diagram): RepairResult {
     });
 
     if (deadEndNodes.length > 0) {
-      let endNode = nodes.find((n) => terminalTypes.has((n.type || "").toLowerCase()));
+      let endNode: DiagramNode | undefined = nodes.find((n) => terminalTypes.has((n.type || "").toLowerCase()));
       if (!endNode) {
         // Calculate position below the lowest node
         let maxY = -Infinity;
@@ -110,28 +110,31 @@ export function repairDiagram(diagram: Diagram): RepairResult {
         }
         avgX = nodes.length > 0 ? avgX / nodes.length : 200;
 
-        endNode = {
+        const newEndNode: DiagramNode = {
           id: `end_${Date.now()}`,
           name: "Selesai",
-          type: diagram.type === "activity" ? "end" : "end",
+          type: (diagram.type === "activity" ? "end" : "end") as any,
           position: { x: avgX, y: maxY + 80 },
           size: { width: 100, height: 50 },
-        } as any;
-        nodes.push(endNode);
-        nodeMap.set(endNode.id, endNode);
+        } as DiagramNode;
+        nodes.push(newEndNode);
+        nodeMap.set(newEndNode.id, newEndNode);
         fixLogs.push(`Membuat node terminal 'Selesai' di akhir diagram`);
+        endNode = newEndNode;
       }
 
       // Connect all dead-end nodes to the end node
-      for (const leaf of deadEndNodes) {
-        const edgeId = `edge_heal_${leaf.id}_to_${endNode.id}`;
-        edges.push({
-          id: edgeId,
-          source: leaf.id,
-          target: endNode.id,
-          type: "flow",
-        });
-        fixLogs.push(`Menyambungkan alur akhir dari '${leaf.name || leaf.id}' ke node 'Selesai'`);
+      if (endNode) {
+        for (const leaf of deadEndNodes) {
+          const edgeId = `edge_heal_${leaf.id}_to_${endNode.id}`;
+          edges.push({
+            id: edgeId,
+            source: leaf.id,
+            target: endNode.id,
+            type: "flow",
+          });
+          fixLogs.push(`Menyambungkan alur akhir dari '${leaf.name || leaf.id}' ke node 'Selesai'`);
+        }
       }
     }
 
@@ -141,7 +144,7 @@ export function repairDiagram(diagram: Diagram): RepairResult {
       let minY = Infinity;
       let topNode: DiagramNode | null = null;
       for (const n of nodes) {
-        if ((n.type || "") !== "note" && n.position.y < minY) {
+        if ((n.type as string) !== "note" && n.position.y < minY) {
           minY = n.position.y;
           topNode = n;
         }

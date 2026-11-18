@@ -140,8 +140,8 @@ export function generateRust(diagram: Diagram): string {
       // Methods
       for (const m of cls.methods || []) {
         const methodName = toSnakeCase(m.name);
-        const params = (m.parameters || [])
-          .map(p => `${toSnakeCase(p.name)}: ${mapRustType(p.type)}`)
+        const params = ((m as any).parameters || m.params || [])
+          .map((p: any) => `${toSnakeCase(p.name)}: ${mapRustType(p.type)}`)
           .join(", ");
         const paramStr = params ? `&self, ${params}` : "&self";
         const retType = m.returnType ? mapRustType(m.returnType) : "()";
@@ -179,13 +179,13 @@ export function generateRust(diagram: Diagram): string {
       lines.push(`pub struct ${structName} {`);
       for (const attr of ent.attributes || []) {
         const fieldName = toSnakeCase(attr.name);
-        const isNullable = Boolean(attr.nullable);
+        const isNullable = Boolean(attr.isNullable || (attr as any).nullable);
         let rustType = mapRustType(attr.type || "string");
         if (isNullable && !rustType.startsWith("Option<")) {
           rustType = `Option<${rustType}>`;
         }
 
-        if (attr.pk) {
+        if (attr.isPrimaryKey || (attr as any).pk) {
           lines.push("    /// Primary Key");
         }
         if (isNullable) {

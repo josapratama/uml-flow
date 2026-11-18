@@ -1,4 +1,4 @@
-import type { Diagram, DiagramNode, DiagramEdge, SequenceParticipant, SequenceMessage } from "@uml-editor/shared";
+import type { Diagram, DiagramNode, Edge, SequenceParticipant, SequenceMessage } from "@uml-editor/shared";
 
 export interface TraceEntry {
   step: number;
@@ -55,7 +55,7 @@ export function getTransitions(diagram: Diagram, fromNodeId: string): AvailableT
   return edges.map((e, index) => {
     const target = nodes.find(n => n.id === e.target);
     const targetName = target?.name || e.target;
-    let label = e.label?.trim();
+    let label = typeof e.label === "string" ? (e.label as string).trim() : e.label?.text?.trim();
     if (!label) {
       label = edges.length > 1 ? `Cabang ${index + 1}: Menuju ${targetName}` : `Menuju ${targetName}`;
     }

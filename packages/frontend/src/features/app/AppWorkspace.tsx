@@ -202,6 +202,9 @@ export function AppWorkspace(props: AppWorkspaceProps) {
               onQuickAddNode={onQuickAddNode}
               onCopyPNG={props.onCopyPNG}
               onAutoRepair={onAutoRepair}
+              onDeleteNode={actions.deleteNode}
+              onDeleteEdge={actions.deleteEdge}
+              onDuplicateNode={actions.duplicateNode}
               onContextMenu={onCanvasContextMenu}
             />
           </div>

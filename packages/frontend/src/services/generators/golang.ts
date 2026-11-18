@@ -95,8 +95,8 @@ export function generateGolang(diagram: Diagram): string {
       lines.push(`type ${ifaceName} interface {`);
       for (const m of iface.methods || []) {
         const methodName = toPascalCase(m.name);
-        const params = (m.parameters || [])
-          .map(p => `${p.name} ${mapGoType(p.type)}`)
+        const params = ((m as any).parameters || m.params || [])
+          .map((p: any) => `${p.name} ${mapGoType(p.type)}`)
           .join(", ");
         const retType = m.returnType ? mapGoType(m.returnType) : "";
         const retPart = retType ? ` ${retType}` : "";
@@ -130,8 +130,8 @@ export function generateGolang(diagram: Diagram): string {
       for (const m of cls.methods || []) {
         const methodName = toPascalCase(m.name);
         const receiver = structName.charAt(0).toLowerCase();
-        const params = (m.parameters || [])
-          .map(p => `${p.name} ${mapGoType(p.type)}`)
+        const params = ((m as any).parameters || m.params || [])
+          .map((p: any) => `${p.name} ${mapGoType(p.type)}`)
           .join(", ");
         const retType = m.returnType ? mapGoType(m.returnType) : "";
         const retPart = retType ? ` ${retType}` : "";
@@ -165,7 +165,7 @@ export function generateGolang(diagram: Diagram): string {
       lines.push(`type ${structName} struct {`);
       for (const attr of ent.attributes || []) {
         const fieldName = toPascalCase(attr.name);
-        const isNullable = Boolean(attr.nullable);
+        const isNullable = Boolean(attr.isNullable || (attr as any).nullable);
         let goType = mapGoType(attr.type || "string");
         if (isNullable && !goType.startsWith("*")) {
           goType = `*${goType}`;

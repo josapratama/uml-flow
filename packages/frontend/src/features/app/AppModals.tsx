@@ -54,9 +54,6 @@ interface AppModalsProps {
   onLoadDiffVersion: (d: Diagram) => void;
   showAcademicCaption: boolean;
   onCloseAcademicCaption: () => void;
-  showAcademicMetadata?: boolean;
-  onCloseAcademicMetadata?: () => void;
-  onOpenAcademicMetadata?: () => void;
   showSQLExport?: boolean;
   onCloseSQLExport?: () => void;
   showImportModal: boolean;

@@ -118,8 +118,8 @@ export function generateCSharp(diagram: Diagram): string {
         for (const m of node.methods || []) {
           const returnType = mapCSharpType(m.returnType || "void");
           const methodName = toPascalCase(m.name);
-          const params = (m.parameters || [])
-            .map(p => `${mapCSharpType(p.type)} ${p.name}`)
+          const params = ((m as any).parameters || m.params || [])
+            .map((p: any) => `${mapCSharpType(p.type)} ${p.name}`)
             .join(", ");
           lines.push(`        ${returnType} ${methodName}(${params});`);
         }
@@ -166,7 +166,7 @@ export function generateCSharp(diagram: Diagram): string {
           csType = `${csType}?`;
         }
 
-        const visibility = attr.visibility === "private" ? "private" : attr.visibility === "protected" ? "protected" : "public";
+        const visibility = attr.visibility === "-" || (attr.visibility as any) === "private" ? "private" : attr.visibility === "#" || (attr.visibility as any) === "protected" ? "protected" : "public";
         const defaultVal = getDefaultValue(csType.replace(/\?$/, ""), Boolean(isOptional));
 
         lines.push(`        ${visibility} ${csType} ${propName} { get; set; }${defaultVal}`);
@@ -179,9 +179,9 @@ export function generateCSharp(diagram: Diagram): string {
         for (const m of methods) {
           const returnType = mapCSharpType(m.returnType || "void");
           const methodName = toPascalCase(m.name);
-          const visibility = m.visibility === "private" ? "private" : m.visibility === "protected" ? "protected" : "public";
-          const params = (m.parameters || [])
-            .map(p => `${mapCSharpType(p.type)} ${p.name}`)
+          const visibility = m.visibility === "-" || (m.visibility as any) === "private" ? "private" : m.visibility === "#" || (m.visibility as any) === "protected" ? "protected" : "public";
+          const params = ((m as any).parameters || m.params || [])
+            .map((p: any) => `${mapCSharpType(p.type)} ${p.name}`)
             .join(", ");
 
           if (isAbstract) {
@@ -228,10 +228,10 @@ export function generateCSharp(diagram: Diagram): string {
       for (const attr of attrs) {
         const propName = toPascalCase(attr.name);
         const csType = mapCSharpType(attr.type || "string");
-        const isNullable = Boolean(attr.nullable);
+        const isNullable = Boolean(attr.isNullable || (attr as any).nullable);
         const effectiveType = isNullable && !csType.endsWith("?") ? `${csType}?` : csType;
 
-        if (attr.pk) {
+        if (attr.isPrimaryKey || (attr as any).pk) {
           lines.push("        [Key]");
           if (csType === "int" || csType === "long") {
             lines.push("        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
@@ -240,7 +240,7 @@ export function generateCSharp(diagram: Diagram): string {
           lines.push("        [Required]");
         }
 
-        if (attr.fk) {
+        if (attr.isForeignKey || (attr as any).fk) {
           lines.push(`        [ForeignKey(nameof(${propName}))]`);
         }
 

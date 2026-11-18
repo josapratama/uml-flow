@@ -7,9 +7,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onRefreshTabs?: () => void;
+  onRestoreSuccess?: () => void;
 }
 
-export function WorkspaceBackupModal({ isOpen, onClose, onRefreshTabs }: Props) {
+export function WorkspaceBackupModal({ isOpen, onClose, onRefreshTabs, onRestoreSuccess }: Props) {
   const { locale } = useI18n();
   const isId = locale === "id";
 
@@ -57,6 +58,7 @@ export function WorkspaceBackupModal({ isOpen, onClose, onRefreshTabs }: Props) 
       const res = restoreWorkspaceBackup(fileContent, restoreMode);
       showToast(res.message, "success");
       onRefreshTabs?.();
+      onRestoreSuccess?.();
       onClose();
     } catch (err: any) {
       showToast(err.message || "Gagal memulihkan cadangan", "error");

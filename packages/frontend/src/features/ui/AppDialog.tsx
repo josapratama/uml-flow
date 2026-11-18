@@ -202,7 +202,7 @@ export function AppDialogContainer() {
                 ref={inputRef}
                 type="text"
                 value={inputValue}
-                placeholder={options.placeholder || ""}
+                placeholder={(options as PromptModalOptions).placeholder || ""}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {

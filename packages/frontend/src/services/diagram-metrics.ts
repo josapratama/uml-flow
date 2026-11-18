@@ -207,11 +207,11 @@ export function calculateDiagramMetrics(diagram: Diagram): DiagramMetrics {
       let hasPk = false;
 
       for (const a of attrs) {
-        if (a.pk) {
+        if (a.isPrimaryKey || (a as any).pk) {
           pks++;
           hasPk = true;
         }
-        if (a.fk) fks++;
+        if (a.isForeignKey || (a as any).fk) fks++;
       }
 
       if (!hasPk && attrs.length > 0) {

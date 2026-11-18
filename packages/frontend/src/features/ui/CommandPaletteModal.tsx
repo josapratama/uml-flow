@@ -7,7 +7,7 @@ export interface CommandItem {
   title: string;
   description?: string;
   icon: string;
-  category: "nodes" | "layout" | "export" | "modals" | "canvas";
+  category: "nodes" | "layout" | "export" | "modals" | "canvas" | "actions";
   shortcut?: string;
   onSelect: () => void;
 }

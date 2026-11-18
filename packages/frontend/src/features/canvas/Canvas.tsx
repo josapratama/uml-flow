@@ -18,6 +18,7 @@ import { DIAGRAM_TYPES } from "../../data/starter-diagrams";
 import { useCanvasState } from "./hooks/useCanvasState";
 import { useCanvasHandlers } from "./hooks/useCanvasHandlers";
 import { useCanvasZoom } from "./hooks/useCanvasZoom";
+import { showToast } from "../ui/Toast";
 
 interface CanvasProps {
   diagram: Diagram | null;
@@ -98,6 +99,9 @@ interface CanvasProps {
   onCreateNewDiagram?: (type: DiagramType) => void;
   onCopyPNG?: () => void;
   onAutoRepair?: () => void;
+  onDeleteNode?: (nodeId: string) => void;
+  onDeleteEdge?: (edgeId: string) => void;
+  onDuplicateNode?: (nodeId: string) => string | null;
   onContextMenu?: (
     e: React.MouseEvent,
     target: {
@@ -148,6 +152,9 @@ export function Canvas({
   onCreateNewDiagram,
   onCopyPNG,
   onAutoRepair,
+  onDeleteNode,
+  onDeleteEdge,
+  onDuplicateNode,
   onContextMenu,
 }: CanvasProps) {
   // --- Watermark State ---
@@ -266,16 +273,157 @@ export function Canvas({
   const [annotationColor, setAnnotationColor] = useState("#ef4444");
   const [strokes, setStrokes] = useState<AnnotationStroke[]>([]);
 
+  // --- Clipboard for Canvas Nodes ---
+  const nodeClipboardRef = useRef<string[]>([]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
+      const activeEl = document.activeElement;
+      const isInput =
+        activeEl &&
+        (activeEl.tagName === "INPUT" ||
+          activeEl.tagName === "TEXTAREA" ||
+          (activeEl as HTMLElement).isContentEditable);
+
+      if (isInput) return;
+
+      const isMac = navigator.platform?.toUpperCase().indexOf("MAC") >= 0;
+      const mod = isMac ? e.metaKey : e.ctrlKey;
+
+      // Ctrl+F: Search Bar
+      if (mod && e.key.toLowerCase() === "f") {
         e.preventDefault();
         setShowSearch((v) => !v);
+        return;
+      }
+
+      // Ctrl+A: Select All Nodes
+      if (mod && e.key.toLowerCase() === "a") {
+        if (diagram && diagram.nodes && diagram.nodes.length > 0) {
+          e.preventDefault();
+          setMultiSelected(new Set(diagram.nodes.map((n) => n.id)));
+          return;
+        }
+      }
+
+      // Ctrl+C: Copy Selected Node(s)
+      if (mod && e.key.toLowerCase() === "c") {
+        const toCopy: string[] = [];
+        if (multiSelected.size > 0) {
+          toCopy.push(...Array.from(multiSelected));
+        } else if (selectedNodeId) {
+          toCopy.push(selectedNodeId);
+        }
+        if (toCopy.length > 0) {
+          e.preventDefault();
+          nodeClipboardRef.current = toCopy;
+          showToast(
+            toCopy.length === 1
+              ? "1 node disalin ke clipboard"
+              : `${toCopy.length} node disalin ke clipboard`,
+            "info"
+          );
+          return;
+        }
+      }
+
+      // Ctrl+V: Paste Copied Node(s)
+      if (mod && e.key.toLowerCase() === "v") {
+        if (nodeClipboardRef.current.length > 0 && onDuplicateNode) {
+          e.preventDefault();
+          const newIds: string[] = [];
+          for (const id of nodeClipboardRef.current) {
+            const newId = onDuplicateNode(id);
+            if (newId) newIds.push(newId);
+          }
+          if (newIds.length === 1) {
+            onNodeSelect(newIds[0]);
+            setMultiSelected(new Set());
+          } else if (newIds.length > 1) {
+            setMultiSelected(new Set(newIds));
+            onNodeSelect(null);
+          }
+          showToast(
+            newIds.length === 1
+              ? "Node berhasil ditempel (Ctrl+V)"
+              : `${newIds.length} node berhasil ditempel (Ctrl+V)`,
+            "success"
+          );
+          return;
+        }
+      }
+
+      // Ctrl+D: Instant Duplicate Selected Node(s)
+      if (mod && e.key.toLowerCase() === "d") {
+        const toDup: string[] = [];
+        if (multiSelected.size > 0) {
+          toDup.push(...Array.from(multiSelected));
+        } else if (selectedNodeId) {
+          toDup.push(selectedNodeId);
+        }
+        if (toDup.length > 0 && onDuplicateNode) {
+          e.preventDefault();
+          const newIds: string[] = [];
+          for (const id of toDup) {
+            const newId = onDuplicateNode(id);
+            if (newId) newIds.push(newId);
+          }
+          if (newIds.length === 1) {
+            onNodeSelect(newIds[0]);
+            setMultiSelected(new Set());
+          } else if (newIds.length > 1) {
+            setMultiSelected(new Set(newIds));
+            onNodeSelect(null);
+          }
+          showToast(
+            newIds.length === 1
+              ? "Node diduplikasi (Ctrl+D)"
+              : `${newIds.length} node diduplikasi (Ctrl+D)`,
+            "success"
+          );
+          return;
+        }
+      }
+
+      // Delete / Backspace: Delete selected node(s) or edge(s)
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (multiSelected.size > 0 && onDeleteNode) {
+          e.preventDefault();
+          const count = multiSelected.size;
+          multiSelected.forEach((id) => onDeleteNode(id));
+          setMultiSelected(new Set());
+          onNodeSelect(null);
+          showToast(`${count} node dihapus`, "info");
+          return;
+        } else if (selectedNodeId && onDeleteNode) {
+          e.preventDefault();
+          onDeleteNode(selectedNodeId);
+          onNodeSelect(null);
+          showToast("Node dihapus", "info");
+          return;
+        } else if (selectedEdgeId && onDeleteEdge) {
+          e.preventDefault();
+          onDeleteEdge(selectedEdgeId);
+          onEdgeSelect(null);
+          showToast("Relasi garis dihapus", "info");
+          return;
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [
+    diagram,
+    multiSelected,
+    selectedNodeId,
+    selectedEdgeId,
+    onDeleteNode,
+    onDeleteEdge,
+    onDuplicateNode,
+    onNodeSelect,
+    onEdgeSelect,
+    setMultiSelected,
+  ]);
 
   // Auto-fit diagram to canvas viewport when a diagram is loaded or changes
   const prevDiagramKey = useRef<string>("");

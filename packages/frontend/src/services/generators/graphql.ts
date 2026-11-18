@@ -168,8 +168,9 @@ export function generateGraphQL(diagram: Diagram): string {
       lines.push(`type ${typeName} {`);
       for (const attr of entity.attributes || []) {
         const cleanName = toCamelCase(attr.name);
-        const gqlType = attr.pk ? "ID" : mapGraphQLType(attr.type || "string");
-        const isNullable = Boolean(attr.nullable);
+        const isPk = attr.isPrimaryKey || (attr as any).pk;
+        const gqlType = isPk ? "ID" : mapGraphQLType(attr.type || "string");
+        const isNullable = Boolean(attr.isNullable || (attr as any).nullable);
         const suffix = isNullable ? "" : "!";
         lines.push(`  ${cleanName}: ${gqlType}${suffix}`);
       }
@@ -178,10 +179,10 @@ export function generateGraphQL(diagram: Diagram): string {
 
       lines.push(`input Create${typeName}Input {`);
       for (const attr of entity.attributes || []) {
-        if (attr.pk) continue; // Exclude auto-PK on create input
+        if (attr.isPrimaryKey || (attr as any).pk) continue; // Exclude auto-PK on create input
         const cleanName = toCamelCase(attr.name);
         const gqlType = mapGraphQLType(attr.type || "string");
-        const isNullable = Boolean(attr.nullable);
+        const isNullable = Boolean(attr.isNullable || (attr as any).nullable);
         const suffix = isNullable ? "" : "!";
         lines.push(`  ${cleanName}: ${gqlType}${suffix}`);
       }
