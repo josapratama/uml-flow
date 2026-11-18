@@ -27,8 +27,8 @@ const CRUD_VERBS = {
   ],
   update: [
     "ubah", "edit", "perbarui", "update", "ganti", "reset", "validasi",
-    "proses", "konfirmasi", "setujui", "approve", "modify", "change",
-    "bayar", "kembali", "verifikasi", "status",
+    "konfirmasi", "setujui", "approve", "modify", "change",
+    "bayar", "kembali",
   ],
   delete: [
     "hapus", "batal", "delete", "drop", "remove", "cancel", "arsip",
@@ -45,6 +45,7 @@ function normalizeText(text: string): string {
 
 /**
  * Extracts processes/use cases and entities from diagram and generates an initial CRUD matrix.
+ * Prioritizes actual diagram connections (edges) between process/use case nodes and entity/database nodes.
  */
 export function extractCrudMatrix(diagram: Diagram): CrudMatrix {
   // 1. Extract Processes
@@ -107,14 +108,13 @@ export function extractCrudMatrix(diagram: Diagram): CrudMatrix {
           lower.length > 2 &&
           !["dan", "atau", "secara", "oleh", "pada", "untuk", "dengan", "sistem"].includes(lower)
         ) {
-          // Capitalize first letter
           const capitalized = candidate.charAt(0).toUpperCase() + candidate.slice(1);
           inferredSet.add(capitalized);
         }
       }
     }
 
-    // Common domain entity keywords found anywhere in process names
+    // Common domain entity keywords found anywhere in process names (word boundary checked)
     const domainKeywords = [
       "User", "Pengguna", "Admin", "Member", "Pelanggan", "Nasabah",
       "Mahasiswa", "Dosen", "Siswa", "Pegawai", "Karyawan",
@@ -125,7 +125,8 @@ export function extractCrudMatrix(diagram: Diagram): CrudMatrix {
 
     for (const kw of domainKeywords) {
       const lowerKw = kw.toLowerCase();
-      const found = processes.some((p) => normalizeText(p).includes(lowerKw));
+      const kwRegex = new RegExp(`\\b${lowerKw}\\b`, "i");
+      const found = processes.some((p) => kwRegex.test(normalizeText(p)));
       if (found) {
         inferredSet.add(kw);
       }
@@ -139,47 +140,92 @@ export function extractCrudMatrix(diagram: Diagram): CrudMatrix {
     entities = ["User", "Data Master", "Transaksi", "Laporan"];
   }
 
-  // 3. Build Matrix & Apply CRUD Heuristics
+  // 3. Build Graph Edge Connections between processes and entities
+  const edgeConnections = new Set<string>();
+  const edgeStereotypes = new Map<string, string>();
+
+  for (const edge of diagram.edges || []) {
+    const srcNode = diagram.nodes?.find((n) => n.id === edge.source);
+    const tgtNode = diagram.nodes?.find((n) => n.id === edge.target);
+    if (srcNode && tgtNode) {
+      const srcName = srcNode.name.trim().toLowerCase();
+      const tgtName = tgtNode.name.trim().toLowerCase();
+      const key1 = `${srcName}::${tgtName}`;
+      const key2 = `${tgtName}::${srcName}`;
+      edgeConnections.add(key1);
+      edgeConnections.add(key2);
+      const edgeLabel = typeof edge.label === "string" ? edge.label : edge.label?.text || "";
+      if (edgeLabel) {
+        edgeStereotypes.set(key1, edgeLabel.toLowerCase());
+        edgeStereotypes.set(key2, edgeLabel.toLowerCase());
+      }
+    }
+  }
+
+  // 4. Build Matrix & Apply CRUD Heuristics
   const matrix: Record<string, Record<string, CrudCell>> = {};
 
   for (const proc of processes) {
     matrix[proc] = {};
     const normP = normalizeText(proc);
 
-    const isManage = CRUD_VERBS.manage.some((v) => normP.includes(v));
-    const hasC = isManage || CRUD_VERBS.create.some((v) => normP.includes(v));
-    const hasR = isManage || CRUD_VERBS.read.some((v) => normP.includes(v));
-    const hasU = isManage || CRUD_VERBS.update.some((v) => normP.includes(v));
-    const hasD = isManage || CRUD_VERBS.delete.some((v) => normP.includes(v));
+    const isManage = CRUD_VERBS.manage.some((v) => new RegExp(`\\b${v}\\b`, "i").test(normP));
+    const hasC = isManage || CRUD_VERBS.create.some((v) => new RegExp(`\\b${v}\\b`, "i").test(normP));
+    const hasR = isManage || CRUD_VERBS.read.some((v) => new RegExp(`\\b${v}\\b`, "i").test(normP));
+    const hasU = isManage || CRUD_VERBS.update.some((v) => new RegExp(`\\b${v}\\b`, "i").test(normP));
+    const hasD = isManage || CRUD_VERBS.delete.some((v) => new RegExp(`\\b${v}\\b`, "i").test(normP));
 
     for (const ent of entities) {
       const normE = normalizeText(ent);
-      const isEntityMentioned =
-        normP.includes(normE) ||
-        (normE === "user" && (normP.includes("pengguna") || normP.includes("akun") || normP.includes("login") || normP.includes("registrasi"))) ||
-        (normE === "pengguna" && (normP.includes("user") || normP.includes("akun") || normP.includes("login"))) ||
-        (normE === "transaksi" && (normP.includes("pesan") || normP.includes("bayar") || normP.includes("pinjam"))) ||
-        (normE === "laporan" && (normP.includes("rekap") || normP.includes("cetak") || normP.includes("monitoring")));
 
-      if (isEntityMentioned) {
-        matrix[proc][ent] = {
-          C: hasC || isManage,
-          R: hasR || isManage || (!hasC && !hasU && !hasD),
-          U: hasU || isManage,
-          D: hasD || isManage,
-        };
-      } else {
-        // Fallback: If no entity is specifically mentioned and entity is secondary
-        matrix[proc][ent] = {
-          C: false,
-          R: false,
-          U: false,
-          D: false,
-        };
+      const isConnectedByEdge = edgeConnections.has(`${proc.toLowerCase()}::${ent.toLowerCase()}`);
+      const edgeLabel = edgeStereotypes.get(`${proc.toLowerCase()}::${ent.toLowerCase()}`) || "";
+
+      let cellC = false;
+      let cellR = false;
+      let cellU = false;
+      let cellD = false;
+
+      // If diagram edge has explicit CRUD labels
+      if (edgeLabel) {
+        if (/create|tambah|simpan|\bc\b/i.test(edgeLabel)) cellC = true;
+        if (/read|lihat|baca|tampil|\br\b/i.test(edgeLabel)) cellR = true;
+        if (/update|ubah|edit|\bu\b/i.test(edgeLabel)) cellU = true;
+        if (/delete|hapus|batal|\bd\b/i.test(edgeLabel)) cellD = true;
+        if (/crud/i.test(edgeLabel)) {
+          cellC = true;
+          cellR = true;
+          cellU = true;
+          cellD = true;
+        }
       }
+
+      // Word boundary matching
+      const isEntityMentioned =
+        new RegExp(`\\b${normE}\\b`, "i").test(normP) ||
+        (normE === "user" && /\b(pengguna|akun|login|registrasi)\b/i.test(normP)) ||
+        (normE === "pengguna" && /\b(user|akun|login)\b/i.test(normP)) ||
+        (normE === "transaksi" && /\b(pesan|bayar|pinjam|checkout)\b/i.test(normP)) ||
+        (normE === "laporan" && /\b(rekap|cetak|monitoring)\b/i.test(normP));
+
+      if (!cellC && !cellR && !cellU && !cellD) {
+        if (isConnectedByEdge || isEntityMentioned) {
+          cellC = hasC || isManage;
+          cellR = hasR || isManage || (!hasC && !hasU && !hasD);
+          cellU = hasU || isManage;
+          cellD = hasD || isManage;
+        }
+      }
+
+      matrix[proc][ent] = {
+        C: cellC,
+        R: cellR,
+        U: cellU,
+        D: cellD,
+      };
     }
 
-    // Safety check: ensure at least one entity has an action for this process
+    // Safety fallback: if no entity matched, default to the first relevant entity
     const anyActive = entities.some(
       (ent) =>
         matrix[proc][ent].C ||
@@ -266,6 +312,27 @@ export function exportCrudMatrixCSV(data: CrudMatrix): string {
   });
 
   return lines.join("\r\n");
+}
+
+/** Exports the CRUD Matrix as Excel-ready HTML table document (.xls compatible) */
+export function exportCrudMatrixExcel(data: CrudMatrix, diagramTitle = "Sistem Informasi"): string {
+  const { processes, entities, matrix } = data;
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Matriks CRUD</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+  <style>
+    th { background-color: #f1f5f9; color: #1e293b; font-weight: bold; border: 1px solid #cbd5e1; padding: 8px; text-align: center; }
+    td { border: 1px solid #cbd5e1; padding: 6px; }
+    .proc-col { text-align: left; font-weight: 600; }
+    .center-col { text-align: center; }
+  </style>
+</head>
+<body>
+  <h2>Matriks CRUD (Proses &times; Entitas): ${diagramTitle}</h2>
+  ${exportCrudMatrixHTML(data)}
+</body>
+</html>`;
 }
 
 /** Exports the CRUD Matrix as styled HTML table */

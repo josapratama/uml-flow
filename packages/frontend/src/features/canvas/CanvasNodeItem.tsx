@@ -18,6 +18,7 @@ interface CanvasNodeItemProps {
   connectingSourceId?: string;
   isEditing: boolean;
   hasMultiSelection: boolean;
+  isDimmed?: boolean;
   onSetHovered: (hovered: boolean) => void;
   onContextMenu: (e: React.MouseEvent) => void;
   onDragStart: (e: React.MouseEvent) => void;
@@ -92,6 +93,7 @@ export function CanvasNodeItem({
   connectingSourceId,
   isEditing,
   hasMultiSelection,
+  isDimmed = false,
   onSetHovered,
   onContextMenu,
   onDragStart,
@@ -109,6 +111,7 @@ export function CanvasNodeItem({
   return (
     <React.Fragment key={node.id}>
       <g
+        style={{ opacity: isDimmed ? 0.38 : 1, transition: "opacity 0.2s ease" }}
         onMouseEnter={() => onSetHovered(true)}
         onMouseLeave={() => onSetHovered(false)}
         onContextMenu={onContextMenu}

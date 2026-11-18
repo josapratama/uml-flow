@@ -155,20 +155,39 @@ export function CanvasLayers(props: CanvasLayersProps) {
     setMultiSelected,
   } = props;
 
-  const renderNode = (node: DiagramNode) => (
-    <CanvasNodeItem
-      key={node.id}
-      node={node}
-      diagramType={diagram.type}
-      isSelected={node.id === selectedNodeId}
-      isHovered={hoveredNodeId === node.id}
-      isMultiSelected={multiSelected.has(node.id)}
-      isConnecting={Boolean(connecting)}
-      isReconnecting={Boolean(reconnecting)}
-      connectingSourceId={connecting?.sourceId}
-      isEditing={editingNodeId === node.id}
-      hasMultiSelection={multiSelected.size > 0}
-      canvasTheme={canvasTheme}
+  const selectedNodeIds = new Set<string>();
+  if (selectedNodeId) selectedNodeIds.add(selectedNodeId);
+  if (multiSelected && multiSelected.size > 0) {
+    multiSelected.forEach((id) => selectedNodeIds.add(id));
+  }
+  const hasNodeSelection = selectedNodeIds.size > 0;
+
+  // Set of connected 1-hop neighbor nodes
+  const connectedNodeIds = new Set<string>(selectedNodeIds);
+  if (hasNodeSelection) {
+    for (const edge of diagram.edges || []) {
+      if (selectedNodeIds.has(edge.source)) connectedNodeIds.add(edge.target);
+      if (selectedNodeIds.has(edge.target)) connectedNodeIds.add(edge.source);
+    }
+  }
+
+  const renderNode = (node: DiagramNode) => {
+    const isDimmed = hasNodeSelection && !connectedNodeIds.has(node.id) && !isContainerNode(node);
+    return (
+      <CanvasNodeItem
+        key={node.id}
+        node={node}
+        diagramType={diagram.type}
+        isSelected={node.id === selectedNodeId}
+        isHovered={hoveredNodeId === node.id}
+        isMultiSelected={multiSelected.has(node.id)}
+        isConnecting={Boolean(connecting)}
+        isReconnecting={Boolean(reconnecting)}
+        connectingSourceId={connecting?.sourceId}
+        isEditing={editingNodeId === node.id}
+        hasMultiSelection={multiSelected.size > 0}
+        isDimmed={isDimmed}
+        canvasTheme={canvasTheme}
       onSetHovered={(hovered) =>
         setHoveredNodeId(hovered ? node.id : null)
       }
@@ -211,6 +230,7 @@ export function CanvasLayers(props: CanvasLayersProps) {
       onRenameCancel={() => setEditingNodeId(null)}
     />
   );
+};
 
   const isContainerNode = (n: DiagramNode) =>
     n.type === "composite" ||

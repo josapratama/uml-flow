@@ -5,6 +5,7 @@ import {
   formatCrudCell,
   exportCrudMatrixMarkdown,
   exportCrudMatrixCSV,
+  exportCrudMatrixExcel,
   type CrudMatrix,
   type CrudCell,
 } from "../../services/crud-matrix-generator";
@@ -26,12 +27,33 @@ export function CrudMatrixModal({ isOpen, onClose, diagram }: Props) {
   const [newProcessName, setNewProcessName] = useState("");
   const [showAddCols, setShowAddCols] = useState(false);
 
-  // Initialize or re-extract when diagram changes
+  const storageKey = `uml_flow_crud_matrix_${diagram?.id || diagram?.name || "default"}`;
+
+  // Initialize from cache or extract when diagram changes
   useEffect(() => {
     if (diagram && isOpen) {
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && Array.isArray(parsed.processes) && Array.isArray(parsed.entities)) {
+            setMatrixData(parsed);
+            return;
+          }
+        }
+      } catch {}
       setMatrixData(extractCrudMatrix(diagram));
     }
-  }, [diagram, isOpen]);
+  }, [diagram, isOpen, storageKey]);
+
+  // Persist customized matrix whenever it updates
+  useEffect(() => {
+    if (matrixData && diagram && isOpen) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(matrixData));
+      } catch {}
+    }
+  }, [matrixData, diagram, isOpen, storageKey]);
 
   const toggleFlag = (proc: string, ent: string, flag: keyof CrudCell) => {
     if (!matrixData) return;
@@ -112,6 +134,9 @@ export function CrudMatrixModal({ isOpen, onClose, diagram }: Props) {
 
   const handleResetHeuristics = () => {
     if (!diagram) return;
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {}
     setMatrixData(extractCrudMatrix(diagram));
     showToast(isId ? "Heuristik CRUD di-reset ulang" : "CRUD heuristics reset", "info");
   };
@@ -148,6 +173,21 @@ export function CrudMatrixModal({ isOpen, onClose, diagram }: Props) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     showToast(isId ? "File CSV berhasil diunduh!" : "CSV downloaded!", "success");
+  };
+
+  const handleDownloadExcel = () => {
+    if (!matrixData || !diagram) return;
+    const xls = exportCrudMatrixExcel(matrixData, diagram.name || "Sistem Informasi");
+    const blob = new Blob([xls], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `matriks_crud_${(diagram.name || "diagram").toLowerCase().replace(/[^a-z0-9]/g, "_")}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(isId ? "File Excel (.xls) berhasil diunduh!" : "Excel (.xls) downloaded!", "success");
   };
 
   const handleDownloadMarkdown = () => {
@@ -225,6 +265,13 @@ export function CrudMatrixModal({ isOpen, onClose, diagram }: Props) {
             >
               <span>📊</span>
               <span>CSV</span>
+            </button>
+            <button
+              onClick={handleDownloadExcel}
+              className="px-2.5 py-1.5 bg-surface-3 hover:bg-surface-4 text-text rounded-lg border border-border transition-colors font-medium flex items-center gap-1.5"
+            >
+              <span>📗</span>
+              <span>Excel</span>
             </button>
             <button
               onClick={handleDownloadMarkdown}

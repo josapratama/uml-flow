@@ -75,13 +75,15 @@ export function parseSQLToERD(
         /(?:CONSTRAINT\s+[`"']?[A-Za-z0-9_]+[`"']?\s+)?FOREIGN\s+KEY\s*\(([^)]+)\)\s*REFERENCES\s+[`"']?([A-Za-z0-9_]+)[`"']?\s*\(([^)]+)\)/i,
       );
       if (fkMatch) {
-        const fkCol = fkMatch[1].trim().replace(/[`"']/g, "");
+        const fkCols = fkMatch[1].split(",").map((c) => c.trim().replace(/[`"']/g, ""));
         const targetTable = fkMatch[2].trim().replace(/[`"']/g, "");
-        relations.push({
-          sourceTable: targetTable,
-          targetTable: tableName,
-          foreignKey: fkCol,
-        });
+        for (const fkCol of fkCols) {
+          relations.push({
+            sourceTable: targetTable,
+            targetTable: tableName,
+            foreignKey: fkCol,
+          });
+        }
         continue;
       }
 
@@ -145,13 +147,15 @@ export function parseSQLToERD(
   let alterMatch: RegExpExecArray | null;
   while ((alterMatch = alterFkRegex.exec(cleaned)) !== null) {
     const tableName = alterMatch[1].trim().replace(/[`"']/g, "");
-    const fkCol = alterMatch[2].trim().replace(/[`"']/g, "");
+    const fkCols = alterMatch[2].split(",").map((c) => c.trim().replace(/[`"']/g, ""));
     const targetTable = alterMatch[3].trim().replace(/[`"']/g, "");
-    relations.push({
-      sourceTable: targetTable,
-      targetTable: tableName,
-      foreignKey: fkCol,
-    });
+    for (const fkCol of fkCols) {
+      relations.push({
+        sourceTable: targetTable,
+        targetTable: tableName,
+        foreignKey: fkCol,
+      });
+    }
   }
 
   // Mark foreign keys in columns

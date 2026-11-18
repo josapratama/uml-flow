@@ -104,7 +104,21 @@ export function generateJava(diagram: Diagram): string {
         lines.push(`  ${vis} ${abs}${ret} ${method.name}(${params});`);
       } else {
         lines.push(`  ${vis} ${ret} ${method.name}(${params}) {`);
-        lines.push(`    // TODO: implement`);
+        if (ret === "void") {
+          // Method execution completed
+        } else if (ret === "boolean") {
+          lines.push(`    return true;`);
+        } else if (ret === "int" || ret === "long" || ret === "short" || ret === "byte") {
+          lines.push(`    return 0;`);
+        } else if (ret === "double" || ret === "float") {
+          lines.push(`    return 0.0;`);
+        } else if (ret === "char") {
+          lines.push(`    return '\\0';`);
+        } else if (ret === "String") {
+          lines.push(`    return "";`);
+        } else {
+          lines.push(`    return null;`);
+        }
         lines.push(`  }`);
       }
     }

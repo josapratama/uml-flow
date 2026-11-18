@@ -1200,4 +1200,73 @@ describe("LaTeX TikZ Code Exporter", () => {
     expect(pathRes.point.x).toBeCloseTo(50, 1);
     expect(pathRes.point.y).toBeCloseTo(75, 1);
   });
+
+  it("generates concrete Java method return statements without placeholder TODOs", async () => {
+    const { generateJava } = await import("./java");
+    const code = generateJava(sampleClassDiagram);
+    expect(code).not.toContain("// TODO: implement");
+    expect(code).toContain("boolean login() {");
+    expect(code).toContain("return true;");
+  });
+
+  it("extracts CRUD associations from diagram edges and exports Excel workbook table", async () => {
+    const { extractCrudMatrix, exportCrudMatrixExcel } = await import("../crud-matrix-generator");
+    const diagramWithGraphEdges: Diagram = {
+      id: "diag-ecommerce",
+      name: "Toko Online",
+      type: "usecase",
+      nodes: [
+        { id: "u1", name: "Checkout Pesanan", type: "usecase", position: { x: 0, y: 0 }, size: { width: 150, height: 50 } } as any,
+        { id: "e1", name: "Order", type: "entity", position: { x: 300, y: 0 }, size: { width: 120, height: 80 } } as any,
+        { id: "e2", name: "Inventory", type: "entity", position: { x: 300, y: 120 }, size: { width: 120, height: 80 } } as any,
+      ],
+      edges: [
+        { id: "edge1", source: "u1", target: "e1", label: { text: "<<create>>" } },
+        { id: "edge2", source: "u1", target: "e2", label: { text: "<<update>>" } },
+      ],
+    };
+
+    const matrix = extractCrudMatrix(diagramWithGraphEdges);
+    expect(matrix.processes).toContain("Checkout Pesanan");
+    expect(matrix.entities).toContain("Order");
+    expect(matrix.entities).toContain("Inventory");
+
+    // Order should have C=true from edge stereotype
+    expect(matrix.matrix["Checkout Pesanan"]["Order"].C).toBe(true);
+    // Inventory should have U=true from edge stereotype
+    expect(matrix.matrix["Checkout Pesanan"]["Inventory"].U).toBe(true);
+
+    const xls = exportCrudMatrixExcel(matrix, "Toko Online");
+    expect(xls).toContain("urn:schemas-microsoft-com:office:excel");
+    expect(xls).toContain("Checkout Pesanan");
+    expect(xls).toContain("Order");
+  });
+
+  it("parses composite foreign keys and ON DELETE CASCADE in SQL DDL", async () => {
+    const { parseSQLToERD } = await import("../sql-importer");
+    const sql = `
+      CREATE TABLE orders (
+        tenant_id INT NOT NULL,
+        order_id INT NOT NULL,
+        total_amount DECIMAL(12, 2),
+        PRIMARY KEY (tenant_id, order_id)
+      );
+
+      CREATE TABLE order_items (
+        id INT PRIMARY KEY,
+        tenant_id INT NOT NULL,
+        order_id INT NOT NULL,
+        item_name VARCHAR(100),
+        FOREIGN KEY (tenant_id, order_id) REFERENCES orders(tenant_id, order_id) ON DELETE CASCADE
+      );
+    `;
+
+    const dsl = parseSQLToERD(sql, "MultiTenant Commerce");
+    expect(dsl).toContain("entity orders {");
+    expect(dsl).toContain("*tenant_id");
+    expect(dsl).toContain("*order_id");
+    expect(dsl).toContain("entity order_items {");
+    expect(dsl).toContain('orders ||--o{ order_items : "tenant_id"');
+    expect(dsl).toContain('orders ||--o{ order_items : "order_id"');
+  });
 });
