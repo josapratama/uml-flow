@@ -62,6 +62,7 @@ export default function App(props: AppProps = {}) {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAcademicA4, setShowAcademicA4] = useState(false);
   const [showConverter, setShowConverter] = useState(false);
+  const [showCrudMatrix, setShowCrudMatrix] = useState(false);
   const [canvasSketchMode, setCanvasSketchMode] = useState(false);
   const [showSQLExport, setShowSQLExport] = useState(false);
   const [showStylePanel, setShowStylePanel] = useState<
@@ -1224,6 +1225,7 @@ export default function App(props: AppProps = {}) {
         onOpenAcademicMetadata={() => setShowAcademicMetadata(true)}
         onOpenAcademicA4={() => setShowAcademicA4(true)}
         onOpenConverter={() => setShowConverter(true)}
+        onOpenCrudMatrix={() => setShowCrudMatrix(true)}
         onOpenThesisBundle={() => setShowThesisBundle(true)}
         onOpenTestCases={() => setShowTestCases(true)}
         onOpenMockData={() => setShowMockData(true)}
@@ -1330,6 +1332,8 @@ export default function App(props: AppProps = {}) {
         showConverter={showConverter}
         onCloseConverter={() => setShowConverter(false)}
         onApplyConvertedDiagram={handleApplyConvertedDiagram}
+        showCrudMatrix={showCrudMatrix}
+        onCloseCrudMatrix={() => setShowCrudMatrix(false)}
         contextMenu={contextMenu}
         onCloseContextMenu={() => setContextMenu(null)}
         showLibrary={showLibrary}
@@ -1432,6 +1436,7 @@ export default function App(props: AppProps = {}) {
         onOpenAcademicMetadata={() => setShowAcademicMetadata(true)}
         onOpenAcademicA4={() => setShowAcademicA4(true)}
         onOpenConverter={() => setShowConverter(true)}
+        onOpenCrudMatrix={() => setShowCrudMatrix(true)}
         onOpenThesisBundle={() => setShowThesisBundle(true)}
         onOpenTestCases={() => setShowTestCases(true)}
         onOpenMockData={() => setShowMockData(true)}

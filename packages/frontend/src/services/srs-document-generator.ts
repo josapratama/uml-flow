@@ -4,6 +4,7 @@ import { extractUseCaseScenarios } from "./use-case-narrative";
 import { extractDataDictionary } from "./erd-dictionary";
 import { calculateDiagramMetrics } from "./diagram-metrics";
 import { generateTestCases } from "./test-case-generator";
+import { extractCrudMatrix, exportCrudMatrixHTML } from "./crud-matrix-generator";
 
 function escapeHtml(str: string): string {
   return String(str || "")
@@ -28,6 +29,8 @@ export function generateSRSDocumentHTML(
   const dictTables = extractDataDictionary(diagram);
   const metrics = calculateDiagramMetrics(diagram);
   const testCases = generateTestCases(diagram);
+  const crudData = extractCrudMatrix(diagram);
+  const crudHtml = exportCrudMatrixHTML(crudData);
 
   const projectTitle =
     meta.documentTitle ||
@@ -287,6 +290,10 @@ export function generateSRSDocumentHTML(
 
   <h2 class="chapter-title">${isId ? "BAB II. SPESIFIKASI NARATIF &amp; SKENARIO ALUR SISTEM" : "CHAPTER 2. NARRATIVE SPECIFICATION &amp; SYSTEM FLOW SCENARIOS"}</h2>
   ${narrativeRowsHtml}
+
+  <h3>2.${narratives.length + 1}. ${isId ? "Matriks CRUD (Proses vs Entitas Data)" : "CRUD Matrix (Process vs Data Entities)"}</h3>
+  <p>${isId ? "Tabel berikut menyajikan pemetaan matriks Create, Read, Update, Delete antara setiap proses/use case dengan entitas data utama dalam arsitektur sistem:" : "The following table presents the Create, Read, Update, Delete mapping between each process/use case and the core data entities in the system architecture:"}</p>
+  ${crudHtml}
 
   <h2 class="chapter-title">${isId ? "BAB III. KAMUS DATA &amp; STRUKTUR ENTITAS / KELAS" : "CHAPTER 3. DATA DICTIONARY &amp; ENTITY / CLASS SPECIFICATION"}</h2>
   ${dictTablesHtml}

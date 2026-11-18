@@ -41,9 +41,9 @@ export function parseSQLToERD(
   const tables: TableDef[] = [];
   const relations: RelationDef[] = [];
 
-  // Match CREATE TABLE [IF NOT EXISTS] `?tableName`? ( body )
+  // Match CREATE TABLE [IF NOT EXISTS] [schema.]`?tableName`? ( body )
   const tableRegex =
-    /CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+[`"']?([A-Za-z0-9_]+)[`"']?\s*\(([\s\S]*?)\)(?:\s*ENGINE[^\n;]*)?(?:\s*DEFAULT\s+CHARSET[^\n;]*)?;/gi;
+    /CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+(?:[`"']?[A-Za-z0-9_]+[`"']?\.)?[`"']?([A-Za-z0-9_]+)[`"']?\s*\(([\s\S]*?)\)(?:\s*ENGINE[^\n;]*)?(?:\s*DEFAULT\s+CHARSET[^\n;]*)?(?:\s*;|\s*$|\s*(?=CREATE\s+TABLE))/gi;
 
   let match: RegExpExecArray | null;
   while ((match = tableRegex.exec(cleaned)) !== null) {
@@ -137,6 +137,21 @@ export function parseSQLToERD(
     }
 
     tables.push({ name: tableName, columns });
+  }
+
+  // Match ALTER TABLE table_name ADD [CONSTRAINT name] FOREIGN KEY (col) REFERENCES other_table(other_col)
+  const alterFkRegex =
+    /ALTER\s+TABLE\s+(?:[`"']?[A-Za-z0-9_]+[`"']?\.)?[`"']?([A-Za-z0-9_]+)[`"']?\s+ADD\s+(?:CONSTRAINT\s+[`"']?[A-Za-z0-9_]+[`"']?\s+)?FOREIGN\s+KEY\s*\(([^)]+)\)\s*REFERENCES\s+(?:[`"']?[A-Za-z0-9_]+[`"']?\.)?[`"']?([A-Za-z0-9_]+)[`"']?\s*\(([^)]+)\)/gi;
+  let alterMatch: RegExpExecArray | null;
+  while ((alterMatch = alterFkRegex.exec(cleaned)) !== null) {
+    const tableName = alterMatch[1].trim().replace(/[`"']/g, "");
+    const fkCol = alterMatch[2].trim().replace(/[`"']/g, "");
+    const targetTable = alterMatch[3].trim().replace(/[`"']/g, "");
+    relations.push({
+      sourceTable: targetTable,
+      targetTable: tableName,
+      foreignKey: fkCol,
+    });
   }
 
   // Mark foreign keys in columns

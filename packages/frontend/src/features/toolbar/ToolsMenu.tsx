@@ -16,6 +16,7 @@ interface Props {
   onOpenDataDictionary?: () => void;
   onOpenAcademicA4?: () => void;
   onOpenConverter?: () => void;
+  onOpenCrudMatrix?: () => void;
   onOpenShortcuts?: () => void;
 }
 
@@ -33,6 +34,7 @@ export function ToolsMenu({
   onOpenDataDictionary,
   onOpenAcademicA4,
   onOpenConverter,
+  onOpenCrudMatrix,
   onOpenShortcuts,
 }: Props) {
   const { locale } = useI18n();
@@ -205,6 +207,23 @@ export function ToolsMenu({
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-text">{isId ? "Konversi Tipe Diagram" : "Convert Diagram Type"}</div>
                   <div className="text-[10px] text-text-muted truncate">{isId ? "ERD ↔ Class, Flowchart ↔ Activity" : "Cross-diagram model transformation"}</div>
+                </div>
+              </button>
+            )}
+
+            {onOpenCrudMatrix && (
+              <button
+                disabled={!hasDiagram}
+                onClick={() => {
+                  setOpen(false);
+                  onOpenCrudMatrix();
+                }}
+                className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left text-text hover:bg-surface-3 transition-colors disabled:opacity-40 disabled:cursor-not-allowed group"
+              >
+                <span>🗂️</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-text">{isId ? "Matriks CRUD (Proses × Entitas)" : "CRUD Matrix (Process × Entity)"}</div>
+                  <div className="text-[10px] text-text-muted truncate">{isId ? "Pemetaan C-R-U-D Bab 3 Skripsi & SRS" : "C-R-U-D mapping for Thesis Chapter 3"}</div>
                 </div>
               </button>
             )}

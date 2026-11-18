@@ -28,6 +28,7 @@ const UseCaseNarrativeModal = lazy(() => import("../ui/UseCaseNarrativeModal").t
 const DataDictionaryModal = lazy(() => import("../ui/DataDictionaryModal").then(m => ({ default: m.DataDictionaryModal })));
 const AcademicA4Modal = lazy(() => import("../ui/AcademicA4Modal").then(m => ({ default: m.AcademicA4Modal })));
 const DiagramConverterModal = lazy(() => import("../ui/DiagramConverterModal").then(m => ({ default: m.DiagramConverterModal })));
+const CrudMatrixModal = lazy(() => import("../ui/CrudMatrixModal").then(m => ({ default: m.CrudMatrixModal })));
 
 interface AppModalsProps {
   showShortcuts: boolean;
@@ -102,6 +103,9 @@ interface AppModalsProps {
   onCloseConverter?: () => void;
   onOpenConverter?: () => void;
   onApplyConvertedDiagram?: (newDiagram: Diagram, inNewTab: boolean) => void;
+  showCrudMatrix?: boolean;
+  onCloseCrudMatrix?: () => void;
+  onOpenCrudMatrix?: () => void;
   showCommandPalette?: boolean;
   onCloseCommandPalette?: () => void;
   onSelectNode?: (nodeId: string) => void;
@@ -203,6 +207,9 @@ export function AppModals({
   onCloseConverter,
   onOpenConverter,
   onApplyConvertedDiagram,
+  showCrudMatrix = false,
+  onCloseCrudMatrix,
+  onOpenCrudMatrix = () => { },
   showCommandPalette = false,
   onCloseCommandPalette,
   onSelectNode = () => { },
@@ -432,6 +439,14 @@ export function AppModals({
           />
         )}
 
+        {showCrudMatrix && (
+          <CrudMatrixModal
+            isOpen={showCrudMatrix}
+            onClose={onCloseCrudMatrix || (() => { })}
+            diagram={diagram}
+          />
+        )}
+
         {showCommandPalette && (
           <CommandPaletteModal
             isOpen={showCommandPalette}
@@ -452,6 +467,7 @@ export function AppModals({
             onOpenDataDictionary={onOpenDataDictionary}
             onOpenAcademicA4={onOpenAcademicA4}
             onOpenConverter={onOpenConverter}
+            onOpenCrudMatrix={onOpenCrudMatrix}
             onOpenWorkspaceBackup={onOpenWorkspaceBackup}
             onOpenNodeHierarchy={onOpenNodeHierarchy}
             onOpenAI={onOpenAI}

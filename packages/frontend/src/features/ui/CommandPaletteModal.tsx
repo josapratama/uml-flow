@@ -31,6 +31,7 @@ interface Props {
   onOpenDataDictionary?: () => void;
   onOpenAcademicA4?: () => void;
   onOpenConverter?: () => void;
+  onOpenCrudMatrix?: () => void;
   onOpenWorkspaceBackup?: () => void;
   onOpenNodeHierarchy?: () => void;
   onRepairDiagram?: () => void;
@@ -68,6 +69,7 @@ export function CommandPaletteModal({
   onOpenDataDictionary = () => { },
   onOpenAcademicA4 = () => { },
   onOpenConverter = () => { },
+  onOpenCrudMatrix = () => { },
   onOpenWorkspaceBackup = () => { },
   onOpenNodeHierarchy = () => { },
   onRepairDiagram = () => { },
@@ -243,6 +245,14 @@ export function CommandPaletteModal({
         icon: "🔄",
         category: "modals",
         onSelect: onOpenConverter,
+      },
+      {
+        id: "open-crud-matrix",
+        title: isId ? "🗂️ Matriks CRUD (Proses × Entitas Data)" : "🗂️ CRUD Matrix (Process × Entity)",
+        description: isId ? "Pemetaan matriks Create, Read, Update, Delete untuk analisis Bab 3 skripsi & SRS" : "CRUD mapping table for software analysis, thesis Chapter 3 & SRS",
+        icon: "🗂️",
+        category: "modals",
+        onSelect: onOpenCrudMatrix,
       },
       {
         id: "open-academic-a4",

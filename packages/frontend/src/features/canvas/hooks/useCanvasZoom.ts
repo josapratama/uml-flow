@@ -54,6 +54,17 @@ export function useCanvasZoom(
       maxY = Math.max(maxY, 120 + (msgCount + 2) * 50);
     }
 
+    // For usecase diagrams, add extra margin for the system boundary frame & header bar
+    if (diagram.type === "usecase") {
+      const ucNodes = diagram.nodes?.filter((n) => n.type === "usecase");
+      if (ucNodes && ucNodes.length > 0) {
+        minY -= 56;
+        minX -= 40;
+        maxX += 40;
+        maxY += 36;
+      }
+    }
+
     const topPadScreen = 68; // Reserve space for CanvasControls floating bar at top
     const bottomPadScreen = 40;
     const horizontalPadScreen = 48;

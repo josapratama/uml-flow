@@ -164,12 +164,61 @@ export interface PathPointResult {
 }
 
 /**
+ * Computes the point and normal for a cubic Bezier curve defined by [p0, c1, c2, p3] at parameter t (0..1).
+ * Uses analytical Bezier formula B(t) and derivative B'(t) to find exact curve point and perpendicular normal.
+ */
+export function getBezierPointAndNormal(
+  p0: Position,
+  c1: Position,
+  c2: Position,
+  p3: Position,
+  t: number = 0.5,
+): PathPointResult {
+  const clampedT = Math.max(0, Math.min(1, t));
+  const mt = 1 - clampedT;
+  const mt2 = mt * mt;
+  const mt3 = mt2 * mt;
+  const t2 = clampedT * clampedT;
+  const t3 = t2 * clampedT;
+
+  // B(t) = (1-t)^3*P0 + 3(1-t)^2*t*C1 + 3(1-t)*t^2*C2 + t^3*P3
+  const x = mt3 * p0.x + 3 * mt2 * clampedT * c1.x + 3 * mt * t2 * c2.x + t3 * p3.x;
+  const y = mt3 * p0.y + 3 * mt2 * clampedT * c1.y + 3 * mt * t2 * c2.y + t3 * p3.y;
+
+  // Tangent B'(t) = 3(1-t)^2*(C1-P0) + 6(1-t)t*(C2-C1) + 3t^2*(P3-C2)
+  const dx =
+    3 * mt2 * (c1.x - p0.x) +
+    6 * mt * clampedT * (c2.x - c1.x) +
+    3 * t2 * (p3.x - c2.x);
+  const dy =
+    3 * mt2 * (c1.y - p0.y) +
+    6 * mt * clampedT * (c2.y - c1.y) +
+    3 * t2 * (p3.y - c2.y);
+
+  const len = Math.hypot(dx, dy);
+  if (len === 0) {
+    return {
+      point: { x, y },
+      normal: { x: 0, y: -1 },
+      tangent: { x: 1, y: 0 },
+    };
+  }
+
+  const tangent = { x: dx / len, y: dy / len };
+  // Normal 90 deg CCW
+  const normal = { x: -tangent.y, y: tangent.x };
+  return { point: { x, y }, normal, tangent };
+}
+
+/**
  * Calculate the point, normal, and tangent on a path at a given ratio (0.0 to 1.0).
  * Protects against placing labels directly on siku/corners (within 16px of vertices).
+ * Supports both piecewise polyline and exact cubic Bezier curves.
  */
 export function getPathPointAndNormal(
   points: Position[],
   ratio: number = 0.5,
+  isBezier: boolean = false,
 ): PathPointResult {
   if (!points || points.length === 0) {
     return {
@@ -184,6 +233,11 @@ export function getPathPointAndNormal(
       normal: { x: 0, y: -1 },
       tangent: { x: 1, y: 0 },
     };
+  }
+
+  // If designated as Bezier curve with 4 control points [p0, c1, c2, p3]
+  if (isBezier && points.length === 4) {
+    return getBezierPointAndNormal(points[0], points[1], points[2], points[3], ratio);
   }
 
   const segLengths: number[] = [];

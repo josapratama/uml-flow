@@ -1098,5 +1098,106 @@ describe("LaTeX TikZ Code Exporter", () => {
     expect(doc).toContain("BAB III. KAMUS DATA");
     expect(doc).toContain("BAB IV. METRIK KOMPLEKSITAS MCCABE");
     expect(doc).toContain("<svg><rect width='10' height='10'/></svg>");
+    expect(doc).toContain("Matriks CRUD");
+  });
+
+  it("parses advanced SQL DDL with schema prefixes and ALTER TABLE foreign keys", async () => {
+    const { isSQLDDL, parseSQLToERD } = await import("../sql-importer");
+    const sqlScript = `
+      CREATE TABLE public.students (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        nim VARCHAR(20) NOT NULL UNIQUE,
+        name VARCHAR(100) NOT NULL
+      )
+
+      CREATE TABLE public.courses (
+        code VARCHAR(10) PRIMARY KEY,
+        title VARCHAR(100) NOT NULL
+      );
+
+      CREATE TABLE public.enrollments (
+        id INT PRIMARY KEY,
+        student_id INT NOT NULL,
+        course_code VARCHAR(10) NOT NULL
+      );
+
+      ALTER TABLE enrollments ADD CONSTRAINT fk_student FOREIGN KEY (student_id) REFERENCES students(id);
+      ALTER TABLE enrollments ADD CONSTRAINT fk_course FOREIGN KEY (course_code) REFERENCES courses(code);
+    `;
+
+    expect(isSQLDDL(sqlScript)).toBe(true);
+    const erdDsl = parseSQLToERD(sqlScript, "Sistem Perkuliahan");
+    expect(erdDsl).toContain('@diagram "Sistem Perkuliahan" erd');
+    expect(erdDsl).toContain("entity students {");
+    expect(erdDsl).toContain("entity courses {");
+    expect(erdDsl).toContain("entity enrollments {");
+    expect(erdDsl).toContain('*id: int [pk]');
+    expect(erdDsl).toContain('student_id: int [fk]');
+    expect(erdDsl).toContain('students ||--o{ enrollments : "student_id"');
+    expect(erdDsl).toContain('courses ||--o{ enrollments : "course_code"');
+  });
+
+  it("extracts and formats automated CRUD Matrix for thesis chapter 3", async () => {
+    const { extractCrudMatrix, exportCrudMatrixMarkdown, exportCrudMatrixCSV, exportCrudMatrixHTML } = await import("../crud-matrix-generator");
+    const ucDiag: Diagram = {
+      id: "uc-siakad",
+      name: "SIAKAD Universitas",
+      type: "usecase",
+      nodes: [
+        { id: "u1", name: "Kelola Data Mahasiswa", type: "usecase", position: { x: 0, y: 0 }, size: { width: 160, height: 60 } } as any,
+        { id: "u2", name: "Pendaftaran Mata Kuliah", type: "usecase", position: { x: 0, y: 80 }, size: { width: 160, height: 60 } } as any,
+        { id: "u3", name: "Lihat Transkrip Nilai", type: "usecase", position: { x: 0, y: 160 }, size: { width: 160, height: 60 } } as any,
+        { id: "u4", name: "Hapus Mata Kuliah", type: "usecase", position: { x: 0, y: 240 }, size: { width: 160, height: 60 } } as any,
+      ],
+      edges: [],
+    };
+
+    const matrix = extractCrudMatrix(ucDiag);
+    expect(matrix.processes.length).toBe(4);
+    expect(matrix.entities.length).toBeGreaterThanOrEqual(1);
+
+    // "Kelola Data Mahasiswa" should have C, R, U, D
+    const mhsRow = matrix.matrix["Kelola Data Mahasiswa"];
+    const mhsEnt = Object.keys(mhsRow).find((k) => k.toLowerCase().includes("mahasiswa")) || Object.keys(mhsRow)[0];
+    expect(mhsRow[mhsEnt].C).toBe(true);
+    expect(mhsRow[mhsEnt].R).toBe(true);
+    expect(mhsRow[mhsEnt].U).toBe(true);
+    expect(mhsRow[mhsEnt].D).toBe(true);
+
+    const md = exportCrudMatrixMarkdown(matrix, "SIAKAD");
+    expect(md).toContain("Matriks CRUD (Proses × Entitas): SIAKAD");
+    expect(md).toContain("Kelola Data Mahasiswa");
+
+    const csv = exportCrudMatrixCSV(matrix);
+    expect(csv).toContain("Proses / Use Case");
+    expect(csv).toContain("CRUD");
+
+    const html = exportCrudMatrixHTML(matrix);
+    expect(html).toContain("<table");
+    expect(html).toContain("Kelola Data Mahasiswa");
+  });
+
+  it("calculates exact analytical cubic Bezier curve points and normals", async () => {
+    const { getBezierPointAndNormal, getPathPointAndNormal } = await import("../../features/canvas/edges/edge-geometry");
+    const p0 = { x: 0, y: 0 };
+    const c1 = { x: 0, y: 100 };
+    const c2 = { x: 100, y: 100 };
+    const p3 = { x: 100, y: 0 };
+
+    const midResult = getBezierPointAndNormal(p0, c1, c2, p3, 0.5);
+    // At t=0.5 on symmetric arch, X must be exactly 50 and Y must be 75
+    expect(midResult.point.x).toBeCloseTo(50, 1);
+    expect(midResult.point.y).toBeCloseTo(75, 1);
+    // Tangent at top apex is purely horizontal (dx > 0, dy = 0)
+    expect(midResult.tangent.x).toBeCloseTo(1, 1);
+    expect(midResult.tangent.y).toBeCloseTo(0, 1);
+    // Normal: 90 deg rotation of tangent (0, 1)
+    expect(midResult.normal.x).toBeCloseTo(0, 1);
+    expect(midResult.normal.y).toBeCloseTo(1, 1);
+
+    // Through getPathPointAndNormal with isBezier = true
+    const pathRes = getPathPointAndNormal([p0, c1, c2, p3], 0.5, true);
+    expect(pathRes.point.x).toBeCloseTo(50, 1);
+    expect(pathRes.point.y).toBeCloseTo(75, 1);
   });
 });

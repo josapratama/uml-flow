@@ -105,19 +105,23 @@ export async function exportAsPNG(
   }
 
   // Remove UI elements that shouldn't be in export
-  // (resize handles, anchors, selection indicators, minimap, zoom controls)
+  // (resize handles, anchors, quick-extender controls, minimap, zoom controls)
   const removeSelectors = [
     ".resize-handles",
     ".node-anchors",
+    ".quick-extender-controls",
     ".validation-overlay",
-    "[class*='selected']",
+    "rect[fill*='canvas-grid']",
+    "#canvas-grid",
+    "pattern#canvas-grid",
     "rect[fill='transparent'][width='5000']",
+    "rect[fill='transparent'][width='200000']",
   ];
   removeSelectors.forEach((sel) => {
     clone.querySelectorAll(sel).forEach((el) => el.remove());
   });
 
-  // Remove selection visual indicators (blue borders)
+  // Remove selection visual indicators (blue borders) without deleting the nodes/edges
   clone.querySelectorAll(".uml-node.selected").forEach((el) => {
     el.classList.remove("selected");
   });
@@ -227,6 +231,29 @@ export function getFullDiagramSVG(svgElement: SVGSVGElement): string {
     );
     contentGroup.removeAttribute("style");
   }
+
+  // Remove interactive UI controls from full diagram SVG
+  const removeSelectors = [
+    ".resize-handles",
+    ".node-anchors",
+    ".quick-extender-controls",
+    ".validation-overlay",
+    "rect[fill*='canvas-grid']",
+    "#canvas-grid",
+    "pattern#canvas-grid",
+    "rect[fill='transparent'][width='5000']",
+    "rect[fill='transparent'][width='200000']",
+  ];
+  removeSelectors.forEach((sel) => {
+    clone.querySelectorAll(sel).forEach((el) => el.remove());
+  });
+
+  clone.querySelectorAll(".uml-node.selected").forEach((el) => {
+    el.classList.remove("selected");
+  });
+  clone.querySelectorAll(".uml-edge.selected").forEach((el) => {
+    el.classList.remove("selected");
+  });
 
   clone.setAttribute("width", String(totalW));
   clone.setAttribute("height", String(totalH));

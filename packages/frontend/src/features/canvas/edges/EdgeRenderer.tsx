@@ -27,6 +27,8 @@ interface EdgeRendererProps {
   edge: Edge;
   nodes: DiagramNode[];
   isSelected: boolean;
+  isDimmed?: boolean;
+  isFocused?: boolean;
   edgeRouting?: "straight" | "orthogonal" | "curved";
   labelOffset?: number;
   laneOffset?: number;
@@ -56,6 +58,8 @@ export function EdgeRenderer({
   edge,
   nodes,
   isSelected,
+  isDimmed = false,
+  isFocused = false,
   edgeRouting = "straight",
   labelOffset = 0,
   laneOffset,
@@ -305,11 +309,22 @@ export function EdgeRenderer({
     fontColor: "#444444",
     ...(edge.style || {}),
   };
-  const strokeColor = isSelected ? "#6366f1" : es.strokeColor;
+  const strokeColor = isSelected
+    ? "#6366f1"
+    : isFocused
+      ? "#4f46e5"
+      : es.strokeColor;
+  const strokeWidth = isSelected
+    ? Math.max(2, es.strokeWidth)
+    : isFocused
+      ? Math.max(2.2, (es.strokeWidth || 1.5) + 0.75)
+      : es.strokeWidth;
+  const edgeOpacity = isDimmed ? 0.22 : 1;
 
   return (
     <g
-      className={`uml-edge ${isSelected ? "selected" : ""}`}
+      className={`uml-edge ${isSelected ? "selected" : ""} ${isFocused ? "focused" : ""}`}
+      style={{ opacity: edgeOpacity, transition: "opacity 0.18s ease" }}
       onContextMenu={onContextMenu}
     >
       {/* Hit area */}
@@ -328,7 +343,7 @@ export function EdgeRenderer({
         d={d}
         fill="none"
         stroke={strokeColor}
-        strokeWidth={isSelected ? 2 : es.strokeWidth}
+        strokeWidth={strokeWidth}
         strokeDasharray={isDashedEdge(edge.type) ? "6,4" : undefined}
         markerEnd={getMarkerEnd(edge.type)}
         markerStart={getMarkerStart(edge.type)}
@@ -379,6 +394,7 @@ export function EdgeRenderer({
         labelShift={labelShift}
         labelOffset={labelOffset}
         nodes={nodes}
+        isBezier={isBezierCurve && allPoints.length === 4}
       />
     </g>
   );

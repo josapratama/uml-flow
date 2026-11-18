@@ -11,6 +11,7 @@ interface EdgeLabelsProps {
   labelShift?: number;
   labelOffset?: number;
   nodes?: DiagramNode[];
+  isBezier?: boolean;
 }
 
 export function EdgeLabels({
@@ -21,10 +22,11 @@ export function EdgeLabels({
   labelShift,
   labelOffset = 0,
   nodes = [],
+  isBezier = false,
 }: EdgeLabelsProps) {
   const mid = getMidpoint(allPoints);
-  // Compute point and normal vector along path at designated ratio (avoiding corners/siku)
-  const { point, normal } = getPathPointAndNormal(allPoints, labelRatio);
+  // Compute point and normal vector along path at designated ratio (avoiding corners/siku, exact for Bezier)
+  const { point, normal } = getPathPointAndNormal(allPoints, labelRatio, isBezier);
   const shiftDist =
     labelShift !== undefined
       ? labelShift

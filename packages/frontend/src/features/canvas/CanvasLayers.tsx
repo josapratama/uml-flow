@@ -333,89 +333,106 @@ export function CanvasLayers(props: CanvasLayersProps) {
       {/* Layer 1: Containers */}
       {containerNodes.map(renderNode)}
 
-      {/* Layer 2: Edges */}
-      {diagram.edges.map((edge) => {
-        const cfg = edgeLayout.edgeConfigs.get(edge.id) || {
-          laneOffset: 0,
-          labelRatio: 0.5,
-          labelShift: -10,
-        };
-        const sFrac =
-          edgeLayout.portFractionMap.get(`${edge.id}:source`) ?? 0.5;
-        const tFrac =
-          edgeLayout.portFractionMap.get(`${edge.id}:target`) ?? 0.5;
-        const chOffset = edgeLayout.channelOffsetMap.get(edge.id) ?? 0;
+      {/* Layer 2: Edges with Connected Subgraph Focus */}
+      {(() => {
+        const selectedNodeIds = new Set<string>();
+        if (selectedNodeId) selectedNodeIds.add(selectedNodeId);
+        if (multiSelected && multiSelected.size > 0) {
+          multiSelected.forEach((id) => selectedNodeIds.add(id));
+        }
+        const hasNodeSelection = selectedNodeIds.size > 0;
 
-        return (
-          <EdgeRenderer
-            key={edge.id}
-            edge={edge}
-            nodes={diagram.nodes}
-            isSelected={
-              edge.id === selectedEdgeId ||
-              (selectedEdgeIds?.has(edge.id) ?? false)
-            }
-            edgeRouting={edgeRouting || "straight"}
-            laneOffset={cfg.laneOffset}
-            labelOffset={cfg.laneOffset}
-            labelRatio={cfg.labelRatio}
-            labelShift={cfg.labelShift}
-            sourcePortFraction={sFrac}
-            targetPortFraction={tFrac}
-            channelOffset={chOffset}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (e.shiftKey && onEdgeShiftSelect) {
-                onEdgeShiftSelect(edge.id);
-              } else {
+        return diagram.edges.map((edge) => {
+          const cfg = edgeLayout.edgeConfigs.get(edge.id) || {
+            laneOffset: 0,
+            labelRatio: 0.5,
+            labelShift: -10,
+          };
+          const sFrac =
+            edgeLayout.portFractionMap.get(`${edge.id}:source`) ?? 0.5;
+          const tFrac =
+            edgeLayout.portFractionMap.get(`${edge.id}:target`) ?? 0.5;
+          const chOffset = edgeLayout.channelOffsetMap.get(edge.id) ?? 0;
+
+          const isConnectedToSelected =
+            hasNodeSelection &&
+            (selectedNodeIds.has(edge.source) || selectedNodeIds.has(edge.target));
+          const isEdgeSelected =
+            edge.id === selectedEdgeId ||
+            (selectedEdgeIds?.has(edge.id) ?? false);
+          const isDimmed =
+            hasNodeSelection && !isConnectedToSelected && !isEdgeSelected;
+
+          return (
+            <EdgeRenderer
+              key={edge.id}
+              edge={edge}
+              nodes={diagram.nodes}
+              isSelected={isEdgeSelected}
+              isFocused={isConnectedToSelected && !isEdgeSelected}
+              isDimmed={isDimmed}
+              edgeRouting={edgeRouting || "straight"}
+              laneOffset={cfg.laneOffset}
+              labelOffset={cfg.laneOffset}
+              labelRatio={cfg.labelRatio}
+              labelShift={cfg.labelShift}
+              sourcePortFraction={sFrac}
+              targetPortFraction={tFrac}
+              channelOffset={chOffset}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (e.shiftKey && onEdgeShiftSelect) {
+                  onEdgeShiftSelect(edge.id);
+                } else {
+                  onEdgeSelect(edge.id);
+                  onNodeSelect(null);
+                }
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 onEdgeSelect(edge.id);
                 onNodeSelect(null);
+                const pt = screenToWorld(e.clientX, e.clientY);
+                onContextMenu?.(e, {
+                  type: "edge",
+                  id: edge.id,
+                  worldPos: pt,
+                });
+              }}
+              onWaypointDragStart={(idx, pt, e) =>
+                startWpDrag(edge.id, idx, pt, e)
               }
-            }}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onEdgeSelect(edge.id);
-              onNodeSelect(null);
-              const pt = screenToWorld(e.clientX, e.clientY);
-              onContextMenu?.(e, {
-                type: "edge",
-                id: edge.id,
-                worldPos: pt,
-              });
-            }}
-            onWaypointDragStart={(idx, pt, e) =>
-              startWpDrag(edge.id, idx, pt, e)
-            }
-            onWaypointDelete={
-              onEdgeWaypointDelete
-                ? (idx) => onEdgeWaypointDelete(edge.id, idx)
-                : undefined
-            }
-            onEndpointDrag={
-              onEdgeEndpointDrag
-                ? (end, anchor) => onEdgeEndpointDrag(edge.id, end, anchor)
-                : undefined
-            }
-            onEndpointDragStart={(end, point, e) => {
-              e.stopPropagation();
-              onDragStart?.();
-              setReconnecting({
-                edgeId: edge.id,
-                end,
-                from: point,
-                to: point,
-              });
-            }}
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              const pt = screenToWorld(e.clientX, e.clientY);
-              setEditingEdgeId(edge.id);
-              setEditingEdgePos?.(pt);
-            }}
-          />
-        );
-      })}
+              onWaypointDelete={
+                onEdgeWaypointDelete
+                  ? (idx) => onEdgeWaypointDelete(edge.id, idx)
+                  : undefined
+              }
+              onEndpointDrag={
+                onEdgeEndpointDrag
+                  ? (end, anchor) => onEdgeEndpointDrag(edge.id, end, anchor)
+                  : undefined
+              }
+              onEndpointDragStart={(end, point, e) => {
+                e.stopPropagation();
+                onDragStart?.();
+                setReconnecting({
+                  edgeId: edge.id,
+                  end,
+                  from: point,
+                  to: point,
+                });
+              }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                const pt = screenToWorld(e.clientX, e.clientY);
+                setEditingEdgeId(edge.id);
+                setEditingEdgePos?.(pt);
+              }}
+            />
+          );
+        });
+      })()}
 
       {/* Inline edge label editor */}
       {editingEdgeId &&

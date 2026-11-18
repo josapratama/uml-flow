@@ -50,6 +50,19 @@ function computeBoundingBox(diagram: Diagram): {
     maxY = Math.max(maxY, 100 + (msgCount + 2) * 50 + 80);
   }
 
+  // Account for usecase system boundary box & title bar
+  if (diagram.type === "usecase") {
+    const ucNodes = diagram.nodes.filter((n) => n.type === "usecase");
+    if (ucNodes.length > 0) {
+      for (const n of ucNodes) {
+        minX = Math.min(minX, n.position.x - 40);
+        minY = Math.min(minY, n.position.y - 56);
+        maxX = Math.max(maxX, n.position.x + n.size.width + 40);
+        maxY = Math.max(maxY, n.position.y + n.size.height + 36);
+      }
+    }
+  }
+
   if (!isFinite(minX)) {
     minX = 0;
     minY = 0;
@@ -178,6 +191,32 @@ export function generateSVG(diagram: Diagram, options: ExportOptions): string {
   if (diagram.type === "sequence") {
     svg += renderSequenceDiagram(diagramWithEdges);
   } else {
+    // Render UML 2.5 Use Case System Boundary frame
+    if (diagram.type === "usecase") {
+      const ucNodes = diagramWithEdges.nodes.filter((n) => n.type === "usecase");
+      if (ucNodes.length > 0) {
+        let bMinX = Infinity, bMinY = Infinity, bMaxX = -Infinity, bMaxY = -Infinity;
+        for (const n of ucNodes) {
+          bMinX = Math.min(bMinX, n.position.x);
+          bMinY = Math.min(bMinY, n.position.y);
+          bMaxX = Math.max(bMaxX, n.position.x + n.size.width);
+          bMaxY = Math.max(bMaxY, n.position.y + n.size.height);
+        }
+        const padX = 36;
+        const padTop = 52;
+        const padBottom = 32;
+        const bx = bMinX - padX;
+        const by = bMinY - padTop;
+        const bw = Math.max(240, bMaxX - bMinX + padX * 2);
+        const bh = Math.max(160, bMaxY - bMinY + padTop + padBottom);
+        const rawTitle = diagram.name && diagram.name !== "Untitled" ? diagram.name : "System Boundary";
+        svg += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="10" fill="rgba(241, 245, 249, 0.55)" stroke="#94a3b8" stroke-width="1.75" stroke-dasharray="6,4"/>`;
+        svg += `<rect x="${bx}" y="${by}" width="${bw}" height="32" rx="10" fill="rgba(226, 232, 240, 0.7)"/>`;
+        svg += `<line x1="${bx}" y1="${by + 32}" x2="${bx + bw}" y2="${by + 32}" stroke="#cbd5e1" stroke-width="1"/>`;
+        svg += `<text x="${bx + bw / 2}" y="${by + 20}" text-anchor="middle" font-size="12.5" font-weight="bold" font-family="sans-serif" fill="#1e293b">${escapeXml(rawTitle)}</text>`;
+      }
+    }
+
     for (const node of diagramWithEdges.nodes) {
       svg += renderNode(node);
     }
