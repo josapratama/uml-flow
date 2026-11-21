@@ -9,6 +9,7 @@ import { StateNodeRenderer } from "./StateNode";
 import { NoteNodeRenderer } from "./NoteNode";
 import { ComponentNodeRenderer } from "./ComponentNode";
 import { DeploymentNodeRenderer } from "./DeploymentNode";
+import { OrgChartNodeRenderer } from "./OrgChartNode";
 
 interface Props {
   node: DiagramNode;
@@ -70,6 +71,8 @@ export function NodeRenderer({
             return <ComponentNodeRenderer {...props} />;
           case "deployment":
             return <DeploymentNodeRenderer {...props} />;
+          case "orgchart":
+            return <OrgChartNodeRenderer {...props} />;
           default:
             return <ClassNodeRenderer {...props} />;
         }

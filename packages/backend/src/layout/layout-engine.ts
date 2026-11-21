@@ -138,6 +138,14 @@ export class LayoutEngine {
         return layoutLayered(diagram, this.options);
       case "deployment":
         return layoutLayered(diagram, { ...this.options, rankSpacing: 150 });
+      case "orgchart":
+        return layoutLayered(diagram, {
+          ...this.options,
+          direction: "TB",
+          rankSpacing: 90,
+          nodeSpacing: 50,
+          edgeRouting: "orthogonal",
+        });
       default:
         return layoutLayered(diagram, this.options);
     }

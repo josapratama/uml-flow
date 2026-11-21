@@ -41,6 +41,14 @@ const KEYWORDS = new Set([
   "preparation",
   "provided",
   "required",
+  "leader",
+  "manager",
+  "staff",
+  "unit",
+  "assistant",
+  "person",
+  "department",
+  "role",
 ]);
 
 const RELATIONS = [

@@ -35,6 +35,9 @@ export function diagramToDSL(diagram: Diagram): string {
     case "deployment":
       dsl += generateDeploymentDSL(diagram);
       break;
+    case "orgchart":
+      dsl += generateOrgChartDSL(diagram);
+      break;
     default:
       dsl += generateGenericDSL(diagram);
       break;
@@ -491,6 +494,31 @@ function generateDeploymentDSL(diagram: Diagram): string {
       dsl += `artifact "${node.name}"\n`;
     } else if (node.type === "component") {
       dsl += `component "${node.name}"\n`;
+    }
+  }
+  dsl += "\n";
+  dsl += generateEdgesDSL(diagram);
+  return dsl;
+}
+
+// ── OrgChart ─────────────────────────────────────────────────────────────
+
+function generateOrgChartDSL(diagram: Diagram): string {
+  let dsl = "";
+  for (const node of diagram.nodes as any[]) {
+    const type = node.type || "staff";
+    const name = formatName(node.name || "Node");
+    const alias = node.id ? ` as ${node.id.replace(/^node_/, "")}` : "";
+    const hasProps = Boolean(node.person || node.department || node.role);
+
+    if (hasProps) {
+      dsl += `${type} ${name}${alias} {\n`;
+      if (node.person) dsl += `  person: "${escapeDslString(node.person)}"\n`;
+      if (node.department) dsl += `  department: "${escapeDslString(node.department)}"\n`;
+      if (node.role) dsl += `  role: "${escapeDslString(node.role)}"\n`;
+      dsl += `}\n\n`;
+    } else {
+      dsl += `${type} ${name}${alias}\n`;
     }
   }
   dsl += "\n";

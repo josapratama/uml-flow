@@ -489,6 +489,45 @@ function renderNode(node: any): string {
       svg += `<text x="${position.x + size.width / 2}" y="${position.y + 14}" text-anchor="middle" font-size="9" fill="#555" font-style="italic">«artifact»</text>`;
       svg += `<text x="${position.x + size.width / 2}" y="${position.y + size.height / 2 + 8}" text-anchor="middle" font-size="12" fill="#333">${escapeXml(name)}</text>`;
     }
+  } else if (
+    node.type === "leader" ||
+    node.type === "manager" ||
+    node.type === "staff" ||
+    node.type === "unit" ||
+    node.type === "assistant"
+  ) {
+    // OrgChart hierarchy card
+    const accentColors: Record<string, { bg: string; bar: string; badge: string; text: string }> = {
+      leader: { bg: "#EFF6FF", bar: "#2563EB", badge: "#DBEAFE", text: "#1E40AF" },
+      manager: { bg: "#ECFDF5", bar: "#059669", badge: "#D1FAE5", text: "#065F46" },
+      staff: { bg: "#F8FAFC", bar: "#64748B", badge: "#E2E8F0", text: "#334155" },
+      assistant: { bg: "#FFFBEB", bar: "#D97706", badge: "#FEF3C7", text: "#92400E" },
+      unit: { bg: "#F5F3FF", bar: "#7C3AED", badge: "#EDE9FE", text: "#5B21B6" },
+    };
+    const c = accentColors[node.type] || accentColors.staff;
+    const isAssistant = node.type === "assistant";
+    const dash = isAssistant ? 'stroke-dasharray="4,3"' : "";
+
+    svg += `<rect x="${position.x}" y="${position.y}" width="${size.width}" height="${size.height}" fill="${c.bg}" stroke="${c.bar}" stroke-width="1.5" rx="6" ${dash}/>`;
+    // Top accent bar
+    svg += `<path d="M ${position.x + 1} ${position.y + 6} A 5 5 0 0 1 ${position.x + 6} ${position.y + 1} L ${position.x + size.width - 6} ${position.y + 1} A 5 5 0 0 1 ${position.x + size.width - 1} ${position.y + 6} L ${position.x + size.width - 1} ${position.y + 6} L ${position.x + 1} ${position.y + 6} Z" fill="${c.bar}"/>`;
+
+    // Title / Jabatan
+    svg += `<text x="${position.x + size.width / 2}" y="${position.y + 24}" text-anchor="middle" font-size="12" font-weight="bold" fill="#0f172a">${escapeXml(name)}</text>`;
+
+    // Divider
+    svg += `<line x1="${position.x + 10}" y1="${position.y + 32}" x2="${position.x + size.width - 10}" y2="${position.y + 32}" stroke="${c.bar}" stroke-opacity="0.3" stroke-width="0.75"/>`;
+
+    // Person name
+    if (node.person) {
+      svg += `<text x="${position.x + size.width / 2}" y="${position.y + 49}" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">${escapeXml(node.person)}</text>`;
+    }
+
+    // Department or role
+    const sub = node.department || node.role;
+    if (sub) {
+      svg += `<text x="${position.x + size.width / 2}" y="${position.y + 66}" text-anchor="middle" font-size="10" fill="#64748b">${escapeXml(sub)}</text>`;
+    }
   } else {
     // Generic / activity / flowchart nodes
     const isCircleTerminal =

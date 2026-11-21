@@ -621,6 +621,69 @@ device "Client Browser"
 "Backend API Container" --> "PostgreSQL Container" : TCP :5432
 `,
   },
+  // ─── Struktur Organisasi (Org Chart) ───────────────────────
+  {
+    id: "orgchart_desa",
+    type: "orgchart",
+    category: "workflow",
+    categoryLabel: "Struktur Organisasi",
+    title: "Struktur Pemerintahan Desa",
+    titleId: "Struktur Pemerintahan Desa",
+    icon: "🏛️",
+    description: "Hierarki jabatan: Kepala Desa, Sekretaris, Kaur Keuangan/Umum, Kasi Pemerintahan & Staf",
+    descriptionId: "Struktur tata kelola desa: garis komando kepemimpinan dan koordinasi badan permusyawaratan",
+    dsl: `@diagram "Struktur Organisasi Pemerintah Desa" orgchart
+
+leader "Kepala Desa" as kades {
+  person: "Ahmad Fauzi, S.Sos"
+  department: "Pimpinan Utama"
+}
+
+manager "Sekretaris Desa" as sekdes {
+  person: "Rudi Hartono, S.Kom"
+  department: "Sekretariat Desa"
+}
+
+staff "Kaur Keuangan" as kaur_keu {
+  person: "Siti Rahma, S.E."
+  department: "Urusan Keuangan"
+}
+
+staff "Kaur Tata Usaha & Umum" as kaur_umum {
+  person: "Budi Santoso"
+  department: "Urusan Umum"
+}
+
+manager "Kasi Pemerintahan" as kasi_pem {
+  person: "M. Yusuf, S.IP"
+  department: "Seksi Pemerintahan"
+}
+
+staff "Staf Pelayanan Arsip & Surat" as staf_yan {
+  person: "Dewi Lestari"
+  department: "Pelayanan Publik"
+}
+
+unit "Badan Permusyawaratan Desa (BPD)" as bpd {
+  person: "Drs. H. Mulyadi"
+}
+
+assistant "Staf Ahli / Konsultan Hukum" as staf_ahli {
+  person: "Adv. Hendra, S.H."
+}
+
+// Garis Komando / Hierarki Pelaporan
+kades --> sekdes : instruksi kerja
+kades --> kasi_pem : instruksi kerja
+sekdes --> kaur_keu
+sekdes --> kaur_umum
+kasi_pem --> staf_yan
+
+// Garis Koordinasi & Konsultasi
+kades ..> bpd : kemitraan
+kades ..> staf_ahli : konsultasi
+`,
+  },
 ];
 
 /**
@@ -637,6 +700,7 @@ export const SAMPLES: Record<string, string> = {
   activity: RICH_SAMPLES.find((s) => s.id === "activity_registration")!.dsl,
   component: RICH_SAMPLES.find((s) => s.id === "component_microservices")!.dsl,
   deployment: RICH_SAMPLES.find((s) => s.id === "deployment_cloud_vps")!.dsl,
+  orgchart: RICH_SAMPLES.find((s) => s.id === "orgchart_desa")!.dsl,
 };
 
 // Daftarkan semua item ke SAMPLES map

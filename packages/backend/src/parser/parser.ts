@@ -16,6 +16,7 @@ import {
   ERDParser,
   ComponentDiagramParser,
   DeploymentDiagramParser,
+  OrgChartParser,
 } from "./diagrams";
 
 /**
@@ -54,6 +55,8 @@ export class Parser {
 
   /** Guess the diagram type when no @diagram declaration exists. */
   private detectType(input: string): DiagramType | null {
+    if (/^\s*(leader|manager|staff|unit|assistant)\s+["'\w]/im.test(input))
+      return "orgchart";
     if (/^\s*(process|io|subroutine|preparation|connector)\s+["'\w]/im.test(input))
       return "flowchart";
     if (/^\s*participant\s+/im.test(input)) return "sequence";
@@ -175,6 +178,7 @@ export class Parser {
       "erd",
       "component",
       "deployment",
+      "orgchart",
     ];
 
     for (let i = 0; i < tokens.length; i++) {
@@ -244,6 +248,8 @@ export class Parser {
         return new ComponentDiagramParser(diagram, tokens, pos);
       case "deployment":
         return new DeploymentDiagramParser(diagram, tokens, pos);
+      case "orgchart":
+        return new OrgChartParser(diagram, tokens, pos);
       default:
         return new ClassDiagramParser(diagram, tokens, pos);
     }

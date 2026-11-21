@@ -79,6 +79,15 @@ const PALETTE: Record<string, { label: string; icon: string; type: string }[]> =
     { label: "Boundary", icon: "▢", type: "system" },
     { label: "Note", icon: "📝", type: "note" },
   ],
+  orgchart: [
+    { label: "Pimpinan (Leader)", icon: "🏛", type: "leader" },
+    { label: "Manajer / Kabid", icon: "👤", type: "manager" },
+    { label: "Staf Pelaksana", icon: "👥", type: "staff" },
+    { label: "Unit / Divisi", icon: "🏢", type: "unit" },
+    { label: "Staf Ahli / Asisten", icon: "📎", type: "assistant" },
+    { label: "Boundary Wilayah", icon: "▢", type: "system" },
+    { label: "Note", icon: "📝", type: "note" },
+  ],
 };
 
 const EDGE_PALETTE: Record<
@@ -121,6 +130,11 @@ const EDGE_PALETTE: Record<
     { label: "Deploy", icon: "→", type: "deploy" },
     { label: "Manifest", icon: "⇢", type: "manifest" },
     { label: "Association", icon: "—", type: "association" },
+  ],
+  orgchart: [
+    { label: "Garis Komando (Atasan-Bawahan)", icon: "↓", type: "flow" },
+    { label: "Garis Koordinasi (Putus-putus)", icon: "⇢", type: "dependency" },
+    { label: "Hubungan Kerja", icon: "—", type: "association" },
   ],
 };
 

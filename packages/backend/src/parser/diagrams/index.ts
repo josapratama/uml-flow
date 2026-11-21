@@ -7,3 +7,4 @@ export { FlowchartParser } from "./flowchart-parser";
 export { ERDParser } from "./erd-parser";
 export { ComponentDiagramParser } from "./component-parser";
 export { DeploymentDiagramParser } from "./deployment-parser";
+export { OrgChartParser } from "./orgchart-parser";

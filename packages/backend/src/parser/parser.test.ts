@@ -86,3 +86,56 @@ describe("warns on silently ignored input in class diagrams", () => {
     expect(r.errors?.some((e) => e.severity === "warning")).toBe(true);
   });
 });
+
+describe("orgchart parser + layout", () => {
+  const ORG_DSL = `@diagram "Struktur Desa" orgchart
+
+leader "Kepala Desa" as kades {
+  person: "Ahmad Fauzi"
+  department: "Pimpinan"
+}
+
+manager "Sekretaris" as sekdes {
+  person: "Rudi Hartono"
+  department: "Sekretariat"
+}
+
+staff "Kaur Keuangan" as kaur_keu {
+  person: "Siti Rahma"
+}
+
+kades --> sekdes : instruksi
+sekdes --> kaur_keu`;
+
+  test("parses orgchart with roles and properties", () => {
+    const r = new Parser().parse(ORG_DSL);
+    expect(r.success).toBe(true);
+    expect(r.diagram!.type).toBe("orgchart");
+    expect(r.diagram!.nodes.length).toBe(3);
+    expect(r.diagram!.edges.length).toBe(2);
+
+    const kades = r.diagram!.nodes.find((n: any) => n.id === "node_kades") as any;
+    expect(kades).toBeDefined();
+    expect(kades.name).toBe("Kepala Desa");
+    expect(kades.person).toBe("Ahmad Fauzi");
+    expect(kades.department).toBe("Pimpinan");
+    expect(kades.type).toBe("leader");
+  });
+
+  test("auto-detects orgchart type from keywords without declaration", () => {
+    const r = new Parser().parse(`leader "Direktur" as dir\nmanager "Manajer" as mgr\ndir --> mgr`);
+    expect(r.diagram!.type).toBe("orgchart");
+    expect(r.diagram!.nodes.length).toBe(2);
+    expect(r.diagram!.edges.length).toBe(1);
+  });
+
+  test("layered layout executes without errors", () => {
+    const r = new Parser().parse(ORG_DSL);
+    const laidOut = new LayoutEngine(undefined, "auto").layout(r.diagram!);
+    expect(laidOut.nodes.length).toBe(3);
+    const kades = laidOut.nodes.find((n: any) => n.id === "node_kades")!;
+    const sekdes = laidOut.nodes.find((n: any) => n.id === "node_sekdes")!;
+    // Kades should be on a higher rank (smaller Y) than Sekdes
+    expect(kades.position.y).toBeLessThan(sekdes.position.y);
+  });
+});

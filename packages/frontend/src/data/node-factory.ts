@@ -206,6 +206,25 @@ export function createDefaultNode(
         position: { x, y },
         size: { width: 160, height: 70 },
       };
+    case "orgchart": {
+      const defaultNames: Record<string, { name: string; person: string; dept: string }> = {
+        leader: { name: "Pimpinan Utama", person: "Nama Pejabat", dept: "Direksi / Pimpinan" },
+        manager: { name: "Kepala Bagian", person: "Nama Manajer", dept: "Divisi Operasional" },
+        staff: { name: "Staf Pelaksana", person: "Nama Staf", dept: "Unit Kerja" },
+        assistant: { name: "Staf Ahli / Asisten", person: "Nama Konsultan", dept: "Sekretariat" },
+        unit: { name: "Unit Kerja / Divisi", person: "Koordinator", dept: "Departemen" },
+      };
+      const def = defaultNames[nodeType] || defaultNames.staff;
+      return {
+        id,
+        type: nodeType,
+        name: def.name,
+        person: def.person,
+        department: def.dept,
+        position: { x, y },
+        size: { width: 220, height: 85 },
+      };
+    }
     default:
       return {
         id,

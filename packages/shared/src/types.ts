@@ -12,7 +12,8 @@ export type DiagramType =
   | "flowchart"
   | "erd"
   | "component"
-  | "deployment";
+  | "deployment"
+  | "orgchart";
 
 // --- Node Types ---
 export interface Position {
@@ -187,6 +188,20 @@ export interface DeploymentNode {
   children?: DeploymentNode[];
 }
 
+// --- Organization Chart ---
+export interface OrgChartNode {
+  id: string;
+  type: "leader" | "manager" | "staff" | "unit" | "assistant";
+  name: string;
+  person?: string;
+  department?: string;
+  role?: string;
+  avatar?: string;
+  position: Position;
+  size: Size;
+  style?: import("./styling").NodeStyle;
+}
+
 export type DiagramNode =
   | ClassNode
   | UseCaseNode
@@ -195,7 +210,8 @@ export type DiagramNode =
   | FlowchartNode
   | ERDEntity
   | ComponentNode
-  | DeploymentNode;
+  | DeploymentNode
+  | OrgChartNode;
 
 // --- Edge/Connection Types ---
 export type RelationType =

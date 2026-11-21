@@ -47,6 +47,13 @@ export const KEYWORDS = new Set([
   "provided",
   "required",
   "interface",
+  "leader",
+  "manager",
+  "staff",
+  "unit",
+  "assistant",
+  "person",
+  "department",
 ]);
 
 /** Relation symbols ordered by length (longest first for greedy matching). */

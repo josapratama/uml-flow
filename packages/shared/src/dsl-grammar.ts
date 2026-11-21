@@ -142,6 +142,13 @@ export const DSL_KEYWORDS = [
   "node",
   "artifact",
   "package",
+  "leader",
+  "manager",
+  "staff",
+  "unit",
+  "assistant",
+  "person",
+  "department",
   "@diagram",
   "as",
 ] as const;

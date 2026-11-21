@@ -82,6 +82,14 @@ export const DIAGRAM_TYPES: DiagramTypeInfo[] = [
     descEn: "Physical nodes, devices, servers & artifacts",
     category: "structural",
   },
+  {
+    id: "orgchart",
+    label: "Struktur Organisasi",
+    icon: "🏛️",
+    descId: "Struktur hierarki jabatan, pimpinan, staf & unit kerja",
+    descEn: "Organizational hierarchy, leadership, staff & units",
+    category: "structural",
+  },
 ];
 
 export const STARTER_DSL: Record<DiagramType, string> = {
@@ -166,5 +174,57 @@ node "Client Device"
 node "Server"
 
 "Client Device" --> "Server"
+`,
+
+  orgchart: `@diagram "Struktur Organisasi" orgchart
+
+leader "Kepala Desa" as kades {
+  person: "Ahmad Fauzi, S.Sos"
+  department: "Pimpinan Desa"
+}
+
+manager "Sekretaris Desa" as sekdes {
+  person: "Rudi Hartono, S.Kom"
+  department: "Sekretariat"
+}
+
+staff "Kaur Keuangan" as kaur_keu {
+  person: "Siti Rahma"
+  department: "Keuangan"
+}
+
+staff "Kaur Umum & Perencanaan" as kaur_umum {
+  person: "Budi Santoso"
+  department: "Tata Usaha"
+}
+
+manager "Kasi Pemerintahan" as kasi_pem {
+  person: "M. Yusuf, S.IP"
+  department: "Pelayanan Masyarakat"
+}
+
+staff "Staf Pelayanan" as staf_yan {
+  person: "Dewi Lestari"
+  department: "Pelayanan Publik"
+}
+
+unit "BPD (Badan Permusyawaratan)" as bpd {
+  person: "Drs. H. Mulyadi"
+}
+
+assistant "Staf Khusus Hukum" as staf_ahli {
+  person: "Hendra, S.H."
+}
+
+// Garis Komando / Hierarki
+kades --> sekdes : memimpin
+kades --> kasi_pem : memimpin
+sekdes --> kaur_keu
+sekdes --> kaur_umum
+kasi_pem --> staf_yan
+
+// Garis Koordinasi / Konsultasi
+kades ..> bpd : koordinasi
+kades ..> staf_ahli : konsultasi
 `,
 };
